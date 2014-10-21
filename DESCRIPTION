@@ -1,12 +1,9 @@
 Package: envnames
 Type: Package
 Title: Keeps track of user-defined and execution environment names 
-Version: 0.1
-Date: 2014-10-20
+Version: 0.2
+Date: 2014-10-21
 Author: Daniel Mastropietro
 Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
-Description: Set of tools to:
-  - retrieve the environment name of environments created with new.env().
-  - find the environment where an object is defined.
-  - define lookup table to keep track of execution environments.
+Description: A set of tools to extract and keep track of user-defined and execution environment names.
 License: GPL

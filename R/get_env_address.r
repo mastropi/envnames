@@ -1,11 +1,17 @@
-# Function that retrieves the address of an environment existing in the envir environment
+# Function that retrieves the memory address of an environment existing in the envir environment as text
 get_env_address = function(env, type="variable", envir=.GlobalEnv)
-  ## For now env should be passed using quote() --e.g. quote(env11)-- unless envir is the global environment
+  ## For now env should be passed using quote() --e.g. quote(env11)-- unless envir is the global environment, in which
+  ## case it can also be passed without quote()
+  ## Note that parameter 'env' can either be an object of the environment class or be a text string containing
+  ## a memory address enclosed in < >. Ex: "<0x0000000008e36338>". In this case specifying the environment is
+  ## NOT necessary because we are already giving the memory address, so R can find it directly!
+  ## (Of course this is not useful inside the function called get_env_address, but still it's useful to note)
   ## Parameter 'type' can be "variable" or "package" and affects where in the inspected environment the memory
-  ## address is retrieved from: for "variable" it is retrieved from the end of the string (e.g. "<0x0000000008e36338>"),
-  ## and for "packages" it is retrieved from the beginning (e.g. "@0x0000000008e36338")
-  ## Usually the memory address for environment variables also appear at the beginning in the same way
-  ## they appear for environment packages. But this is NOT always the case, for example for the addresses
+  ## address is retrieved from:
+  ## - when type="variable" it is retrieved from the end of the string (e.g. "<0x0000000008e36338>"),
+  ## - when type="packages" it is retrieved from the beginning (e.g. "@0x0000000008e36338")
+  ## Usually the memory address for environment "variables" also appear at the beginning of the inspected output
+  ## as is the case for environment "packages". But this is NOT always the case, for example for the addresses
   ## of execution enviroments, which show up ONLY at the end of the second line of the inspected object.
 {
   # Inspect object 'env'
