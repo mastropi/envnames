@@ -1,15 +1,11 @@
+\docType{package}
 \name{envnames-package}
 \alias{envnames-package}
 \alias{envnames}
-\docType{package}
-\title{Keeps track of user-defined and execution environment names}
-\description{Set of tools to:
+\title{Tracks user-defined and execution environment names}
+\description{The main goal of this package is to overcome the limitation of the built-in \code{\link{environmentName}} function of the base package which cannot retrieve the name of an environment unless it is a package or the global environment.
 
-- retrieve the environment name of environments created with new.env()
-
-- find the environment where an object is defined (including user-defined environments)
-
-- keep track of execution environments
+The envnames package solves this problem by creating a lookup table that maps environment names to their memory addresses. Using this lookup table, it is possible to retrieve the name of any environment where an object resides or to retrieve the environment of the calling function.
 }
 \details{
 \tabular{ll}{
@@ -37,15 +33,15 @@ Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 \references{N/A}
 \keyword{ package }
 \keyword{ environment }
-\seealso{N/A}
+\seealso{ \code{\link{environmentName}} in the base package for the built-in function that retrieves environment names of packages.}
 \examples{
-### Example 1: Retrieving the names of environments created with new.env()
+### Example 1: Retrieve the names of environments created with new.env()
 # Create new environments
-env1 = new.env()
-env2 = new.env()
-env3 = new.env(parent=baseenv())
-env_of_envs = new.env()
-with(env_of_envs, env11 <- new.env())
+env1 = new.env()                      # Environment in .GlobalEnv
+env2 = new.env()                      # Environment in .GlobalEnv
+env3 = new.env(parent=baseenv())      # Environment in base environment
+env_of_envs = new.env()               # User-defined environment that contains other environments
+with(env_of_envs, env11 <- new.env()) # Environment defined inside environment \code{env_of_envs}
 
 # Create the table containing the address-name pairs of existing environments
 (env_table_global = setup_env_table())
@@ -64,7 +60,7 @@ environment_name(quote(env11), env_table_env_of_envs, envir=env_of_envs)  # "env
 # Define two environments
 env1 = new.env()
 env2 = new.env()
-# Define function g() in the env2 environment to be called by function f() below
+# Define function g() in environment \code{env2} to be called by function f() below
 # Function g() prints the name of the calling function.
 with(env2,
      g <- function(x) {
@@ -73,7 +69,11 @@ with(env2,
 
        # Get the name of the calling environment
        env_calling_name = get_env_calling()
-       cat("Now inside function", get_fun_name(), ": calling environment is", env_calling_name, "\n")
+       
+       # Show calling environment without using envnames package and using it
+       cat("Now inside function", get_fun_name(), "\n")
+       cat("Calling environment name (using environmentName() function):  \"", environmentName(sys.frame(sys.parent())), "\"\n", sep="")
+       cat("Calling environment name (using envnames::get_env_calling()): \"", env_calling_name, "\"\n", sep="")
 
        # Start process
        x = x + 2;
@@ -81,7 +81,7 @@ with(env2,
      }
 )
 
-# Calling function
+# Calling function whose name should be printed when g() is run
 with(env1,
      f <- function(x) {
        # Setup for environment tracking
@@ -93,8 +93,8 @@ with(env1,
      }
 )
 
-# Run function f and 
-env1$f(7)
+# Run function f with argument 7
+env1$f(7)                     # Prints: "Now inside function g : calling environment is env1:f"
 
 
 ### Example 3: find the location of an object
@@ -104,6 +104,11 @@ obj_find("f", silent=TRUE)    # Run in silent mode
 
 env2$xx = 2
 obj_find("xx")                # "env2"
+
+
+### Cleanup: delete environments
+rm(list=c("env1", "env2", "env3", "env_of_envs", "env_table_global", "env_table_env_of_envs"))
+
 
 \dontshow{
 # Define function g inside environment env3 whose parent is the baseenv environment

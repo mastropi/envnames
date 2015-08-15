@@ -1,4 +1,9 @@
-# Returns the name of the environment to which a particular object belongs
+#' Returns the name of the environment to which a particular object belongs.
+#' @param obj name of the object to be searched in the \code{envir} environment.
+#' @param envir environment where object \code{obj}.
+#' @param silent run in silent mode? Use \code{TRUE} to hide the search history, which lists
+#' the environments that are searched for object \code{obj}.
+#' 
 obj_find = function(obj, envir=.GlobalEnv, silent=FALSE)
 ## obj is the name of the object to look for (given as a character string)
 {  
