@@ -3,6 +3,8 @@
 # Description:  Test the envnames package
 #
 
+library(envnames)
+
 # Clear workspace
 rm(list=ls())
 
