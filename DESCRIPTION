@@ -1,9 +1,9 @@
 Package: envnames
 Type: Package
-Title: Keeps track of user-defined and execution environment names 
-Version: 0.2
-Date: 2014-10-21
+Title: Track user-defined and execution environment names
+Version: 0.3.0
+Date: 2015-08-16
 Author: Daniel Mastropietro
 Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
-Description: A set of tools to extract and keep track of user-defined and execution environment names.
+Description: A set of functions to retrieve and keep track of user-defined and execution environment names.
 License: GPL

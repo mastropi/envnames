@@ -1,14 +1,22 @@
 # TODO: (2014/10/18)
-# 1) Write a function called setup_env() to be called at the beginning of every function that:
+# 1) [DONE-2014/10/20] Write a function called setup_env() to be called at the beginning of every function that:
 #    adds the address-name pair of the execution environment to the global lookup table containing
 #    the execution environments information (lut)
-# 2) Write a function called get_env_name_calling(n=1) that retrieves the name of the environment of
+# 2) [DONE-2014/10/20] Write a function called get_env_calling(n=1) that retrieves the name of the environment of
 #    any calling function (to be used inside another function for... debugging purposes?)
 # 3) Update the setup_env_table() function so that the table includes environments defined in all
 # existing environments accessible from the envir environment passed as parameter.
 
-# Function that retrieves the name of an environment existing in environment 'envir' using the address-name lookup table 'envmap'
-environment_name = function(env, envmap, type="variable", envir=.GlobalEnv)
+#' Retrieve the name of an environment
+#' 
+#' Retrieve the name of an environment as \code{\link{environmentName}} in the base package does,
+#' but extends its functionality by also retrieving the names of user-defined environments and function
+#' environments.
+#' 
+#' @aliases environment_name
+#' @details Environment \code{env} is searched for in environment \code{envir} using the address-name
+#' lookup table \code{envmap} defined inside \code{envir}.
+get_env_name <- environment_name <- function(env, envmap=.envmap, type="variable", envir=.GlobalEnv)
 ## For now env should be passed using quote() --e.g. quote(env11)-- unless envir is the global environment,
 ## in which case it can be also passed without quote().
 ## This requirement comes from the requirement by get_env_address() --> see the description of parameter 'type' in function get_env_address().
@@ -19,11 +27,15 @@ environment_name = function(env, envmap, type="variable", envir=.GlobalEnv)
   #env_current = environment()
   #env_parent = parent.env(env_current)
   #env_calling = parent.frame()
-  
+
   # Get the address of the env environment to look for in the address-names lookup table
   address_match = get_env_address(env, type=type, envir=envir)
 
-  # Look for address_match in the address-names lookup table envmap
+  # Look for address_match in the address-names lookup table envmap defined in the envir environment
+  envmap = eval(substitute(envmap), envir=envir)
+    ## Here is the explanation of how the above evaluation works:
+    ## - substitute() evaluates envmap on the function environment and returns .envmap (assuming envmap=.envmap, the default)
+    ## - eval() evaluates variable .envmap in the envir environment
   env_name = NULL
   found = FALSE
   if (!is.null(address_match)) {

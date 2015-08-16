@@ -1,5 +1,5 @@
 # Returns the environment name of the function being called n+1 levels counted back from the present function environment
-get_env_calling = function(n=1)
+get_env_calling = function(envmap=.envmap, n=1)
 # When n=0 (default) the function returns the environment name of the calling function.
 {
   # Setup: get information about the calling environment at level n+1 of the chain
@@ -18,7 +18,7 @@ get_env_calling = function(n=1)
     ## (which does not have a name, just an address).
   #cat("Calling address:\n")
   #print(calling_address)
-  calling_name = as.character( .lut[ .lut[,1]==calling_address, 2 ] )
+  calling_name = as.character( envmap[ envmap[,1]==calling_address, 2 ] )
   
   return(calling_name)
 }

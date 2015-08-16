@@ -2,29 +2,26 @@
 \name{envnames-package}
 \alias{envnames-package}
 \alias{envnames}
-\title{Tracks user-defined and execution environment names}
+\title{Track user-defined and execution environment names}
 \description{The main goal of this package is to overcome the limitation of the built-in \code{\link{environmentName}} function of the base package which cannot retrieve the name of an environment unless it is a package or the global environment.
 
 The envnames package solves this problem by creating a lookup table that maps environment names to their memory addresses. Using this lookup table, it is possible to retrieve the name of any environment where an object resides or to retrieve the environment of the calling function.
+
+All function in this package follow the underscore_separated all lower case naming convention.
 }
 \details{
-\tabular{ll}{
-Package: \tab envnames\cr
-Type: \tab Package\cr
-Version: \tab 0.2\cr
-Date: \tab 2014-10-20\cr
-License: \tab GPL\cr
-}
-1) Use setup_env_table() to create a lookup table with memory addresses and names of existing environments (including user-defined environments and loaded package environments).
+The package currently contains 10 functions. Following is a guideline on how to use the package to track environment names in the global environment and inside a function:
+
+1) In the global environment Use \code{\link{setup_envmap}} to create a lookup table (called .envmap) with memory addresses and names of existing environments (including user-defined environments and loaded package environments).
 
 
-2) Inside a function, use setup_env() to setup the global lookup table that keeps track of execution environments.
+2) Inside a function, use \code{\link{setup_env}} to add the environment of the function to the .envmap global lookup table with environment names and addresses.
 
 
-3) Use environment_name() to retrieve the name of an environment created with new.env() using the above lookup table.
+3) Use environment_name() to retrieve the name of an environment created with \code{\link{new.env}} using the above lookup table.
 
 
-4) Use obj_find() to find the environments where a given object is defined.
+4) Use \code{\link{obj_find}} to find the environments where a given object is defined.
 }
 \author{Daniel Mastropietro
 
@@ -35,6 +32,8 @@ Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 \keyword{ environment }
 \seealso{ \code{\link{environmentName}} in the base package for the built-in function that retrieves environment names of packages.}
 \examples{
+print(ls())
+
 ### Example 1: Retrieve the names of environments created with new.env()
 # Create new environments
 env1 = new.env()                      # Environment in .GlobalEnv
@@ -44,16 +43,16 @@ env_of_envs = new.env()               # User-defined environment that contains o
 with(env_of_envs, env11 <- new.env()) # Environment defined inside environment \code{env_of_envs}
 
 # Create the table containing the address-name pairs of existing environments
-(env_table_global = setup_env_table())
-(env_table_env_of_envs = setup_env_table(envir=env_of_envs))
+setup_envmap()
+setup_envmap(envir=env_of_envs)
 
 # Retrieve the environment name
 # Note the use of quote() to enclose the environment variable
-environment_name(quote(env1), env_table_global)                           # "env1"
-environment_name(quote(env3), env_table_global)                           # "env3"
-environment_name(quote(env9), env_table_global)                           # NULL (env9 does not exist)
-environment_name(quote(env_of_envs), env_table_global)                    # "env_of_envs"
-environment_name(quote(env11), env_table_env_of_envs, envir=env_of_envs)  # "env11"
+environment_name(quote(env1))                       # "env1"
+environment_name(quote(env3))                       # "env3"
+environment_name(quote(env9))                       # NULL (env9 does not exist)
+environment_name(quote(env_of_envs))                # "env_of_envs"
+environment_name(quote(env11), envir=env_of_envs)   # "env11"
 
 
 ### Example 2: Track of execution environments
@@ -72,7 +71,7 @@ with(env2,
        
        # Show calling environment without using envnames package and using it
        cat("Now inside function", get_fun_name(), "\n")
-       cat("Calling environment name (using environmentName() function):  \"", environmentName(sys.frame(sys.parent())), "\"\n", sep="")
+       cat("Calling environment name (using environmentName() function):  \"", environmentName(parent.frame()), "\"\n", sep="")
        cat("Calling environment name (using envnames::get_env_calling()): \"", env_calling_name, "\"\n", sep="")
 
        # Start process
@@ -100,14 +99,11 @@ env1$f(7)                     # Prints: "Now inside function g : calling environ
 ### Example 3: find the location of an object
 # This differs from the R function find() because it also searches in user-defined environments
 obj_find("f")                 # "env1"
+with(env1, obj_find(f))       # "env1" (note the use of \code{with} since \code{f} is defined in the \code{env1} environment and does not exist in the global environment)
 obj_find("f", silent=TRUE)    # Run in silent mode
 
 env2$xx = 2
 obj_find("xx")                # "env2"
-
-
-### Cleanup: delete environments
-rm(list=c("env1", "env2", "env3", "env_of_envs", "env_table_global", "env_table_env_of_envs"))
 
 
 \dontshow{
@@ -142,4 +138,7 @@ h <- function(x) {
 environment(env3) = globalenv()
 h(7)
 }
+
+### Cleanup: delete environments
+rm(list=c("env1", "env2", "env3", "env_of_envs", "env_table_global", "env_table_env_of_envs"))
 }

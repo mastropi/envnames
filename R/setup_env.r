@@ -1,18 +1,27 @@
-# Adds the execution environment (of the calling function) to a global address-name lookup table .lut
-# and returns the memory address of the execution environment (of the calling function) being added.
+#' Set up the execution environment.
+#' 
+#' Adds the execution environment (of the calling function) to the global address-name lookup table .envmap
+#' defined in the environment where the calling function is defined.
+#' 
+#' @return It returns (invisibly) the memory address of the execution environment (i.e. of the function calling
+#' \code{setup_env}).
+#' @note It is assumed that the environment of the calling function has NOT been changed after its creation
+#' using e.g. the \code{environment} function. If this is the case, \code{setup_env} will not correctly
+#' return the memory address of the execution environment.
 setup_env = function()
 {
   # Change the warning level to avoid a warning message when trying to convert a memory address below with as.numeric()
   op = options("warn"); options(warn=-1); on.exit(options(warn=op$warn))
   
-  # Define the environment of the envnames package, which is where the lookup table .lut is created
+  # Define the environment of the envnames package, which is where the lookup table .envmap is created
   #envir_pkg = as.environment("package:envnames")
   envir_pkg = .GlobalEnv
   
   # Setup: Prepare lookup table to hold the address of the execution environment (of the calling function, here called env_current)
   env_current = parent.frame(n=1)       # Execution environment of the calling function
   fname = get_fun_name(n=1)             # Name of the calling function
-  env_parent = parent.env(env_current)  # Environment where the execution environment of the calling function belongs
+  env_parent = parent.env(env_current)  # Parent environment, i.e. the environment where the calling function resides
+                                        # In other words, this is the environment where the execution environment of the calling function belongs to.
                                         # IT IS ASSUMED that the environment of the function was NOT changed using the environment() function.
                                         # If this is the case, this will fail, because env_parent will NOT contain
                                         # the environment where the function is defined! (which is what we are interested in here)
@@ -39,10 +48,14 @@ setup_env = function()
     }    
   }
 
-  # Create the environment names table of the environments existing in the env_parent2 environment
+  # Create the environment names table of the environments existing in the env_parent2 environment.
   # We need this because the env_parent2 environment is where we need to look for the name of the
   # env_parent environment.
-  env_table = setup_env_table(envir=env_parent2)
+  # Note that the lookup table 'env_table' is created in the env_parent2 environment
+  # (this is what the assign() function is doing) because below we retrieve the parent environment
+  # name by calling environment_name() with envir=env_parent2 => the env_table is evaluated in the
+  # env_parent2 environment.
+  assign("env_table", get_env_names(envir=env_parent2), envir=env_parent2)
   
   # Check if env_parent has a name or is just a memory address in order to define the type of address
   # to look for with the environment_name() function (either type="package" or type="variable", respectively)
@@ -63,14 +76,15 @@ setup_env = function()
     ## in the parent environment, because env_current does not have a name, it's directly the memory
     ## address of the environment.
 
-  # Add the entry to the .lut table (and create it if it does not exist)
-  if (!exists(".lut", envir=envir_pkg)) {
-    assign(".lut", as.data.frame( matrix(nrow=0, ncol=2) ), envir=envir_pkg)
-    names(.lut) = c("address", "name")
+  # Add the entry to the .envmap table (and create it if it does not exist)
+  if (!exists(".envmap", envir=envir_pkg)) {
+    # Create an empty .envmap data frame
+    assign(".envmap", as.data.frame( matrix(nrow=0, ncol=2) ), envir=envir_pkg)
+    names(.envmap) = c("address", "name")
   }
-  assign(".lut",  rbind(.lut, data.frame(address=env_address, name=paste(env_parent_name, fname, sep=":"))), envir=envir_pkg)
-  #cat("Following pair added to the lookup table .lut:\n")
-  #print(.lut[nrow(.lut),])
+  assign(".envmap",  rbind(.envmap, data.frame(address=env_address, name=paste(env_parent_name, fname, sep=":"))), envir=envir_pkg)
+  #cat("Following pair added to the lookup table .envmap:\n")
+  #print(.envmap[nrow(.envmap),])
   
-  return(env_address)
+  return(invisible(env_address))
 }

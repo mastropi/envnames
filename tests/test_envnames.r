@@ -23,7 +23,7 @@ with(env1, f <- function(x) x + 1)
 with(env2, g <- function(x) x*pi)
 
 # Start: Create a lookup table containing address-name pairs of environments
-env_table_global = setup_env_table()
+env_table_global = setup_envmap()
 
 # Retrieve the environment name
 environment_name(quote(env1), env_table_global)
@@ -38,7 +38,7 @@ with(env_of_envs, env12 <- new.env())
 with(env_of_envs$env11, h <- function(x) x*2)
 
 # Start: Create a lookup table containing address-name pairs of environments
-env_lookup_1 = setup_env_table(envir=env_of_envs)
+env_lookup_1 = setup_envmap(envir=env_of_envs)
 
 # Retrieve the environment name
 environment_name(quote(env11), env_lookup_1, envir=env_of_envs)
