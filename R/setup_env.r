@@ -8,6 +8,20 @@
 #' @note It is assumed that the environment of the calling function has NOT been changed after its creation
 #' using e.g. the \code{environment} function. If this is the case, \code{setup_env} will not correctly
 #' return the memory address of the execution environment.
+#' @examples 
+#' f <- function() {
+#'  f_env_address = setup_env()
+#'  f_env_name = get_env_name(environment())
+#'  cat("Function environment address and name:", f_env_address, ",", f_env_name, "\n")
+#' }
+#' f()   # environment name is .GlobalEnv:f
+#' 
+#' # Define the same function f in a user-defined environment
+#' env1 = new.env()
+#' with(env1, f <- .GlobalEnv$f)
+#' # Change the environment of env1$f (o.w. the environment is set to .GlobalEnv)
+#' environment(env1$f) = env1
+#' env1$f()  # environment name is env1:f
 setup_env = function()
 {
   # Change the warning level to avoid a warning message when trying to convert a memory address below with as.numeric()
