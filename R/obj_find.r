@@ -1,56 +1,116 @@
-#' Find an object in a given environment.
+#' Find an object in a given environment
+#' 
+#' Check if an object is reachable from the given environment (parameter \code{envir}) either because:
+#' \itemize{
+#' \item it exists in the given environment
+#' \item it exists in an environment defined inside the given environment
+#' \item it is reachable via the search() path
+#' }
+#' Note that \code{obj_find} differs from \code{exists} in that the object is NOT searched in parent environments,
+#' since all checks of object existence call \code{exists} using \code{inherits=FALSE}.
+#' On the contrary, \code{obj_find} looks for the object in all the environments defined \bold{inside} the given environment.
+#' \cr
+#' When the object is found, a vector containing the names of all the environments where the object was found is
+#' returned, including the names of user-defined environments.
 #' 
 #' @param obj object to be searched in the \code{envir} environment, given as the object itself or as a character string.
-#' A character string should be given if the object is not defined in the calling environment,
-#' o.w. an object-not-found error will be raised.
-#' @param envir environment where object \code{obj}.
-#' @param silent run in silent mode? Use \code{TRUE} to hide the search history, which lists
+#' @param envir environment used as basis for the search for object \code{obj} as explained in the description.
+#' @param silent run in silent mode? Use \code{FALSE} to show the search history, which lists
 #' the environments that are searched for object \code{obj}.
-#' @return The name of the environment to which the object belongs.
+#' @return A vector containing the names of the environments where the object is found.
+#' @examples 
+#' # Define a variable in the global environment
+#' x = 4
+#' # Create a new environment
+#' env1 = new.env()
+#' env1$x = 3
+#' env1$y = 5
 #' 
-obj_find = function(obj, envir=.GlobalEnv, silent=FALSE)
-## obj is the name of the object to look for (NOT enclosed in parenthesis)
+#' # Look for object x in the global environment
+#' obj_find(x)   # "env1" ".GlobalEnv"
+#' obj_find("x") # "env1" ".GlobalEnv"
+#' obj_find("x", envir=env1)  # "env1" ".GlobalEnv" (as .GlobalEnv is in the search path)
+#' obj_find("y") # "env1"
+#' obj_find(nonexistentObject)  # NULL (note that NO error is raised even if the object does not exist)
+#'
+obj_find = function(obj, envir=.GlobalEnv, silent=TRUE)
 {
-  # Extract the name (i.e. string of the object passed in obj when obj is NOT a string --e.g. obj=x => obj_name = "x")
-  if (is.character(obj)) {
+  # Extract the name of the object
+  # (i.e. the string of the object passed in obj when obj is NOT a string --e.g. when obj = x => obj_name = "x")
+  # Note that we cannot use is.name() to check this (because is.name() returns TRUE when the argument is an
+  # object created with as.name(), e.g. as.name("x")) nor is.character() because the latter will return TRUE
+  # when the CONTENT of an object is of type character...!)
+  obj_name = deparse(substitute(obj))    # this returns "\"x\"" when obj = "x" and "x" if obj = x (the variable x)
+  if (length(grep("\"", obj_name)) > 0)  # this is TRUE when obj is already a string
     obj_name = obj
-  } else {
-    obj_name = deparse(substitute(obj))
-  }
+  
+  # Get the name of the envir environment
+  envir_name = deparse(substitute(envir))
 
-  # Retrieve all environments existing in the envir environment
-  envmap = get_env_names(envir=envir)
-
-  # Go over all the environments stored in envmap and check if the object is there
+  # Initialize the output variable
   env_names = NULL
-  i = 0
-  n = nrow(envmap)
   found = FALSE
-  for (address in envmap[,1]) {
-    i = i + 1
-    env_address = as.character(envmap[i,1])
-    env_name = as.character(envmap[i,2])
-    if (!silent) {
-      cat(i, "of", n, ": Inspecting environment", env_name, "...\n")
-    }
-    
-    # Get the environment from the currently analyzed envmap entry
-    # Need to check if the current entry corresponds to an unnamed environment or to a named environment
-    if (substr(env_address, 1, 1) == "<") {
-      # Case for unnamed environments (e.g. those created with new.env())
-      env = get(env_name, envir=envir)
-    } else {
-      # Case for named environments (e.g. .GlobalEnv, package:stats, etc.)
-      env = as.environment(env_name)
-    }
-    
-    # Check whether the object exists in the currently analyzed environment
-    if (exists(obj_name, envir=env, inherits=FALSE)) { # inherits=FALSE avoids searching on the enclosing (i.e. parent) environments
-      env_names = c(env_names, env_name)  # Remove any factor attribute with as.character()
+  
+  error = FALSE
+  tryCatch(
+    if (class(envir) != "environment") {
+      error_NotValidEnvironment(envir_name)
+      error = TRUE
+    },
+    error=function(e) {
+            error_NotValidEnvironment(envir_name); assign("error", TRUE, inherits=TRUE)
+            ## Note the use of the inherits=TRUE parameter which means: search for the variable to be assigned in parent environments and assign the value to the first one found.
+          }
+  )
+  if (error) return(invisible(NULL))
+
+  # Check if obj_name is not an empty string, o.w. exists() function below gives an error
+  # (the gsub() function removes blanks in the value of obj_name so that if the user passes "   ",
+  # nchar() still returns 0, i.e. the name of the object is an empty string)
+  if (nchar(gsub(" ", "", obj_name)) > 0) {
+
+    ### 1.- First check if the object exists in the envir environment
+    # Note that this is only performed when the envir environment is NOT the .GlobalEnv environment
+    # since in that case, the global environment will still be added in step (2) as .GlobalEnv is part
+    # of the search() path.
+    if (envir_name != ".GlobalEnv" && exists(obj_name, envir=envir, inherits=FALSE)) { ## inherits=FALSE avoids searching on the enclosing (i.e. parent) environments
+      env_names = deparse(substitute(envir))
       found = TRUE
     }
-  }
+
+    ### 2.- Check if the object is defined in any environment defined inside the envir environment
+    # or if it can be reached by the search() path.
+    # Retrieve all environments existing in the envir environment
+    envmap = get_env_names(envir=envir)
+
+    # Go over all the environments stored in envmap and check if the object is there
+    i = 0
+    n = nrow(envmap)
+    for (address in envmap[,1]) {
+      i = i + 1
+      env_address = as.character(envmap[i,1])
+      env_name = as.character(envmap[i,2])
+      if (!silent)
+        cat(i, "of", n, ": Inspecting environment", env_name, "...\n")
   
+      # Get the environment from the currently analyzed envmap entry
+      # Need to check if the current entry corresponds to an unnamed environment or to a named environment
+      if (substr(env_address, 1, 1) == "<") {
+        # Case for unnamed environments (e.g. those created with new.env())
+        env = get(env_name, envir=envir)
+      } else {
+        # Case for named environments (e.g. .GlobalEnv, package:stats, etc.)
+        env = as.environment(env_name)
+      }
+
+      # Check whether the object exists in the currently analyzed environment
+      if (exists(obj_name, envir=env, inherits=FALSE)) { ## inherits=FALSE avoids searching on the enclosing (i.e. parent) environments
+          env_names = c(env_names, env_name)
+          found = TRUE
+      }
+    }
+  }
+
   if (!silent) {
     if (found) {
       cat("Object", obj_name, "found in the following environments:\n")
@@ -59,9 +119,8 @@ obj_find = function(obj, envir=.GlobalEnv, silent=FALSE)
       cat("The object was not found in any environment\n");
     }
     
-    return(invisible(env_names))
-    
+    return(invisible(env_names))  # Return invisible() because we already printed the environments where the object was found
   } else {
-    return(env_names)
+    return(env_names)             # Return non-invisible, because we want to show the environments where the object was found
   }
 }

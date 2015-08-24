@@ -1,6 +1,6 @@
-#' Set up the execution environment.
+#' Set up the execution environment
 #' 
-#' Adds the execution environment (of the calling function) to the global address-name lookup table .envmap
+#' Add the execution environment (of the calling function) to the global address-name lookup table .envmap
 #' defined in the environment where the calling function is defined.
 #' 
 #' @return It returns (invisibly) the memory address of the execution environment (i.e. of the function calling

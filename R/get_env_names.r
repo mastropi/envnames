@@ -22,7 +22,7 @@ get_env_names = function(envir=.GlobalEnv) {
 
     env_table = data.frame(address=env_addresses, name=env_names)
   } else {
-    cat("ERROR: Environment given in parameter envir not found.\n")
+    error_NotValidEnvironment(deparse(substitute(envir)))
   }
 
   return(env_table)
