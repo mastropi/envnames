@@ -23,13 +23,13 @@ with(env1, f <- function(x) x + 1)
 with(env2, g <- function(x) x*pi)
 
 # Start: Create a lookup table containing address-name pairs of environments
-env_table_global = setup_envmap()
+setup_envmap()
 
 # Retrieve the environment name
-environment_name(quote(env1), env_table_global)
-environment_name(quote(env2), env_table_global)
-environment_name(quote(env3), env_table_global)
-environment_name(quote(env9), env_table_global)
+environment_name(quote(env1))
+environment_name(quote(env2))
+environment_name(quote(env3))
+environment_name(quote(env9))
 
 ### 2. Create another environment that holds other environments in turn
 env_of_envs = new.env()
@@ -109,7 +109,7 @@ with(env1,
   } else {
     type = "package"
   }
-  env_parent_name = environment_name(env_parent, env_table_global, type=type, envir=env_parent2)
+  env_parent_name = environment_name(env_parent, type=type, envir=env_parent2)
   #print(env_parent)
   # The following trick of changing the environment of function was tried when the inspect() call returned infinite information... (never ending)
   # but then I found the silent=TRUE option in inspect()!! --and therefore the trick is on longer necessary.
@@ -214,7 +214,7 @@ env1$f(3, env3)
 
 
 # Retrieve the environment name of an object
-obj_find("f", env_table_global)
+obj_find("f")
 
 
 test = function(obj, env=.GlobalEnv) {

@@ -34,7 +34,7 @@ get_env_name <- environment_name <- function(env, envmap=.envmap, type="variable
   # Look for address_match in the address-names lookup table envmap defined in the envir environment
   envmap = eval(substitute(envmap), envir=envir)
     ## Here is the explanation of how the above evaluation works:
-    ## - substitute() evaluates envmap on the function environment and returns .envmap (assuming envmap=.envmap, the default)
+    ## - substitute() replaces envmap with its value in the calling expression and returns .envmap (assuming envmap=.envmap, the default)
     ## - eval() evaluates variable .envmap in the envir environment
   env_name = NULL
   found = FALSE

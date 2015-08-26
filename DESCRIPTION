@@ -7,3 +7,4 @@ Author: Daniel Mastropietro
 Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 Description: A set of functions to retrieve and keep track of user-defined and execution environment names.
 License: GPL
+Suggests: testthat

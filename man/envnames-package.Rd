@@ -140,5 +140,5 @@ h(7)
 }
 
 ### Cleanup: delete environments
-rm(list=c("env1", "env2", "env3", "env_of_envs", "env_table_global", "env_table_env_of_envs"))
+rm(list=c("env1", "env2", "env3", "env_of_envs", "env_table_env_of_envs"))
 }

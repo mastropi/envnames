@@ -7,8 +7,11 @@
 #' \item it is reachable via the search() path
 #' }
 #' Note that \code{obj_find} differs from \code{exists} in that the object is NOT searched in parent environments,
-#' since all checks of object existence call \code{exists} using \code{inherits=FALSE}.
+#' since all checks of object existence call \code{exists} using \code{inherits=FALSE}. This is so because the
+#' function is aimed at reporting the names of the environment where the object is found, something that is not
+#' readily given by the \code{exists} function.
 #' On the contrary, \code{obj_find} looks for the object in all the environments defined \bold{inside} the given environment.
+#' \cr
 #' \cr
 #' When the object is found, a vector containing the names of all the environments where the object was found is
 #' returned, including the names of user-defined environments.
