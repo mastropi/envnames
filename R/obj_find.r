@@ -36,6 +36,7 @@
 #' obj_find("y") # "env1"
 #' obj_find(nonexistentObject)  # NULL (note that NO error is raised even if the object does not exist)
 #'
+#' @export
 obj_find = function(obj, envir=.GlobalEnv, silent=TRUE)
 {
   # Extract the name of the object

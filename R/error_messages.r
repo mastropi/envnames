@@ -1,5 +1,7 @@
 # Functions that show error messages
 #
+# Purpose: Concentrate all error messages in one place. 
+#
 # Error functions should start with prefix 'error_'
 # Warning functions should start with prefix 'warning_'
 # etc.

@@ -1,4 +1,14 @@
-# Returns the environment name of the function being called n+1 levels counted back from the present function environment
+#' Get the enrivonment of the calling function
+#' 
+#' Get the environment name of the function being called \code{n} levels counted back from the
+#' execution environment of the function that calls \code{get_env_calling}.
+#' 
+#' @param envmap name of the lookup table containing the environment name-address pairs.
+#' @param n how many levels to go back looking for the environment of the calling function.
+#' @return The name of the environment of the function calling the function from where
+#' \code{get_env_calling} was called n levels back.
+#' 
+#' @export
 get_env_calling = function(envmap=.envmap, n=1)
 # When n=0 (default) the function returns the environment name of the calling function.
 {

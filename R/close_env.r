@@ -1,4 +1,11 @@
-# Removes the env_address entry (given as charater value) from the address-names lookup table .envmap (defined in .GlobalEnv)
+#' Remove an address from the global address-name lookup table
+#' 
+#' Remove the \code{env_address} entry from the global address-name lookup table \code{.envmap}
+#' defined in the global environment.
+#' 
+#' @param env_address memory address given as a character string to remove from the \code{.envmap} lookup table.
+#' 
+#' @export
 close_env = function(env_address)
 {
   assign(".envmap", .envmap[-which(.envmap[,1] == env_address),], envir=.GlobalEnv)

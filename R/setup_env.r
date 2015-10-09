@@ -4,17 +4,17 @@
 #' defined in the environment where the calling function is defined.
 #' 
 #' @return It returns (invisibly) the memory address of the execution environment (i.e. of the function calling
-#' \code{setup_env}).
+#' \code{setup_env}) as a character string.
 #' @note It is assumed that the environment of the calling function has NOT been changed after its creation
 #' using e.g. the \code{environment} function. If this is the case, \code{setup_env} will not correctly
 #' return the memory address of the execution environment.
 #' @examples 
-#' f <- function() {
+#' showExecEnviron <- function() {
 #'  f_env_address = setup_env()
 #'  f_env_name = get_env_name(environment())
-#'  cat("Function environment address and name:", f_env_address, ",", f_env_name, "\n")
+#'  cat("Address and name of the function's execution environment:", f_env_address, ",", f_env_name, "\n")
 #' }
-#' f()   # environment name is .GlobalEnv:f
+#' showExecEnviron()   # Address and name of the function's execution environment: <...> , .GlobalEnv:f
 #' 
 #' # Define the same function f in a user-defined environment
 #' env1 = new.env()
@@ -22,6 +22,8 @@
 #' # Change the environment of env1$f (o.w. the environment is set to .GlobalEnv)
 #' environment(env1$f) = env1
 #' env1$f()  # environment name is env1:f
+#' 
+#' @export
 setup_env = function()
 {
   # Change the warning level to avoid a warning message when trying to convert a memory address below with as.numeric()
