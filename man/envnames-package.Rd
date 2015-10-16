@@ -30,7 +30,7 @@ Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 \references{N/A}
 \keyword{ package }
 \keyword{ environment }
-\seealso{ \code{\link{environmentName}} in the base package for the built-in function that retrieves environment names of packages.}
+\seealso{ \code{\link{environmentName} } in the base package for the built-in function that retrieves environment names of packages.}
 \examples{
 print(ls())
 

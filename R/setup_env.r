@@ -9,12 +9,12 @@
 #' using e.g. the \code{environment} function. If this is the case, \code{setup_env} will not correctly
 #' return the memory address of the execution environment.
 #' @examples 
-#' showExecEnviron <- function() {
+#' f <- function() {
 #'  f_env_address = setup_env()
 #'  f_env_name = get_env_name(environment())
 #'  cat("Address and name of the function's execution environment:", f_env_address, ",", f_env_name, "\n")
 #' }
-#' showExecEnviron()   # Address and name of the function's execution environment: <...> , .GlobalEnv:f
+#' f()   # Address and name of the function's execution environment: <...> , .GlobalEnv:f
 #' 
 #' # Define the same function f in a user-defined environment
 #' env1 = new.env()

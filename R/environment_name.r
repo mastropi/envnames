@@ -13,12 +13,12 @@
 #' but extends its functionality by also retrieving the names of user-defined environments and function
 #' environments.
 #' 
-#' @aliases environment_name
+#' @aliases get_env_name
 #' @details Environment \code{env} is searched for in environment \code{envir} using the address-name
 #' lookup table \code{envmap} defined inside \code{envir}.
 #' 
 #' @export
-get_env_name <- environment_name <- function(env, envmap=.envmap, type="variable", envir=.GlobalEnv)
+environment_name <- function(env, envmap=.envmap, type="variable", envir=.GlobalEnv)
 ## For now env should be passed using quote() --e.g. quote(env11)-- unless envir is the global environment,
 ## in which case it can be also passed without quote().
 ## This requirement comes from the requirement by get_env_address() --> see the description of parameter 'type' in function get_env_address().
@@ -59,3 +59,5 @@ get_env_name <- environment_name <- function(env, envmap=.envmap, type="variable
 }
 
 
+#' @export
+get_env_name <- environment_name
