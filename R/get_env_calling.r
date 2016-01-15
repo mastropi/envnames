@@ -1,7 +1,7 @@
-#' Get the enrivonment of the calling function
+#' Name of calling function including the environment where the function is defined
 #' 
-#' Get the environment name of the function being called \code{n} levels counted back from the
-#' execution environment of the function that calls \code{get_env_calling}.
+#' Get the environment and name of the function calling \code{n} levels back from the function
+#' calling \code{get_env_calling}.
 #' 
 #' @param envmap name of the lookup table containing the environment name-address pairs.
 #' @param n how many levels to go back looking for the environment of the calling function.

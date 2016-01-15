@@ -1,3 +1,8 @@
+# Created:      Aug-2015
+# Author:       Daniel Mastropietro
+# Description:  Test the envnames package using the testthat package
+#
+
 library(envnames)
 context("Environment names")
 
@@ -13,6 +18,9 @@ context("Environment names")
 # ns_env <- load_all(pkg, quiet = TRUE)$env
 # env <- new.env(parent = ns_env)
 # with_envvar(r_env_vars(), testthat::test_dir(test_path, filter = filter, env = env, ...))
+# Note that function with_envvar() was originally part of the devtools package but is now part of
+# the withr package, which is "A set of functions to run code 'with' safely and temporarily
+# modified global state." (Ref: https://cran.r-project.org/web/packages/withr/withr.pdf)
 with(globalenv(), env1 <- new.env())
 with(globalenv(), env2 <- new.env())
 assign("env3", new.env(), envir=globalenv())

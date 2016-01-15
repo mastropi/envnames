@@ -1,6 +1,6 @@
 # Created:      20-Oct-2014
 # Author:       Daniel Mastropietro
-# Description:  Test the envnames package
+# Description:  Test the envnames package by hand (i.e. without using the testthat package)
 #
 
 library(envnames)
@@ -9,11 +9,12 @@ library(envnames)
 rm(list=ls())
 
 # Compile the R code present in the package directory
-files = list.files(path="R/", pattern=".r$")
-for (f in files) {
-  cat("Compiling...", f, "\n");
-  source(file.path("R/",f))
-}
+# (this should not be necessary if we have loaded the envnames package as done above)
+# files = list.files(path="R/", pattern=".r$")
+# for (f in files) {
+#   cat("Compiling...", f, "\n");
+#   source(file.path("R/",f))
+# }
 
 
 env1 = new.env()
@@ -26,6 +27,10 @@ with(env2, g <- function(x) x*pi)
 setup_envmap()
 
 # Retrieve the environment name
+# (2016/01/15) Note the use of quote() to enclose the environment for now which has to do with
+# the fact that an environment cannot be converted to a string (as in as.character(env1)).
+# In principle I should be able to solve for the need of using quote() by adding the quote() function
+# appropriately inside the environment_name() function... but still need to figure out how.
 environment_name(quote(env1))
 environment_name(quote(env2))
 environment_name(quote(env3))
@@ -189,7 +194,8 @@ with(env3,
        
        # Get the name of the calling environment
        env_calling_name = envnames::get_env_calling()
-       cat("Now inside function", envnames::get_fun_name(), ": calling environment is", env_calling_name, "\n")
+       cat("Now inside function ", envnames::get_fun_name(), ", called by function ", envnames::get_fun_name(1),
+           ": calling environment is ", env_calling_name, "\n", sep="")
        
        # Start process
        x = x + 3;
@@ -205,7 +211,16 @@ with(env1,
        
        # Start
        assign("x", x, envir)
+       # This first example is NOT what we want, as g(x) prints that the calling environment
+       # is the environment stored in 'envir' (e.g. env3)
        xval = with(envir, g(x))
+       # This IS what we want because g(x) prints that the calling environment is env1:f,
+       # that is the name of the function that has called g(x) (this is informative!)
+       # NOTE that for now we need to enclose variable envir in quote()... this is a limitation
+       # of the environment_name() function at this point (Jan-2016).
+       xval = eval(parse(text=paste(quote(envir),"$g(x)")))
+       # This is equivalent to the above when g(x) is defined in environment env3
+       xval = env3$g(x)
        return(invisible(xval))
      }
 )
