@@ -16,8 +16,6 @@
 #' @aliases get_env_name
 #' @details Environment \code{env} is searched for in environment \code{envir} using the address-name
 #' lookup table \code{envmap} defined inside \code{envir}.
-#' 
-#' @export
 environment_name <- function(env, envmap=.envmap, type="variable", envir=.GlobalEnv)
 ## For now env should be passed using quote() --e.g. quote(env11)-- unless envir is the global environment,
 ## in which case it can be also passed without quote().
@@ -58,6 +56,4 @@ environment_name <- function(env, envmap=.envmap, type="variable", envir=.Global
   return(env_name)
 }
 
-
-#' @export
 get_env_name <- environment_name

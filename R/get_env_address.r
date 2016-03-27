@@ -8,8 +8,6 @@
 #' @details Parameter \code{env} should be passed enclosed in function \code{quote()} as in \code{quote(env1)}
 #' unless \code{envir} is the global environment, in which case it can be passed as a string.
 #' @return A string containing the environment address.
-#' 
-#' @export
 get_env_address = function(env, type="variable", envir=.GlobalEnv)
   ## For now env should be passed using quote() --e.g. quote(env11)-- unless envir is the global environment, in which
   ## case it can also be passed without quote()

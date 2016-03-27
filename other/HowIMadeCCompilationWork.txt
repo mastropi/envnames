@@ -1,0 +1,32 @@
+26-Mar-2016
+Defining a C function in R and calling it from R
+
+It should be straight forward using the inline package (Ref: http://adv-r.had.co.nz/C-interface.html (Hadley Wickham, very clear guide)) but it didn't work out of the box.
+Reason: a non-existent include directory referenced by the -I option!
+Solution: edit the $R_HOME/etc/x64/Makeconf file and comment out the line starting with LOCAL_SOFT.
+
+STEPS FOLLOWED
+--------------
+http://stackoverflow.com/questions/24481474/understanding-rcpp-compile
+indicates that any non-existent directories listed in the g++ command (like d:/RCompile/r-compiling/local/local320/include/cmath) are ignored.
+although this does not seem the case because the error I get refers to specifically that file! (d:/RCompile/r-compiling/local/local320/include/cmath)
+In fact, when I tried gcc from the command line in a DOS window and I include an invalid path (ON A NON-EXISTENT DRIVE e.g. D:) in the -I option (-I adds include directories, i.e. where the compiler searches for .h files), I get the error that stdlib.h is not found!
+
+Meaning of -DNDEBUG:
+-D is the option of g++ and NDEBUG is the macro that is defined and that turns off assertions (as mandated by the C standard)
+http://stackoverflow.com/questions/24257027/does-dndebug-lower-case-do-anything-in-g
+
+g++ manual:
+https://gcc.gnu.org/onlinedocs/gcc-5.3.0/gcc.pdf
+
+[SOLVED] I had to edit the C:\Program Files\R\R-3.2.0\etc\x64\Makeconf file and comment the line where it makes reference to the invalid directory included with a -I option when running the g++ compiler!
+LOCAL_SOFT = d:/RCompile/r-compiling/local/local320
+I found this out by searching the string "RCompile" with Super Finder XT.
+
+HOWEVER:
+- When trying to get the memory address of an object, R crashes in Windows. It does NOT crash in Linux (Kubuntu 12.04 LTS)
+- When running the myroot() function compiled with Rcpp, R crashes in Windows. It does NOT crash in Linux (Kubuntu 12.04 LTS)
+
+CONCLUSION: I will install the cywgin DLLs and the R 2.15.x toolchain included in RTools 3.2 (I had not installed them because I thought I didn't need them!) as suggested here: https://cran.r-project.org/doc/manuals/R-admin.html#The-Windows-toolset
+Once this was installed and the system path changed (by placing the two directories Rtools\bin and Rtools\gcc-4.6.3\bin at the beginning), the C functions work fine!
+Note: despite seeing the suggestion that the Rtools program should be installed in a directory with no spaces, I still installed it in C:\Program Files... I encountered no problem so far.

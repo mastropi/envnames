@@ -7,8 +7,6 @@
 #' @param n how many levels to go back looking for the environment of the calling function.
 #' @return The name of the environment of the function calling the function from where
 #' \code{get_env_calling} was called n levels back.
-#' 
-#' @export
 get_env_calling = function(envmap=.envmap, n=1)
 # When n=0 (default) the function returns the environment name of the calling function.
 {

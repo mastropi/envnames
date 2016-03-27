@@ -15,8 +15,6 @@
 #' env1 = new.env()
 #' env11 = with(env1, new.env())
 #' get_env_names(env1)
-#' 
-#' @export
 get_env_names = function(envir=.GlobalEnv) {
   # Initialize the output lookup table to NULL in case the envir environment does not exist
   env_table = NULL

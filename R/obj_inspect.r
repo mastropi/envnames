@@ -9,7 +9,9 @@ obj_inspect = function(obj, envir=.GlobalEnv)
   if (inherits(try_eval, "try-error")) {
     obj.inspection = NULL
   } else {
-    obj.inspection = capture.output(.Internal( inspect( eval(obj, envir=envir), silent=TRUE) ))
+#    obj.inspection = capture.output(.Internal( inspect( eval(obj, envir=envir), silent=TRUE) ))
+#    obj.inspection = .Call("address", eval(obj, envir=envir))
+    obj.inspection = address(eval(obj, envir=envir))
   }
   
   return(obj.inspection)

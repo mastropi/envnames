@@ -22,8 +22,6 @@
 #' # Change the environment of env1$f (o.w. the environment is set to .GlobalEnv)
 #' environment(env1$f) = env1
 #' env1$f()  # environment name is env1:f
-#' 
-#' @export
 setup_env = function()
 {
   # Change the warning level to avoid a warning message when trying to convert a memory address below with as.numeric()
