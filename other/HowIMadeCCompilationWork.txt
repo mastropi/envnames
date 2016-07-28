@@ -22,6 +22,7 @@ https://gcc.gnu.org/onlinedocs/gcc-5.3.0/gcc.pdf
 [SOLVED] I had to edit the C:\Program Files\R\R-3.2.0\etc\x64\Makeconf file and comment the line where it makes reference to the invalid directory included with a -I option when running the g++ compiler!
 LOCAL_SOFT = d:/RCompile/r-compiling/local/local320
 I found this out by searching the string "RCompile" with Super Finder XT.
+[UPDATE-2016/07/21, after installation of Rtools-3.4 that works with R-3.3.x] We don't need to comment out the LOCAL_SOFT option but still I do it because its content doesn't make any sense --as I don't have a D: drive!
 
 HOWEVER:
 - When trying to get the memory address of an object, R crashes in Windows. It does NOT crash in Linux (Kubuntu 12.04 LTS)

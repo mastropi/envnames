@@ -39,13 +39,8 @@ obj_find = function(obj, envir=.GlobalEnv, silent=TRUE)
 {
   # Extract the name of the object
   # (i.e. the string of the object passed in obj when obj is NOT a string --e.g. when obj = x => obj_name = "x")
-  # Note that we cannot use is.name() to check this (because is.name() returns TRUE when the argument is an
-  # object created with as.name(), e.g. as.name("x")) nor is.character() because the latter will return TRUE
-  # when the CONTENT of an object is of type character...!)
-  obj_name = deparse(substitute(obj))    # this returns "\"x\"" when obj = "x" and "x" if obj = x (the variable x)
-  if (length(grep("\"", obj_name)) > 0)  # this is TRUE when obj is already a string
-    obj_name = obj
-  
+	obj_name = get_obj_name(obj)
+
   # Get the name of the envir environment
   envir_name = deparse(substitute(envir))
 
@@ -56,11 +51,11 @@ obj_find = function(obj, envir=.GlobalEnv, silent=TRUE)
   error = FALSE
   tryCatch(
     if (class(envir) != "environment") {
-      error_NotValidEnvironment(envir_name)
+			envnames:::error_NotValidEnvironment(envir_name)
       error = TRUE
     },
     error=function(e) {
-            error_NotValidEnvironment(envir_name); assign("error", TRUE, inherits=TRUE)
+            envnames:::error_NotValidEnvironment(envir_name); assign("error", TRUE, inherits=TRUE)
             ## Note the use of the inherits=TRUE parameter which means: search for the variable to be assigned in parent environments and assign the value to the first one found.
           }
   )

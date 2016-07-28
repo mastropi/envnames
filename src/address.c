@@ -4,7 +4,7 @@
 SEXP address(SEXP x);
 
 SEXP address(SEXP x) {
-	char address[18];
+	char address[20];
 	snprintf(address, sizeof(address), "<%p>", (void *)x);
 	return(ScalarString(mkChar(address)));
 }

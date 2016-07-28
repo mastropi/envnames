@@ -6,10 +6,10 @@
 #include <Rdefines.h>
 #include <R_ext/Print.h>
 
-extern "C" {
-  static void address(SEXP x);
-}
+//extern "C" {
+//  static void address(SEXP x);
+//}
 
-static void address(SEXP x) {
+SEXP address(SEXP x) {
 	Rprintf("<%p>", (void *)x);
 }

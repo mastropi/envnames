@@ -74,3 +74,15 @@ b = 2;
 mysum(a, b)
 ## Works
 
+# 2016/07/21: Test the address() function defined in src/address.c
+code <- "
+char address[20];
+snprintf(address, sizeof(address), \"<%p>\", (void *)&x);
+return(ScalarString(mkChar(address)));
+"
+address <- cfunction(c(x="SEXP"), code, verbose=TRUE)
+x = 3
+address(x)
+## Note: that defining the address() function as "Rprintf("<%p>", (void *)x);"
+## (and compiling with R CMD SHLIB loading it with dyn.load() and trying it out with .Call("address", x))
+## although it returns the right memory address string, it makes R hang...

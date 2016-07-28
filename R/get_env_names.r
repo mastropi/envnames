@@ -22,7 +22,7 @@ get_env_names = function(envir=.GlobalEnv) {
   # Names of the currently defined environments in the envir environment as they are given
   # at the time of their creation with new.env() (e.g. "env1")
   # NOTE: Either of the two statements below work (one of them is commented out)
-  # Note in the firts option the need to use the option envir=envir in the get() function,
+  # Note in the first option the need to use the option envir=envir in the get() function,
   # and this is because the list of variables returned by ls(envir) reside in the envir environment.
   #env_names = try( Filter(function(x) "environment" %in% class(get(x, envir=envir)), ls(envir)), silent=TRUE )
   env_names = try( with(envir, Filter(function(x) "environment" %in% class(get(x)), ls())), silent=TRUE )
@@ -30,12 +30,12 @@ get_env_names = function(envir=.GlobalEnv) {
     # Store the way R shows an environment (e.g. <environment: 0x00000000107eb718>, where the number is the memory address) 
     env_resolves = lapply(env_names, get, envir=envir) # NOTE: The envir=envir parameter is used by get(). Note that using (with(envir, lapply(env_names, get)) does NOT work, because get() in that case runs on the global environment...)
     # Extract the memory address from the above (this is the difficult part!)
-    env_addresses = eval( unlist( lapply(env_resolves, get_env_address) ), envir=envir)
+    env_addresses = eval( unlist( lapply(env_resolves, get_obj_address) ), envir=envir)
 
     # Now get the address-name pairs of existing environments (e.g. .GlobalEnv, package:stats, package:base, etc.)
     # that can be reached from the envir environment
     allenvs = search()
-    env_addresses_packages = vapply(search(), function(x) get_env_address(as.environment(x), type="package"), FUN.VALUE=character(1))
+    env_addresses_packages = vapply(search(), function(x) get_obj_address(as.environment(x)), FUN.VALUE=character(1))
               ## NOTE: FUN.VALUE in the vapply() function is a required parameter.
               ## It is used to specify the type and length of the value returned by the function called by vapply().
               ## In this case (FUN.VALUE=character(1)) we are saying that the function should return
@@ -45,7 +45,7 @@ get_env_names = function(envir=.GlobalEnv) {
 
     env_table = data.frame(address=env_addresses, name=env_names)
   } else {
-    error_NotValidEnvironment(deparse(substitute(envir)))
+    envnames:::error_NotValidEnvironment(deparse(substitute(envir)))
   }
 
   return(env_table)

@@ -26,11 +26,11 @@ setup_env = function()
 {
   # Change the warning level to avoid a warning message when trying to convert a memory address below with as.numeric()
   op = options("warn"); options(warn=-1); on.exit(options(warn=op$warn))
-  
+
   # Define the environment of the envnames package, which is where the lookup table .envmap is created
   #envir_pkg = as.environment("package:envnames")
   envir_pkg = .GlobalEnv
-  
+
   # Setup: Prepare lookup table to hold the address of the execution environment (of the calling function, here called env_current)
   env_current = parent.frame(n=1)       # Execution environment of the calling function
   fname = get_fun_name(n=1)             # Name of the calling function
@@ -42,7 +42,7 @@ setup_env = function()
   if (environmentName(env_parent) == environmentName(globalenv())) {
     # If env_parent is .GlobalEnv do not go further up (because the parent of the .GlobalEnv is a package!
     # and env_parent2 should point to the environment where env_parent is defined. As far as I know
-    # .GlobalEnv is not defined within another package!!
+    # .GlobalEnv is not defined within another package...
     env_parent2 = .GlobalEnv
   } else {
     env_parent2 = environment(env_parent) # Environment of the env_parent environment.
@@ -73,7 +73,7 @@ setup_env = function()
   
   # Check if env_parent has a name or is just a memory address in order to define the type of address
   # to look for with the environment_name() function (either type="package" or type="variable", respectively)
-  env_parent_address = get_env_address(env_parent, envir=env_parent2)
+  env_parent_address = get_obj_address(env_parent, envir=env_parent2)
   try_asnumeric = try( as.numeric( substr(env_parent_address, 2, nchar(env_parent_address)-1) ), silent=TRUE )
   if (!is.na(try_asnumeric)) {
     type = "variable"
@@ -82,10 +82,11 @@ setup_env = function()
   }
   
   # Get the name of the parent environment (of the calling function execution environment)
-  env_parent_name = environment_name(env_parent, env_table, type=type, envir=env_parent2)
+  #env_parent_name = environment_name(env_parent, env_table, type=type, envir=env_parent2)
+  env_parent_name = environment_name(env_parent, envir=env_parent2)
 
   # Get the address of the execution environment of the calling function
-  env_address = get_env_address(env_current, envir=env_parent)
+  env_address = get_obj_address(env_current, envir=env_parent)
     ## IMPORTANT: env_current should NOT be quoted with quote(), otherwise env_current is not found
     ## in the parent environment, because env_current does not have a name, it's directly the memory
     ## address of the environment.

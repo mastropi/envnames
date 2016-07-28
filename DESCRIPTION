@@ -5,6 +5,9 @@ Version: 0.3.0
 Date: 2015-08-16
 Author: Daniel Mastropietro
 Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
-Description: A set of functions to retrieve and keep track of user-defined and execution environment names.
+Description: A set of functions to retrieve and keep track of user-defined and
+    execution environment names.
 License: GPL
-Suggests: testthat
+Suggests:
+    testthat
+RoxygenNote: 5.0.1

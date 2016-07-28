@@ -6,6 +6,22 @@
 #    any calling function (to be used inside another function for... debugging purposes?)
 # 3) Update the setup_env_table() function so that the table includes environments defined in all
 # existing environments accessible from the envir environment passed as parameter.
+# 4) (2016/03/30) Add the functionality of searching the environment on ALL existing environments
+#    (existing in the global environment and within any defined environment therein) if input parameter
+#    envir=NULL.
+#    The function should return the name of the environment including the environment where it was found
+#    as in e.g. env1:env12
+# 5) (2016/03/30) Add the functionality of receiving a memory address in the env parameter and retrieving
+#    the environment name associated to the address (of course if the associated variable exists and is
+#    an environment!). This would be useful because some functions in R return the memory address of
+#    the environment... For instance when retrieving the environment where a function is defined, whenever
+#    the function is defined within a user-defined environment (as in with(env1, f <- function(x) { }))
+#    UPDATE: (2016/03/30) Well, this is not really necessary for this, because the returned value of
+#    environment(env1$f) in the example just given returns an ENVIRONMENT
+#    (as in <environment: 0x0000000009030df8>), NOT a string... and if we call environment_name() with
+#    this environment as input, we get the environment name(s) associated with it!!
+#    Still, we may want to search for a memory address given as string... just in case, maybe it's useful
+#    in some situations.
 
 #' Retrieve the name of an environment
 #' 
@@ -13,44 +29,45 @@
 #' but extends its functionality by also retrieving the names of user-defined environments and function
 #' environments.
 #' 
+#' @param env environment variable whose name is requested. See details for different types of input
+#' variables.
+#' @param envir environment where \code{env} should be searched for.
+#' 
+#' @details
+#' The \code{env} parameter should be a variable of class \code{environment}. It can be given either
+#' as the variable name or in the form of <environment: [memory-address]> as in e.g.
+#' <environment: 0x0000000009030df8>. The latter form is for instance returned by the function
+#' environment() called on a function, which returns the environment of definition of the function.
+#' Environment \code{env} is searched for in environment \code{envir} using its memory address.
+#' It may happen that there exist more than one environment with the same memory address (for instance
+#' if an environment is a copy of another environment). In such case, the names of all the environments
+#' matching the same memory address as the one given in \code{env} are returned.
+#' Whenever \code{env} is given as a named environment variable, it should be passed enclosed in
+#' function \code{quote()} as in \code{quote(env1)}, unless \code{envir} is the global environment.
+#' 
+#' @return A string containing the name of the environments defined in the \code{envir} environment
+#' whose memory address matches that of the \code{env} environment given, or NULL if the environment is
+#' not found in the \code{envir} environment or in the global environment.
 #' @aliases get_env_name
-#' @details Environment \code{env} is searched for in environment \code{envir} using the address-name
-#' lookup table \code{envmap} defined inside \code{envir}.
-environment_name <- function(env, envmap=.envmap, type="variable", envir=.GlobalEnv)
-## For now env should be passed using quote() --e.g. quote(env11)-- unless envir is the global environment,
-## in which case it can be also passed without quote().
-## This requirement comes from the requirement by get_env_address() --> see the description of parameter 'type' in function get_env_address().
-## Note that parameter 'env' can either be an object of the environment class or be a text string containing
-## a memory address enclosed in < >. Ex: "<0x0000000008e36338>". In this case specifying the environment is
-## NOT necessary because we are already giving the memory address, so R can find it directly!
+environment_name <- function(env, envir=.GlobalEnv)
 {
   #env_current = environment()
   #env_parent = parent.env(env_current)
   #env_calling = parent.frame()
 
-  # Get the address of the env environment to look for in the address-names lookup table
-  address_match = get_env_address(env, type=type, envir=envir)
+  # Setup the address-name pairs of the environments defined in envir
+  envmap = get_env_names(envir=envir)  
 
-  # Look for address_match in the address-names lookup table envmap defined in the envir environment
-  envmap = eval(substitute(envmap), envir=envir)
-    ## Here is the explanation of how the above evaluation works:
-    ## - substitute() replaces envmap with its value in the calling expression and returns .envmap (assuming envmap=.envmap, the default)
-    ## - eval() evaluates variable .envmap in the envir environment
+  # Get the address of the env environment to look for in the address-names lookup table just created
+  address_match = get_obj_address(env, envir=envir)
+
+  # Look for address_match in the address-name lookup table envmap created above
   env_name = NULL
-  found = FALSE
   if (!is.null(address_match)) {
-    #cat("Matched address:", address_match, "\n")
-    
-    # Go over the addresses stored in the first column of envmap and check whether the object passed is found there
-    i = 0
-    for (address in envmap[,1]) {
-      i = i + 1
-      if (address == address_match) {
-        env_name = as.character(envmap[i,2])  # Remove any factor attribute with as.character()
-        found = TRUE
-        break
-      }
-    }
+    # Look for the address in the first column of envmap
+    ind = which(envmap[,1] == address_match)
+    if (length(ind) > 0)
+        env_name = as.character(envmap[ind,2])  # Remove any factor attribute with as.character()
   }
 
   return(env_name)

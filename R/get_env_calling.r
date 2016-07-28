@@ -1,7 +1,7 @@
 #' Name of calling function including the environment where the function is defined
 #' 
-#' Get the environment and name of the function calling \code{n} levels back from the function
-#' calling \code{get_env_calling}.
+#' Get the environment and name of the calling function \code{n} levels back from the function
+#' that called this function \code{get_env_calling}.
 #' 
 #' @param envmap name of the lookup table containing the environment name-address pairs.
 #' @param n how many levels to go back looking for the environment of the calling function.
@@ -20,7 +20,7 @@ get_env_calling = function(envmap=.envmap, n=1)
   # Note that we can find environment 'env_calling' inside the current environment
   # (i.e. the currently executing environment) because we have just defined env_calling
   # in the execution environment!)
-  calling_address = get_env_address(env_calling, envir=environment())
+  calling_address = get_obj_address(env_calling, envir=environment())
     ## Note: do NOT use quote() to enclose env_calling, because it is in the form of an address.
     ## This is so because env_calling corresponds to the execution environment of the calling function
     ## (which does not have a name, just an address).

@@ -71,7 +71,7 @@ with(env2,
         # Memory address of the calling function as text
         # Note that we can find environment 'env_calling' from within env_current (i.e. the currently executing environment)
         # because we have just defined env_calling in the execution environment!!)
-        calling_address = get_env_address(quote(env_calling), envir=env_current)
+        calling_address = get_obj_address(quote(env_calling), envir=env_current)
         calling_name = as.character(lut[lut[,1]==calling_address,2])
         # Retrieve the name associated to calling_address
         # This is not necessary because 
@@ -107,7 +107,7 @@ with(env1,
   
   # Check if env_parent has a name or is just a memory address in order to define the type of address
   # to look for in the environment_name() function
-  env_parent_address = get_env_address(env_parent)
+  env_parent_address = get_obj_address(env_parent)
   try_asnumeric = try( as.numeric( substr(env_parent_address, 2, nchar(env_parent_address)-1) ), silent=TRUE )
   if (!is.na(try_asnumeric)) {
     type = "variable"
@@ -121,7 +121,7 @@ with(env1,
   #env_tmp = new.env()
   #environment(f) <- env_tmp
   #env_address = get_env_address(env_current, envir=env_tmp)
-  env_address = get_env_address(env_current, envir=env_parent)
+  env_address = get_obj_address(env_current, envir=env_parent)
   ## IMPORTANT: env_current should NOT be quoted with quote(), otherwise env_current is not found in the parent environment, because it does not have a name!
   ## HOWEVER THERE IS STILL A PROBLEM WITH THIS... The fact that the inspect() function being called inside
   ## obj_inspect() --which is called get_env_address()-- generates what is apparently an infinite output!!
