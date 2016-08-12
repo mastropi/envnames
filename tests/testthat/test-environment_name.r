@@ -40,21 +40,38 @@ cat("Parent environment of env11: "); print(parent.env(env_of_envs$env11))
 # Create the tables containing the address-name pairs of existing environments
 #debugonce(setup_envmap)
 #trace(get_env_names, tracer=quote(cat(sprintf("tracing get_env_names(*, env_resolves=)\n", env_resolves))))
-setup_envmap()
+#setup_envmap()
 #untrace(get_env_names)
-setup_envmap(envir=env_of_envs)
+#setup_envmap(envir=env_of_envs)
 
 
 # 3.- TEST! ---------------------------------------------------------------
 # Note the use of quote() to enclose the environment variable
-test_that("environment names are correctly returned", {
-  #  skip("not now")
+test_that("the environment name is correctly returned when the environment variable is given as a variable (in all environments)", {
+  # skip("not now")
+  # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
+  expect_equal(environment_name(env1), "env1")
+  expect_equal(environment_name(env11, envir=env_of_envs), "env11")
+})
+
+test_that("the environment name is correctly returned when environment variable enclosed in quote()", {
+  # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
   expect_equal(environment_name(quote(env1)), "env1")
-  expect_equal(environment_name(quote(env3)), "env3")
-  expect_equal(environment_name(quote(env9)), NULL)   # env9 does not exist
-  expect_equal(environment_name(quote(env_of_envs)), "env_of_envs")
   expect_equal(environment_name(quote(env11), envir=env_of_envs), "env11")
+})
+
+test_that("the environment name is NULL when the environment does not exist", {
+  expect_equal(environment_name(quote(env9)), NULL)
+})
+
+test_that("the environment name is NULL when the envir environment does not exist", {
+  expect_equal(environment_name(env11, envir=alskdjfl), NULL)
+})
+
+test_that("the environment name is correctly returned when given as an environment (e.g. <environment: 0x0000000019942d08>)", {
+  expect_equal(environment_name(as.environment(env1)),  "env1")
+  expect_equal(environment_name(as.environment(env_of_envs$env11), envir=env_of_envs),  "env11")
 })
 
 

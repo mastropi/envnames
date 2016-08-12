@@ -1,4 +1,4 @@
-#' Returns the name of the function being called n+1 levels counted back from the present function environment
+#' Return the name of the function being called n+1 levels counted back from the present function environment
 get_fun_name = function(n=0)
 # When n=0 (default) the function returns the function name of the calling function.
 {

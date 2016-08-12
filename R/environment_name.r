@@ -51,6 +51,9 @@
 #' @aliases get_env_name
 environment_name <- function(env, envir=.GlobalEnv)
 {
+  # Output variable
+  env_name = NULL
+
   #env_current = environment()
   #env_parent = parent.env(env_current)
   #env_calling = parent.frame()
@@ -58,16 +61,17 @@ environment_name <- function(env, envir=.GlobalEnv)
   # Setup the address-name pairs of the environments defined in envir
   envmap = get_env_names(envir=envir)  
 
-  # Get the address of the env environment to look for in the address-names lookup table just created
-  address_match = get_obj_address(env, envir=envir)
-
-  # Look for address_match in the address-name lookup table envmap created above
-  env_name = NULL
-  if (!is.null(address_match)) {
-    # Look for the address in the first column of envmap
-    ind = which(envmap[,1] == address_match)
-    if (length(ind) > 0)
+  if (!is.null(envmap)) { # This means that parameter 'envir' is a valid environment
+    # Get the address of the env environment to look for in the address-names lookup table just created
+    env_address = get_obj_address(env, envir=envir, n=2)
+    
+    # Look for env_address in the address-name lookup table envmap created above
+    if (!is.null(env_address)) {
+      # Look for the address in the first column of envmap
+      ind = which(envmap[,1] == env_address)
+      if (length(ind) > 0)
         env_name = as.character(envmap[ind,2])  # Remove any factor attribute with as.character()
+    }
   }
 
   return(env_name)

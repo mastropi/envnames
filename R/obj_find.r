@@ -75,8 +75,7 @@ obj_find = function(obj, envir=.GlobalEnv, silent=TRUE)
       found = TRUE
     }
 
-    ### 2.- Check if the object is defined in any environment defined inside the envir environment
-    # or if it can be reached by the search() path.
+    ### 2.- Check if the object is defined in any environment defined inside the envir environment or if it can be reached by the search() path.
     # Retrieve all environments existing in the envir environment
     envmap = get_env_names(envir=envir)
 

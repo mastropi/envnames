@@ -24,17 +24,18 @@ with(env1, f <- function(x) x + 1)
 with(env2, g <- function(x) x*pi)
 
 # Start: Create a lookup table containing address-name pairs of environments
-setup_envmap()
+#setup_envmap()
 
 # Retrieve the environment name
 # (2016/01/15) Note the use of quote() to enclose the environment for now which has to do with
 # the fact that an environment cannot be converted to a string (as in as.character(env1)).
 # In principle I should be able to solve for the need of using quote() by adding the quote() function
 # appropriately inside the environment_name() function... but still need to figure out how.
-environment_name(quote(env1))
-environment_name(quote(env2))
-environment_name(quote(env3))
-environment_name(quote(env9))
+# (2016/08/11) We no longer need to enclose the environment name in quote()!
+environment_name(env1)
+environment_name(env2)
+environment_name(env3)
+environment_name(env9)   # This should be NULL as env9 is not an environment
 
 ### 2. Create another environment that holds other environments in turn
 env_of_envs = new.env()
@@ -42,13 +43,11 @@ with(env_of_envs, env11 <- new.env())
 with(env_of_envs, env12 <- new.env())
 with(env_of_envs$env11, h <- function(x) x*2)
 
-# Start: Create a lookup table containing address-name pairs of environments
-env_lookup_1 = setup_envmap(envir=env_of_envs)
-
 # Retrieve the environment name
-environment_name(quote(env11), env_lookup_1, envir=env_of_envs)
-environment_name(quote(env12), env_lookup_1, envir=env_of_envs)
-environment_name(quote(env13), env_lookup_1, envir=env_of_envs)
+# (2016/08/11) Here we still need to enclose the environment name in quote(), because envir= is not the global environment... but why? I thought I had solved this!
+environment_name(env11, envir=env_of_envs)
+environment_name(quote(env12), envir=env_of_envs)
+environment_name(quote(env13), envir=env_of_envs)
 
 
 
