@@ -30,11 +30,11 @@
 #' env1$y = 5
 #' 
 #' # Look for object x in the global environment
-#' obj_find(x)   # "env1" ".GlobalEnv"
-#' obj_find("x") # "env1" ".GlobalEnv"
-#' obj_find("x", envir=env1)  # "env1" ".GlobalEnv" (as .GlobalEnv is in the search path)
-#' obj_find("y") # "env1"
-#' obj_find(nonexistentObject)  # NULL (note that NO error is raised even if the object does not exist)
+#' #obj_find(x)   # "env1" ".GlobalEnv"
+#' #obj_find("x") # "env1" ".GlobalEnv"
+#' #obj_find("x", envir=env1)  # "env1" ".GlobalEnv" (as .GlobalEnv is in the search path)
+#' #obj_find("y") # "env1"
+#' #obj_find(nonexistentObject)  # NULL (note that NO error is raised even if the object does not exist)
 obj_find = function(obj, envir=.GlobalEnv, silent=TRUE)
 {
   # Extract the name of the object

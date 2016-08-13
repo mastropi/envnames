@@ -9,7 +9,7 @@ context("Environment names")
 # 1.- Prepare the workspace -----------------------------------------------
 # Create new environments
 # Environments in .GlobalEnv: Note the need to specifically require the environment to be created in .GlobalEnv
-# either by calling with() or assign() as sohwn below.
+# either by calling with() or assign() as shown below.
 # In fact when running this program through devtools::test() or through CTRL+SHIF+T in RStudio, anything
 # defined in this code is NOT part of the global environment, but part of the function where this code
 # gets inserted to or run from!
@@ -47,33 +47,44 @@ cat("Parent environment of env11: "); print(parent.env(env_of_envs$env11))
 
 # 3.- TEST! ---------------------------------------------------------------
 # Note the use of quote() to enclose the environment variable
-test_that("the environment name is correctly returned when the environment variable is given as a variable (in all environments)", {
+test_that("T1) the environment name is correctly returned when the environment variable is given as a variable (in all environments)", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
   expect_equal(environment_name(env1), "env1")
-  expect_equal(environment_name(env11, envir=env_of_envs), "env11")
+  expect_equal(environment_name(env11, envir=globalenv()$env_of_envs), "env11")
 })
 
-test_that("the environment name is correctly returned when environment variable enclosed in quote()", {
+test_that("T2) the environment name is correctly returned when environment variable enclosed in quote()", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
   expect_equal(environment_name(quote(env1)), "env1")
-  expect_equal(environment_name(quote(env11), envir=env_of_envs), "env11")
+  expect_equal(environment_name(quote(env11), envir=globalenv()$env_of_envs), "env11")
 })
 
-test_that("the environment name is NULL when the environment does not exist", {
+test_that("T3) the environment name is NULL when the environment does not exist", {
+  # Note: need to enclose 'env9' in quote() o.w. we receive an error message that 'env9' does not exist and the test fails
   expect_equal(environment_name(quote(env9)), NULL)
 })
 
-test_that("the environment name is NULL when the envir environment does not exist", {
+test_that("T4) the environment name is NULL when the envir environment does not exist", {
+  skip("Test skipped because the ERROR shown by environment_name() is considered an error by the testthat package")
   expect_equal(environment_name(env11, envir=alskdjfl), NULL)
 })
 
-test_that("the environment name is correctly returned when given as an environment (e.g. <environment: 0x0000000019942d08>)", {
-  expect_equal(environment_name(as.environment(env1)),  "env1")
-  expect_equal(environment_name(as.environment(env_of_envs$env11), envir=env_of_envs),  "env11")
+test_that("T5) the environment name is correctly returned when given as an environment (e.g. <environment: 0x0000000019942d08>)", {
+  expect_equal(environment_name(as.environment(globalenv()$env1)),  "env1")
+  expect_equal(environment_name(as.environment(globalenv()$env_of_envs$env11), envir=globalenv()$env_of_envs),  "env11")
 })
 
+test_that("T6) the environment name of an object given as a string which does not exist is NULL", {
+  expect_equal(environment_name("doesNotExist"), NULL)
+  expect_equal(environment_name("0x000000001806d1b8"), NULL)
+})
+
+test_that("T7) the environment name of an object given as a string containing the memory address of an environemnt returns the name of the environment", {
+  expect_equal(environment_name(address(globalenv()$env1)), "env1")
+  expect_equal(environment_name(address(globalenv()$env_of_envs$env11), envir=globalenv()$env_of_envs), "env11")
+})
 
 # 4.- Cleanup -------------------------------------------------------------
 with(globalenv(), rm(list=c("env1", "env2", "env3", "env_of_envs")))

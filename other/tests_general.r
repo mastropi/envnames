@@ -3,7 +3,7 @@
 
 
 g = function() {
-  get_calling_chain();
+  get_fun_calling_chain();
   # print(env_address);
   # # Get the name of the calling environment
   # env_calling_name = get_env_calling()
@@ -130,3 +130,45 @@ obj_inspect2(get("x"), envir=globalenv())     # not found (OK)
 obj_inspect2(x, envir=globalenv())     # found
 obj_inspect2(obj, envir=globalenv())   # found
 obj_inspect2(xdafafs, envir=globalenv())   # not found
+
+
+
+
+with(env2,
+     g <- function(x) {
+       # Setup for environment tracking
+#       env_address = setup_env(); on.exit(close_env(env_address))
+       
+       # Get the name of the calling environment
+#       env_calling_name = get_env_calling()
+       
+       
+       fun_calling = get_fun_calling_chain(n=1)
+       
+       # Show calling environment without using envnames package and using it
+       cat("Now inside function", get_fun_name(), "\n")
+       cat("Environment name of calling function (using environmentName() function):  \"", environmentName(parent.frame()), "\"\n", sep="")
+#       cat("Calling environment name (using envnames::get_env_calling()): \"", env_calling_name, "\"\n", sep="")
+       cat("Environment name of calling function as returned by get_fun_calling_chain(1): ", fun_calling[,"envfun"], "\n", sep="")
+       
+       # Start process
+       x = x + 2;
+       return(invisible(x))
+     }
+)
+
+# Calling function whose name should be printed when g() is run
+with(env1,
+     f <- function(x) {
+       # Setup for environment tracking
+#       env_address = setup_env(); on.exit(close_env(env_address))
+       
+       # Start
+       gval = env2$g(x)
+       return(invisible(gval))
+     }
+)
+
+# Run function f with argument 7
+env1$f(7)                     # Prints: "Now inside function g : calling environment is env1:f"
+with(env1, f(7))

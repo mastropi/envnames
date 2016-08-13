@@ -16,6 +16,7 @@
 #' parameter can either be passed as a variable name or as the string corresponding to the variable name.  
 #' The function uses the deparse(substitute()) call on the object passed to the function and then
 #' removes any quotes that could have been added to the result if the object passed is already a string.
+#' The function CANNOT be applied in *apply() contexts.
 #'   
 #' @examples
 #' get_obj_name(x)		# returns "x"
