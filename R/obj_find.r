@@ -30,11 +30,11 @@
 #' env1$y = 5
 #' 
 #' # Look for object x in the global environment
-#' #obj_find(x)   # "env1" ".GlobalEnv"
-#' #obj_find("x") # "env1" ".GlobalEnv"
-#' #obj_find("x", envir=env1)  # "env1" ".GlobalEnv" (as .GlobalEnv is in the search path)
-#' #obj_find("y") # "env1"
-#' #obj_find(nonexistentObject)  # NULL (note that NO error is raised even if the object does not exist)
+#' obj_find(x)   # "env1" ".GlobalEnv"
+#' obj_find("x") # "env1" ".GlobalEnv"
+#' obj_find("x", envir=env1)  # "env1" ".GlobalEnv" (as .GlobalEnv is in the search path)
+#' obj_find("y") # "env1"
+#' obj_find(nonexistentObject)  # NULL (note that NO error is raised even if the object does not exist)
 obj_find = function(obj, envir=.GlobalEnv, silent=TRUE)
 {
   # Extract the name of the object
@@ -82,20 +82,21 @@ obj_find = function(obj, envir=.GlobalEnv, silent=TRUE)
     # Go over all the environments stored in envmap and check if the object is there
     i = 0
     n = nrow(envmap)
-    for (address in envmap[,1]) {
+    for (address in envmap[,"address"]) {
       i = i + 1
-      env_address = as.character(envmap[i,1])
-      env_name = as.character(envmap[i,2])
+			env_type = as.character(envmap[i,"type"])
+      env_address = as.character(envmap[i,"address"])
+      env_name = as.character(envmap[i,"name"])
       if (!silent)
         cat(i, "of", n, ": Inspecting environment", env_name, "...\n")
   
       # Get the environment from the currently analyzed envmap entry
       # Need to check if the current entry corresponds to an unnamed environment or to a named environment
-      if (substr(env_address, 1, 1) == "<") {
+      if (env_type == "user") {
         # Case for unnamed environments (e.g. those created with new.env())
         env = get(env_name, envir=envir)
       } else {
-        # Case for named environments (e.g. .GlobalEnv, package:stats, etc.)
+        # Case for named environments (mostly packages) (e.g. .GlobalEnv, package:stats, etc.)
         env = as.environment(env_name)
       }
 

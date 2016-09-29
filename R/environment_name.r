@@ -70,13 +70,13 @@ environment_name <- function(env, envir=.GlobalEnv, envmap=NULL)
   if (!is.null(envmap)) { # This means that parameter 'envir' is a valid environment
     # Get the address of the env environment to look for in the address-names lookup table just created
     env_address = get_obj_address(env, envir=envir, n=2)
-    
+
     # Look for env_address in the address-name lookup table envmap created above
     if (!is.null(env_address)) {
       # Look for the address in the first column of envmap
-      ind = which(envmap[,1] == env_address)
+      ind = which(envmap[,"address"] == env_address)
       if (length(ind) > 0)
-        env_name = as.character(envmap[ind,2])  # Remove any factor attribute with as.character()
+        env_name = as.character(envmap[ind,"name"])  # Remove any factor attribute with as.character()
     }
   }
 

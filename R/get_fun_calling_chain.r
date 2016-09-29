@@ -69,14 +69,15 @@ get_fun_calling_chain = function(n=NULL, envmap=NULL) {
 		# Get the name of the calling function at level n
 		calling_fun_name = get_fun_name(nback+1)
 
-		# Add the information on the calling function to the output data frame
+		# Show detailed info
 #		cat("* nback:", nback, ", env_enclosing_name", env_enclosing_name, "\n\n")
+#   cat("Address of calling environment at level", nback, ":", env_address, "\n")
+#   cat("Name of enclosing environment of calling function at level", nback, ":", env_enclosing_name, "\n")
+#		cat("Name of calling function at level", nback, ":", calling_fun_name, "\n")
+
+		# Add the information on the calling function to the output data frame
 		envfun = paste(env_enclosing_name, "$", calling_fun_name, sep="")
 		fun_calling_chain[nback+1,] = c(nback, calling_fun_name, env_enclosing_name, envfun)
-
-    cat("Address of calling environment at level", nback, ":", env_address, "\n")
-    cat("Name of enclosing environment of calling function at level", nback, ":", env_enclosing_name, "\n")
-		cat("Name of calling function at level", nback, ":", calling_fun_name, "\n")
 
 		# Stop if we have reached level n (when n is not NULL) 
 		if (!is.null(n) && nback == n) break;

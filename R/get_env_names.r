@@ -18,7 +18,7 @@
 get_env_names = function(envir=.GlobalEnv) {
   # Initialize the output lookup table to NULL in case the envir environment does not exist
   env_table = NULL
-  
+
   # Names of the currently defined environments in the envir environment as they are given
   # at the time of their creation with new.env() (e.g. "env1")
   # NOTE: Either of the two statements below work (one of them is commented out)
@@ -43,10 +43,13 @@ get_env_names = function(envir=.GlobalEnv) {
               ## It specifies the type and length of the value returned by the function called by vapply().
               ## In this case (FUN.VALUE=character(1)) we are saying that the function should return
               ## a vector of length 1 of type character.
-    env_addresses = c(env_addresses, env_addresses_packages)
+		# Type of address: environment or package. This information may be of interest when dealing with environments
+		# and in particular is needed by obj_find() to know how to resolve the environment where an object is found. 
+		env_types = c(rep("user", length(env_names)), rep("system", length(env_addresses_packages)))
+		env_addresses = c(env_addresses, env_addresses_packages)
     env_names = c(env_names, names(env_addresses_packages))
 
-    env_table = data.frame(address=env_addresses, name=env_names)
+    env_table = data.frame(type=env_types, address=env_addresses, name=env_names)
   } else {
     envnames:::error_NotValidEnvironment(deparse(substitute(envir)))
   }
