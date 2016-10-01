@@ -3,6 +3,7 @@
 # Description:  Test the envnames package using the testthat package
 #
 
+library(testthat)
 library(envnames)
 context("Environment names")
 
@@ -37,12 +38,12 @@ cat("Parent environment of env11: "); print(parent.env(env_of_envs$env11))
 
 
 # 2.- Address-name pairs lookup table -------------------------------------
-# Create the tables containing the address-name pairs of existing environments
-#debugonce(setup_envmap)
-#trace(get_env_names, tracer=quote(cat(sprintf("tracing get_env_names(*, env_resolves=)\n", env_resolves))))
-#setup_envmap()
+# Get the table containing the address-name pairs of existing environments
+#debugonce(get_env_names)
+#trace(get_env_names, tracer=quote(cat(sprintf("tracing get_env_names(*, env=)\n", env))))
+get_env_names()
 #untrace(get_env_names)
-#setup_envmap(envir=env_of_envs)
+get_env_names(envir=env_of_envs)
 
 
 # 3.- TEST! ---------------------------------------------------------------
@@ -82,8 +83,8 @@ test_that("T6) the environment name of an object given as a string which does no
 })
 
 test_that("T7) the environment name of an object given as a string containing the memory address of an environemnt returns the name of the environment", {
-  expect_equal(environment_name(address(globalenv()$env1)), "env1")
-  expect_equal(environment_name(address(globalenv()$env_of_envs$env11), envir=globalenv()$env_of_envs), "env11")
+  expect_equal(environment_name(get_obj_address(globalenv()$env1)), "env1")
+  expect_equal(environment_name(get_obj_address(globalenv()$env_of_envs$env11), envir=globalenv()$env_of_envs), "env11")
 })
 
 # 4.- Cleanup -------------------------------------------------------------

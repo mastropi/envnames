@@ -1,32 +1,49 @@
 #' Return the chain of calling functions
 #' 
-#' Returns a data frame with the chain of functions leading to the function from which
-#' \code{get_fun_calling_chain} is called, or optionally it returns the information on one
+#' Return a data frame with the calling stack of function calls, or optionally the information on one
 #' particular function in this chain.
+#' This function is intended to be called only within a function.
 #' 
-#' @param n positive integer specifying the number of levels that defines which calling function should
-#' be returned. When n is not NULL the information on the calling function n levels back from the function
-#' calling get_fun_calling_chain() is returned.
-#' Defaults to NULL, in which case all the function calling chain is returned.
+#' @param n non-negative integer specifying the number of levels to go up from the calling function
+#' to get the calling function of interest in the calling chain.
+#' When \code{n} is not \code{NULL} the information on the calling function \code{n} levels up
+#' (from the calling function) is returned.
+#' Defaults to \code{NULL}, in which case all the functions calling chain is returned.
 #' 
 #' @param envmap data frame containing a lookup table with name-address pairs of environment names and
 #' addresses to be used when creating the function calling chain. Defaults to NULL which means that the
 #' lookup table is constructed on the fly with the environments defined in the Global Environment.
+#' It is useful to speed up the process of computing the fuctions calling chains if it is known that
+#' the environments in the workspace will not change. 
 #' See the @details for more information on its structure.
+#' 
+#' @param silent whether to run in silent mode. If FALSE, how the function crawls the different function
+#' environments is shown. Defaults to \code{TRUE}. 
+#' 
+#' @return A data frame with the following columns:
+#' \itemize{
+#' \item{\code{level}:} the stack level going back in the function call chain, where 0 indicates the function where
+#' \code{get_fun_calling_chain} was called from
+#' \item{\code{fun}:} the function name
+#' \item{\code{env}:} the environment where the function is defined as returned by \code{environment()}
+#' \item{\code{envfun}:} the environment where the function is defined together with the function name separated by
+#' a \code{$} sign. Ex: \code{env1$f}
+#' }
 #' 
 #' @details
 #' If \code{envmap} is passed it should be a data frame with at least the following columns:
-#' \code{name} and \code{address}, where \code{name} contains the environment name and \code{address}
-#' contains its memory address. 
-get_fun_calling_chain = function(n=NULL, envmap=NULL) {
+#' \itemize{
+#' \item{\code{address}} memory address of the environment
+#' \item{\code{pathname}} environment name with the full path to it as in e.g. "env$env1$envx"
+#' }
+#' This table can be constructed by running get_env_names() once.
+get_fun_calling_chain = function(n=NULL, envmap=NULL, silent=TRUE) {
 	#------------------------------------ Parse input parameters --------------------------------
 	# Setup the address-name pairs of all environments defined in the workspace
 	# (we do this once so that we don't need to do it every time the environment_name() function is called
 	# in the loop below!)
-	# TODO: (2016/08/13) Check if this process works as at the time of the writing get_env_names() does not crawl
-	# over ALL environments defined in the workspace.
 	if (is.null(envmap)) {
-		envmap = get_env_names(envir=.GlobalEnv)
+		envmap = get_env_names(envir=NULL)
 	}
 	#------------------------------------ Parse input parameters --------------------------------
 
@@ -58,28 +75,36 @@ get_fun_calling_chain = function(n=NULL, envmap=NULL) {
 		# Get the name of the enclosing environment of the calling function at level n
 		# It's important that we first try to retrieve the environment name using the built-in
 		# environmentName() function because the enclosing environment could be a package namespace
-		# and namespaces are not part of the search() environments...
+		# and namespaces are not part of the search() environments... so they don't show up in the environment
+		# address-name pairs table created by get_env_names(). 
 		# This is in fact the case when using the wrapper get_fun_calling() to call get_fun_calling_chain()
 		# since the enclosing environment of get_fun_calling() is "namespace:envnames"!! 
 		env_enclosing_name = environmentName(env_enclosing)
 		if (env_enclosing_name == "") {
 			env_enclosing_name = environment_name(env_enclosing, envmap=envmap)
+			if (is.null(env_enclosing_name)) {
+				# This happens when the environment is not found in the envmap table (this should not happen!)
+				env_enclosing_name = "<NA>"
+			}
 		}
 
 		# Get the name of the calling function at level n
 		calling_fun_name = get_fun_name(nback+1)
 
 		# Show detailed info
-#		cat("* nback:", nback, ", env_enclosing_name", env_enclosing_name, "\n\n")
-#   cat("Address of calling environment at level", nback, ":", env_address, "\n")
-#   cat("Name of enclosing environment of calling function at level", nback, ":", env_enclosing_name, "\n")
-#		cat("Name of calling function at level", nback, ":", calling_fun_name, "\n")
+		if (!silent) {
+			cat("\n* nback:", nback, ", env_enclosing_name", env_enclosing_name, "\n")
+			cat("Address of calling environment at level", nback, ":", env_address, "\n")
+			cat("Name of enclosing environment of calling function at level", nback, ":", env_enclosing_name, "\n")
+			cat("Name of calling function at level", nback, ":", calling_fun_name, "\n")
+		}
 
 		# Add the information on the calling function to the output data frame
 		envfun = paste(env_enclosing_name, "$", calling_fun_name, sep="")
 		fun_calling_chain[nback+1,] = c(nback, calling_fun_name, env_enclosing_name, envfun)
 
-		# Stop if we have reached level n (when n is not NULL) 
+		# Stop if we have reached level n (when n is not NULL)
+		# (recall that n is the number of levels to go back from the user's function, NOT from the get_fun_calling_chain() function!)
 		if (!is.null(n) && nback == n) break;
 
 		# Get the environment of the calling function at the next level of the calling chain and its environment
@@ -87,7 +112,7 @@ get_fun_calling_chain = function(n=NULL, envmap=NULL) {
     env = parent.frame(nback+1)
     env_enclosing = parent.env(env)
   }
-	if (identical(env, globalenv())) {
+	if (!silent && identical(env, globalenv())) {
   	cat("Reached global environment\n")
 	}
 
@@ -96,6 +121,8 @@ get_fun_calling_chain = function(n=NULL, envmap=NULL) {
 		return(fun_calling_chain)
 	} else {
 		# Return just the information on the calling function n levels back from the function calling get_fun_calling_chain()
-		return(fun_calling_chain[n,"envfun"])
+		# This function may not exist if n is too large, i.e. larger than the number of levels stored in the
+		# fun_calling_chain data frame.
+		return(fun_calling_chain[fun_calling_chain$level==n,"envfun"])
 	}
 }

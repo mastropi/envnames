@@ -1,6 +1,7 @@
 useDynLib(envnames, .registration=TRUE)
 
 export(environment_name)
+export(get_env_name)
 export(get_env_names)
 export(get_fun_calling)
 export(get_fun_calling_chain)

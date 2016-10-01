@@ -9,5 +9,5 @@
 # The function name should then sum up what type of message is shown using Camel notation (e.g. NotValidEnvironment)
 
 error_NotValidEnvironment = function(envir_name) {
-  cat("ERROR: '", envir_name, "' is not a valid environment.\n", sep="")
+  tryCatch(cat("ERROR: '", envir_name, "' is not a valid environment.\n", sep=""), error=function(e) cat("The variable passed is not a valid environment\n"))
 }

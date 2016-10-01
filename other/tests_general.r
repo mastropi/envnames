@@ -38,7 +38,8 @@ with(env_of_envs, env9 <- new.env())
 ### This is an extension of the get_env_names() function because it also lists the environments
 ### inside packages other than the Global Environment.
 # The names of the returned character array contain the root of the packages where the environments have been
-# found with a number indicating the object ID (e.g. .GlobalEnv1 for fthe first found object, .GlobalEnv2 for the second found object, etc.)
+# found with a number indicating the object ID (e.g. .GlobalEnv1 for fthe first found object, .GlobalEnv2 for
+# the second found object, etc.)
 # This should replace the creation of the env_names variable in get_env_names().
 environments = unlist(  sapply(  search(),
                                  FUN=function(package) {
@@ -49,6 +50,17 @@ environments = unlist(  sapply(  search(),
 )
 )
 
+sapply(  search(),
+         FUN=function(package) {
+           envs = Filter(function(x) "environment" %in% class(get(x, envir=as.environment(package))),
+                         ls(envir=as.environment(package)))
+           if (length(envs) > 0) {
+            cbind(package, envs)
+           } else {
+             matrix(nrow=0, ncol=2)
+           }
+         }
+)
 
 
 # Get the address of every environment found

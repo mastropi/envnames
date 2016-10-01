@@ -1,31 +1,8 @@
-# TODO: (2014/10/18)
-# 1) [DONE-2014/10/20] Write a function called setup_env() to be called at the beginning of every function that:
-#    adds the address-name pair of the execution environment to the global lookup table containing
-#    the execution environments information (lut)
-# 2) [DONE-2014/10/20] Write a function called get_env_calling(n=1) that retrieves the name of the environment of
-#    any calling function (to be used inside another function for... debugging purposes?)
-# 3) Update the setup_env_table() function so that the table includes environments defined in all
-# existing environments accessible from the envir environment passed as parameter.
-# 4) (2016/03/30) Add the functionality of searching the environment on ALL existing environments, i.e.
-#    existing in the global environment and within any defined environment therein.
-#    The function should return the name of the environment including the environment where it was found
-#    as in e.g. env1$env12
-# 5) [DONE-2016/08/13] (2016/03/30) Add the functionality of receiving a memory address in the env parameter and retrieving
-#    the environment name associated to the address (of course if the associated variable exists and is
-#    an environment!). This would be useful because some functions in R return the memory address of
-#    the environment (for instance when retrieving the environment where a function is defined, whenever
-#    the function is defined within a user-defined environment (as in with(env1, f <- function(x) { })))
-# 	 or when running e.g. options() we get a list of defined functions with the address of 
-# 	 the environment where they are defined at the end of the function definition and we may want to know
-#		 in which environment (name) the function is defined.
-#    UPDATE: (2016/03/30) note that the returned value of e.g. environment(env1$f) in the example just given
-#		 correctly returns the environment 'env1' (i.e. environment_name(environment(env1$f)) returns "env1")  
-
 #' Retrieve the name of an environment
 #' 
-#' Retrieve the name of an environment as \code{\link{environmentName}} in the base package does,
-#' but extends its functionality by also retrieving the names of user-defined environments and function
-#' environments.
+#' Retrieve the name of an environment as the \code{\link{environmentName}} function of the base package does,
+#' but extending its functionality to retrieving the names of user-defined environments and function
+#' environments as well.
 #' 
 #' @param env environment variable whose name is requested. See details for different types of input
 #' variables.
@@ -53,7 +30,18 @@
 #' whose memory address matches that of the \code{env} environment given, or NULL if the environment is
 #' not found in the \code{envir} environment or in the global environment.
 #' @aliases get_env_name
-environment_name <- function(env, envir=.GlobalEnv, envmap=NULL)
+environment_name <- function(env, envir=NULL, envmap=NULL)
+# todo:
+# 1) [DONE-2016/08/13] (2016/03/30) Add the functionality of receiving a memory address in the env parameter and retrieving
+#    the environment name associated to the address (of course if the associated variable exists and is
+#    an environment!). This would be useful because some functions in R return the memory address of
+#    the environment (for instance when retrieving the environment where a function is defined, whenever
+#    the function is defined within a user-defined environment (as in with(env1, f <- function(x) { })))
+# 	 or when running e.g. options() we get a list of defined functions with the address of 
+# 	 the environment where they are defined at the end of the function definition and we may want to know
+#		 in which environment (name) the function is defined.
+#    UPDATE: (2016/03/30) note that the returned value of e.g. environment(env1$f) in the example just given
+#		 correctly returns the environment 'env1' (i.e. environment_name(environment(env1$f)) returns "env1")  
 {
   # Output variable
   env_name = NULL
@@ -69,14 +57,18 @@ environment_name <- function(env, envir=.GlobalEnv, envmap=NULL)
 
   if (!is.null(envmap)) { # This means that parameter 'envir' is a valid environment
     # Get the address of the env environment to look for in the address-names lookup table just created
-    env_address = get_obj_address(env, envir=envir, n=2)
+		# Set envir to .GlobalEnv when it's NULL because get_obj_address() needs to have a specific environment specified
+		if (is.null(envir)) {
+			envir = .GlobalEnv
+		}
+    env_address = get_obj_address(env, envir=envir, n=1)
 
     # Look for env_address in the address-name lookup table envmap created above
     if (!is.null(env_address)) {
       # Look for the address in the first column of envmap
       ind = which(envmap[,"address"] == env_address)
       if (length(ind) > 0)
-        env_name = as.character(envmap[ind,"name"])  # Remove any factor attribute with as.character()
+        env_name = as.character(envmap[ind,"pathname"])  # Remove any factor attribute with as.character()
     }
   }
 

@@ -3,6 +3,7 @@
 # Description:  Test the envnames package using the testthat package
 #
 
+library(testthat)
 library(envnames)
 context("Function calling chain")
 

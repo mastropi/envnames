@@ -5,16 +5,20 @@
 \title{Track user-defined and execution environment names}
 \description{The main goal of this package is to overcome the limitation of the built-in \code{\link{environmentName}} function of the base package which cannot retrieve the name of an environment unless it is a package or the global environment.
 
-The envnames package solves this problem by creating a lookup table that maps environment names to their memory addresses. Using this lookup table, it is possible to retrieve the name of any environment where an object resides or to retrieve the environment of the calling function.
+The envnames package solves this problem by creating a lookup table that maps environment names to their memory addresses. Using this lookup table, it is possible to retrieve the name of any environment where an object resides or, from within a function, to retrieve the calling stack showing the function names and the environment names where they reside.
 
-All function in this package follow the underscore_separated all lower case naming convention.
+All function in this package follow the underscore_separated-all-lower-case naming convention.
 }
 \details{
-The package currently contains 10 functions. Following is a guideline on how to use the package to track user-defined environment names and function environments:
+The package currently contains 8 visible functions. Following is a guideline on how to use the package to keep track of user-defined environment names and function environments:
 
 1) Use environment_name() to retrieve the name of an environment created with \code{\link{new.env}}.
 
 2) Use \code{\link{obj_find}} to find the environments where a given object is defined.
+
+3) Use \code{\link{get_fun_calling}(n)} from within a function to retrieve the name of the calling function \code{n} levels up in the calling stack together with the environment name where they reside.
+
+4) Use \code{\link{get_fun_calling_chain}} from within a function to get the calling stack.
 }
 \author{Daniel Mastropietro
 
@@ -25,17 +29,13 @@ Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 \keyword{ environment }
 \seealso{ \code{\link{environmentName} } in the base package for the built-in function that retrieves environment names of packages.}
 \examples{
-### Example 1: Retrieve the names of environments created with new.env()
+### Example 1: Retrieve the names of user-environments (created with new.env())
 # Create new environments
 env1 = new.env()                      # Environment in .GlobalEnv
 env2 = new.env()                      # Environment in .GlobalEnv
-env3 = new.env(parent=baseenv())      # Environment in base environment
+env3 = new.env(parent=baseenv())      # Environment whose enclosure or parent environment is the base environment (as opposed to the global environment)
 env_of_envs = new.env()               # User-defined environment that contains other environments
 with(env_of_envs, env11 <- new.env()) # Environment defined inside environment \code{env_of_envs}
-
-# Create the table containing the address-name pairs of existing environments
-#setup_envmap()
-#setup_envmap(envir=env_of_envs)
 
 # Retrieve the environment name
 # Note the use of quote() to enclose the environment variable
@@ -46,7 +46,7 @@ environment_name(env_of_envs)                # "env_of_envs"
 environment_name(env11, envir=env_of_envs)   # "env11"
 
 
-### Example 2: Track of execution environments
+### Example 2: Retrieve calling functions and their environments
 # Define two environments
 env1 = new.env()
 env2 = new.env()
@@ -64,7 +64,7 @@ with(env2,
 			 # Essenially the environment name without using the envnames package is empty.
        cat("Now inside function", fun_current_name, "\n")
        cat("Calling environment name (using environmentName() function):  \"", environmentName(parent.frame()), "\"\n", sep="")
-       cat("Calling environment name (using envnames::get_fun_calling_chain()): \"", fun_calling_name, "\"\n", sep="")
+       cat("Calling environment name (using envnames::get_fun_calling()): \"", fun_calling_name, "\"\n", sep="")
 
        # Start process
        x = x + 2;
@@ -96,7 +96,6 @@ obj_find(xx)                  # "env2"
 
 obj_find(nonexistent)         # NULL
 
-
 \dontshow{
 # This is not shown because the example is very similar to Example 3 above
 # Define function g inside environment env3 whose parent is the baseenv environment
@@ -125,8 +124,8 @@ h <- function(x) {
 }
 
 h(7)
-}
 
 ### Cleanup: delete environments
 rm(list=c("env1", "env2", "env3", "env_of_envs", "env_table_env_of_envs"))
+}
 }
