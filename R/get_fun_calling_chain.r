@@ -67,10 +67,11 @@ get_fun_calling_chain = function(n=NULL, envmap=NULL, silent=TRUE) {
 	# Iterate on the history of calling functions up to level n if n is not NULL
   while (!identical(env, globalenv())) {
 		# Get the address of the execution environment of the calling function at level n
-    env_address = get_obj_address(env)
+    env_address = get_obj_address(env, envir=NULL)
 			## NOTES:
 			## - No need to enclose 'env' in quote()
-			## - No need to specify the environment where 'env' is defined (i.e. the enclosing environment)
+			## - envir=NULL makes the environment 'env' be searched in the whole workspace
+			## (e.g. not only in the global environment for instance)
 
 		# Get the name of the enclosing environment of the calling function at level n
 		# It's important that we first try to retrieve the environment name using the built-in
@@ -123,6 +124,10 @@ get_fun_calling_chain = function(n=NULL, envmap=NULL, silent=TRUE) {
 		# Return just the information on the calling function n levels back from the function calling get_fun_calling_chain()
 		# This function may not exist if n is too large, i.e. larger than the number of levels stored in the
 		# fun_calling_chain data frame.
-		return(fun_calling_chain[fun_calling_chain$level==n,"envfun"])
+		fun_calling = fun_calling_chain[fun_calling_chain$level==n,"envfun"]
+		if (length(fun_calling) == 0) {
+			fun_calling = NA
+		}
+		return(fun_calling)
 	}
 }

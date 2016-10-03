@@ -10,6 +10,7 @@ context("Object addresses")
 
 # 1.- Prepare the workspace -----------------------------------------------
 with(globalenv(), {
+  x <- 1
   env1 <- new.env()
   env_of_envs <- new.env()
   env_of_envs$env11 <- new.env()
@@ -40,41 +41,48 @@ test_that("T2) addresses of packages are correctly returned", {
 test_that("T3) the address of an object passed as a string is correctly returned (in different environments)", {
   # skip ("not now")
   # browser()
-  expect_equal(get_obj_address("env1"), envnames:::address(globalenv()$env1))
+  expected = envnames:::address(globalenv()$env1)
+  names(expected) = "R_GlobalEnv"
+  expect_equal(get_obj_address("env1"), expected)
   expect_equal(get_obj_address("x", envir=globalenv()$env1), envnames:::address(globalenv()$env1$x))
 })
 
 test_that("T4) the address of an object passed as an object is correctly returned (in different environments)", {
   # skip ("not now")
   # browser()
-  expect_equal(get_obj_address(env1), envnames:::address(globalenv()$env1))
+  expected = envnames:::address(globalenv()$env1)
+  names(expected) = "R_GlobalEnv"
+  expect_equal(get_obj_address(env1), expected)
   expect_equal(get_obj_address(env11, envir=globalenv()$env_of_envs), envnames:::address(globalenv()$env_of_envs$env11))
   expect_equal(get_obj_address(x, envir=globalenv()$env1), envnames:::address(globalenv()$env1$x))
 })
 
-test_that("T5) the address of objects passed as expressions is correctly returned", {
+test_that("T5) the address of objects passed as expressions in specified environments is correctly returned
+            (note that if we run this WITHOUT specifying the environment the address changes every time, because
+            a new memory address is allocated to the result of globalenv()$objects[1], i.e. to 'x' which is
+            the value of element 1 of 'objects'", {
   # skip ("not now")
   # browser()
   expect_equal(get_obj_address(globalenv()$objects[1], envir=globalenv()$env1), envnames:::address(globalenv()$env1$x))
+  expect_equal(get_obj_address(globalenv()$objects[1], envir=globalenv()), envnames:::address(globalenv()$x))
 })
 
-test_that("T6) the address returned for a non-existing object is NULL", {
+test_that("T6) the address returned for an object referenced via its environment (as in env1$x) is the memory address of the object", {
+  # skip ("not now")
+  # browser()
+  expect_equal(get_obj_address(globalenv()$env1$x), envnames:::address(globalenv()$env1$x))
+})
+
+test_that("T7) the address returned for a non-existing object is NULL", {
   # skip ("not now")
   # browser()
   expect_equal(get_obj_address("klajsdklfj"), NULL)
 })
 
-test_that("T7) the address returned for an object when the variable passed as environment of evaluation is not an environment, is NULL", {
+test_that("T8) the address returned for an object when the variable passed as environment of evaluation is not an environment, is NULL", {
   # skip ("not now")
   # browser()
   expect_equal(get_obj_address(x, envir=globalenv()$env1$x), NULL)
-})
-
-test_that("T8) the address returned for an object referenced via its environment (as in env1$x) is NULL
-          (as the way to retrieve its address is by separating the object name from the environment as in get_obj_address(x, envir=env1))", {
-  # skip ("not now")
-  # browser()
-  expect_equal(get_obj_address(globalenv()$env1$x), NULL)
 })
 
 test_that("T9) the address returned for an object stored in a deeply nested environment is correct", {
@@ -83,18 +91,12 @@ test_that("T9) the address returned for an object stored in a deeply nested envi
   expect_equal(get_obj_address("z", envir=globalenv()$env_of_envs$env11), envnames:::address(globalenv()$env_of_envs$env11$z))
 })
 
-test_that("T10) the address of objects passed as memory address is the memory address itself", {
+test_that("T10) the address of objects passed as memory address is NULL", {
   # skip ("not now")
   # browser()
-  expect_equal(get_obj_address("<000000000C330188>"), "<000000000C330188>")
+  expect_equal(get_obj_address("<000000000C330188>", envir=globalenv()), NULL)
+  expect_equal(get_obj_address("<000000000C330188>"), NULL)
 })
-
-test_that("T11) the address of objects passed as incorrect memory addresses is NULL", {
-  # skip ("not now")
-  # browser()
-  expect_equal(get_obj_address("<000000000C3301GZ>"), NULL)
-})
-
 
 
 # 3.- Cleanup -------------------------------------------------------------

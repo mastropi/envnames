@@ -157,6 +157,81 @@ extract_last_member = function(full_name) {
 	return(list(root=root, name=name))
 }
 
+#' Check whether a string is a memory address
+#' 
+#' Check whether an object represents a valid memory address. If the object does not exist or is not of the
+#' correct type FALSE is returned, no error is raised. 
+#' 
+#' @param x object to check.
+#' @return boolean indicating whether the given object represents a valid memory address. 
+is_memory_address = function(x) {
+	result = FALSE
+
+	ischaracter = try( is.character(x), silent=TRUE )
+	if (!inherits(ischaracter, "try-error") && ischaracter) {
+		# Check if x contains a string that is a memory address
+		# We allow for one or more spaces at the beginning of the string as in "   <0x00000000119dba68>"		
+		# Note that the blank space at the beginning of the pattern includes tabs (checked).
+		# Note also that if we want to use PERL regular expression we should use double escape to represent
+		# special characters as in grep("^\\s*<", obj, perl=TRUE)
+		isaddress = grep("^ *<[0-9a-f]{16}>$", x, ignore.case=TRUE)
+		if (length(isaddress) > 0) {
+			result = TRUE
+		} else {
+			result = FALSE
+		}
+	}
+
+	return(result)
+}
+
+#' Standardize the name of an environment
+#' 
+#' This function standardizes the name of an environment so that environment names are consistent
+#' with the output of base function \link{environmentName}.
+#' It only has an effect when the environment is the global environment or the base environment,
+#' which have different ways of referring to them, namely:
+#' \code{globalenv()}, \code{.GlobalEnv}, \code{baseenv()}, \code{as.environment("package:base")}
+#' 
+#' @param env_name environment name to standardize.
+#'
+#' @return The name of the environment, where the global environment is represented as "R_GlobalEnv" and the
+#' base environment is shown as "base".
+standardize_env_name = function(env_name) {
+	# Use "R_GlobalEnv" for the global environment and "base" for the base environment
+	# to be consistent with the output of environmentName()
+	env_name = gsub("\\.GlobalEnv|globalenv\\(\\)", "R_GlobalEnv", env_name)
+	env_name = gsub("package:base|baseenv\\(\\)", "base", env_name)
+	return(env_name)
+}
+
+#' De-standardize the name of an environment
+#' 
+#' This function inverts the process performed by \link{standardize_env_name} that is, it converts
+#' the standardized names "R_GlobalEnv" and "base" back to names that are recognized by R as actual
+#' environments when using function \link{as.environment}, namely to \code{".GlobalEnv"} and \code{"package:base"}.
+#' 
+#' @param env_name environment name to de-standardize.
+#'
+#' @return The name of the environment, where the global environment is represented as ".GlobalEnv" and the
+#' base environment is represented as "package:base".
+destandardize_env_name = function(env_name) {
+	# Use "R_GlobalEnv" for the global environment and "base" for the base environment
+	# to be consistent with the output of environmentName()
+	env_name = gsub("R_GlobalEnv", ".GlobalEnv", env_name)
+	env_name = gsub("base", "package:base", env_name)
+	return(env_name)
+}
+
+#' Call unlist and preserve the names
+#' 
+#' Function \code{unlist} is called so that the output is an array (whenever possible) whose names
+#' attribute contains the names of the elements of the list (unchanged, i.e. without adding a number
+#' to identify them as the regular \code{unlist()} function does).
+#' 
+#' @param alist list to unlist.
+#' 
+#' @return Whenever possible, an array whose names attribute is set to the names of the elements of the list.
 unlist_with_names = function(alist) {
 	# Get the lengths ana names of each list element
 	lengths = sapply(alist, FUN=length)					# Number of elements in each list element

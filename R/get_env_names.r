@@ -70,9 +70,9 @@ get_env_names = function(envir=NULL) {
 															}
 													)
 				envs_array = envnames:::unlist_with_names(envs_list)
-				# Use "R_GlobalEnv" for the global environment (to be consistent with the output of environmentName(globalenv())
-				# Note that the name for the global environment returned by the sapply() call above is ".GlobalEnv"!
-				names(envs_array) = gsub(".GlobalEnv", "R_GlobalEnv", names(envs_array))
+				# Standardize the names of the environment so that the global and the base environments are always shown
+				# the same way, regardless of how the 'envir' parameter is passed.
+				names(envs_array) = sapply(names(envs_array), FUN=envnames:::standardize_env_name)
 				envs_array
 			},
 			silent=TRUE)
@@ -85,9 +85,9 @@ get_env_names = function(envir=NULL) {
 		env_names = try( {
 					envs = with(envir, Filter(function(x) "environment" %in% class(get(x)), ls()))
 					envir_name = get_obj_name(envir, n=1)
-					# Use "R_GlobalEnv" for the global environment (to be consistent with the output of environmentName(globalenv())
-					# So, if the user passed globalenv() or .GlobalEnv as 'envir', they are replaced with "R_GlobalEnv"
-					envir_name = gsub(".GlobalEnv|globalenv\\(\\)", "R_GlobalEnv", envir_name)
+					# Standardize the names of the environment so that the global and the base environments are always shown
+					# the same way, regardless of how the 'envir' parameter is passed.
+					envir_name = envnames:::standardize_env_name(envir_name)
 					names(envs) = rep(envir_name, length(envs))
 					envs
 				}, silent=TRUE )
@@ -101,14 +101,15 @@ get_env_names = function(envir=NULL) {
 														address=character(0),
 														pathname=character(0),
 														path=character(0),
-														name=character(0))
+														name=character(0),
+														stringsAsFactors=FALSE)
 												
 		# Continue processing if any environments were found
 		if (length(env_names) > 0) {
 			if (is.null(envir)) {
 				# Get the address-name pairs of all system/package environments (e.g. .GlobalEnv, package:stats, package:base, etc.)
 				allenvs = search()
-				env_addresses_packages = vapply(search(), function(x) { get_obj_address(as.environment(x)) }, FUN.VALUE=character(1))
+				env_addresses_packages = vapply(search(), function(x) { get_obj_address(as.environment(x), envir=.GlobalEnv) }, FUN.VALUE=character(1))
 				## NOTE: FUN.VALUE in the vapply() function is a required parameter.
 				## It specifies the type and length of the value returned by the function called by vapply().
 				## In this case (FUN.VALUE=character(1)) we are saying that the function should return
@@ -141,8 +142,8 @@ get_env_names = function(envir=NULL) {
 			envs = lapply(env_full_names, function(x) eval(parse(text=x), envir=envir))
 	
 			# Get the memory addresses of the environments just resolved
-			env_addresses = eval( unlist( lapply(envs, get_obj_address) ), envir=envir)
-	
+			env_addresses = eval( unlist( lapply(envs, get_obj_address, envir) ), envir=envir)
+
 			# Complete with the rest of the info to store in the output data frame
 			# Note: the type of address: "user" or "system". This information may be of interest when dealing
 			# with environments and in particular is needed by obj_find() to know how to resolve the environment
@@ -158,12 +159,13 @@ get_env_names = function(envir=NULL) {
 			env_names = unlist( env_roots_and_names["name",] )
 
 			# Save the information in the env_table data frame
-			env_table = rbind(env_table, data.frame(type=env_types,
-																							locations=env_locations,
-																							address=env_addresses,
-																							pathname=env_full_names,
-																							path=env_paths,
-																							name=env_names))
+			env_table = data.frame(	type=env_types,
+															location=env_locations,
+															address=env_addresses,
+															pathname=env_full_names,
+															path=env_paths,
+															name=env_names,
+															stringsAsFactors=FALSE)
 		} # if (length(env_names) > 0)
   } else  {
     envnames:::error_NotValidEnvironment(deparse(substitute(envir)))
