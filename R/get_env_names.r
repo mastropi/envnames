@@ -1,11 +1,16 @@
 #' Create a data frame with address-name pairs of environments
 #' 
-#' Return a data frame containing the address-name pairs of environments existing in the workspace
-#' (including environments that are part of the search() path) or just the environments defined in
-#' a given environment.
+#' Return a data frame containing the address-name pairs of user-defined, system and package environments
+#' in the workspace or within a given environment.
 #' 
 #' @param envir environment where environments are searched for. Defaults to NULL which means that all environments
 #' in the whole workspace should be searched for and all packages in the \code{search()} path should be returned.
+#' 
+#' @details
+#' The search for environments is recursive, meaning that a search is carried out for environments defined
+#' within other environments.
+#' 
+#' The search within packages is always on \emph{exported objects} only.
 #' 
 #' @return A data frame containing the following six columns:
 #' \itemize{
@@ -104,8 +109,11 @@ get_env_names = function(envir=NULL) {
 														name=character(0),
 														stringsAsFactors=FALSE)
 												
-		# Continue processing if any environments were found
-		if (length(env_names) > 0) {
+		# Continue processing if either:
+		# - any environments were found or
+		# - the whole workspace is searched for (envir=NULL) in which case we should retrieve
+		# all system and package environments as well.
+		if (length(env_names) > 0 || is.null(envir)) {
 			if (is.null(envir)) {
 				# Get the address-name pairs of all system/package environments (e.g. .GlobalEnv, package:stats, package:base, etc.)
 				allenvs = search()
@@ -125,26 +133,35 @@ get_env_names = function(envir=NULL) {
 			# If envir=NULL, we now set it to .GlobalEnv so that the crawl function goes over all environments defined
 			# in the workspace (i.e. the global environment)
 			# Otherwise we recursively search just for the environments inside the given 'envir' environment. 
-			if (is.null(envir)) {
-				envir = .GlobalEnv
-			}
-			env_full_names = envnames:::unlist_with_names( tapply(	env_names,
-																															INDEX=names(env_names),
-																															FUN=envnames:::crawl_envs, c(), c(), envir) )
-	
-			# Get the environments referenced by the env_full_names names
-			# NOTE that we use eval() instead of get() because eval() can evaluate environments given as e.g. env_of_envs$env11
-			# but get() cannot... get() only does NOT accept the '$' sign, but accepts only calls of the form
-			# get("env11", envir=env_of_envs) and creating these statements from the env_full_names content is more difficult.
-			# Note also that there should not be any problem with the evaluation of env_full_names to environments because
-			# these env_full_names are obtained from actually searching for environments through the crawl_envs() function above.
-			#envs = lapply(env_full_names, get, envir=envir)
-			envs = lapply(env_full_names, function(x) eval(parse(text=x), envir=envir))
-	
-			# Get the memory addresses of the environments just resolved
-			env_addresses = eval( unlist( lapply(envs, get_obj_address, envir) ), envir=envir)
+		  if (length(env_names) == 0) {
+		    # Initialize env_full_names and env_addresses to an empty array, which will be updated below with
+		    # the respective info from system and package environments
+		    env_full_names = character(0)
+		    env_addresses = character(0)
+		  } else {
+		    if (is.null(envir)) {
+		      envir = .GlobalEnv
+		    }
+		    env_full_names = envnames:::unlist_with_names( tapply(env_names,
+		                                                          INDEX=names(env_names),  # This is the BY group of the analysis
+		                                                          FUN=envnames:::crawl_envs, c(), c(), envir) )
 
-			# Complete with the rest of the info to store in the output data frame
+		    # Get the environments referenced by the env_full_names names
+		    # NOTE that we use eval() instead of get() (in which case we would have used envs = lapply(env_full_names, get, envir=envir))
+		    # because eval() can evaluate environments given as e.g. env_of_envs$env11
+		    # but get() cannot... get() only does NOT accept the '$' sign, but accepts only calls of the form
+		    # get("env11", envir=env_of_envs) and creating these statements from the env_full_names content is more difficult.
+		    # Note also that there should not be any problem with the evaluation of env_full_names to environments because
+		    # these env_full_names are obtained from actually searching for environments through the crawl_envs() function above.
+		    envs = lapply(env_full_names, function(x) eval(parse(text=x), envir=envir))
+	
+  			# Get the memory addresses of the environments just resolved
+  			env_addresses = eval( unlist( lapply(envs, get_obj_address, envir) ), envir=envir)
+		  }
+		  
+		  #------------------------ 3. Put together all environments found --------------------------
+		  # Put together all the info gathered so far about user-defined environments and system/package
+		  # environments into the output data frame.
 			# Note: the type of address: "user" or "system". This information may be of interest when dealing
 			# with environments and in particular is needed by obj_find() to know how to resolve the environment
 			# where an object is found from the environment name, whether using eval() for user-defined environments

@@ -103,7 +103,7 @@ get_obj_name = function(obj, n=0, silent=FALSE) {
   obj_parent = substitute(obj)
   nback = 0
   while (nback < n) {
-		expr = tryCatch(parse(text=paste("substitute(", obj_parent, ")")), error=function(e) if(!silent) error_NotValidExpression(obj_parent) )
+		expr = tryCatch(parse(text=paste("substitute(", obj_parent, ")")), error=function(e) if(!silent) error_NotValidExpression(obj_parent), silent=TRUE )
 		if (!is.expression(expr)) return(NULL)
 		obj_parent = eval.parent(expr, n=nback+1)
     nback = nback + 1
@@ -111,7 +111,7 @@ get_obj_name = function(obj, n=0, silent=FALSE) {
 
   # Expression to evaluate at the parent.frame(n) environment where object 'obj_parent' needs to be 'substitute'd
   # with the value it received when the function was called
-	expr = tryCatch(parse(text=paste("deparse(substitute(", obj_parent, "))")), error=function(e) if(!silent) error_NotValidExpression(obj_parent) )
+	expr = tryCatch(parse(text=paste("deparse(substitute(", obj_parent, "))")), error=function(e) if(!silent) error_NotValidExpression(obj_parent), silent=TRUE )
 	if (!is.expression(expr)) return(NULL)
 
 	# Get the object name (i.e. "x" if obj = x (the variable x) or obj = "x" (the string "x"))

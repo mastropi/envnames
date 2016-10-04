@@ -69,7 +69,7 @@ obj_find = function(obj, envir=NULL, n=0, silent=TRUE) {
 			if (env_type == "user") {
 				# Case for unnamed environments (e.g. those created with new.env())
 				#env = get(env_name, envir=envir_actual)
-				env = try( eval(parse(text=env_full_name), envir=envir) )
+				env = try( eval(parse(text=env_full_name), envir=envir), silent=TRUE )
 			} else {
 				# Case for named environments (mostly packages) (e.g. .GlobalEnv, package:stats, etc.)
 				env = as.environment(env_full_name)
@@ -114,7 +114,8 @@ obj_find = function(obj, envir=NULL, n=0, silent=TRUE) {
     error=function(e) {
 						envnames:::error_NotValidEnvironment(envir_name); assign("error", TRUE, inherits=TRUE)
             ## Note the use of the inherits=TRUE parameter which means: search for the variable to be assigned in parent environments and assign the value to the first one found.
-          }
+          },
+		silent=TRUE
   )
   if (error) return(invisible(NULL))
 

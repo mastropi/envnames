@@ -149,7 +149,7 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 					!is.null(obj_eval) &&
 					gsub("\"", "", deparse(substitute(obj))) != obj_eval) {
 				# This means there is a chance that the object is not simply a string like "x" or a number like 3, etc.
-				obj_addresses = try( envnames:::address(obj) )
+				obj_addresses = try( envnames:::address(obj), silent=TRUE )
 				if (inherits(obj_addresses, "try-error")) {
 					obj_addresses = NULL
 				}

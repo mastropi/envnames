@@ -10,10 +10,10 @@
 
 error_NotValidEnvironment = function(envir_name) {
 	fun_name = get_fun_name(n=1)
-  tryCatch(cat("ERROR: (", fun_name, ") '", envir_name, "' is not a valid environment.\n", sep=""), error=function(e) cat("The variable passed is not a valid environment\n"))
+  tryCatch(cat("ERROR: (", fun_name, ") '", envir_name, "' is not a valid environment.\n", sep=""), error=function(e) cat("The variable passed is not a valid environment\n"), silent=TRUE)
 }
 
 error_NotValidExpression = function(expr) {
 	fun_name = get_fun_name(n=1)
-	tryCatch(cat("ERROR: (", fun_name, ") '", expr, "' is not a valid expression to evaluate.\n", sep=""), error=function(e) cat("The expression is not valid.\n"))
+	tryCatch(cat("ERROR: (", fun_name, ") '", expr, "' is not a valid expression to evaluate.\n", sep=""), error=function(e) cat("The expression is not valid.\n"), silent=TRUE)
 }

@@ -200,8 +200,8 @@ is_memory_address = function(x) {
 standardize_env_name = function(env_name) {
 	# Use "R_GlobalEnv" for the global environment and "base" for the base environment
 	# to be consistent with the output of environmentName()
-	env_name = gsub("\\.GlobalEnv|globalenv\\(\\)", "R_GlobalEnv", env_name)
-	env_name = gsub("package:base|baseenv\\(\\)", "base", env_name)
+	env_name = gsub("\\.GlobalEnv|globalenv\\(\\)|globalenv", "R_GlobalEnv", env_name)
+	env_name = gsub("package:base|baseenv\\(\\)|baseenv", "base", env_name)
 	return(env_name)
 }
 
