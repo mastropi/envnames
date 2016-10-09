@@ -114,13 +114,19 @@ get_obj_name = function(obj, n=0, silent=FALSE) {
 	expr = tryCatch(parse(text=paste("deparse(substitute(", obj_parent, "))")), error=function(e) if(!silent) error_NotValidExpression(obj_parent), silent=TRUE )
 	if (!is.expression(expr)) return(NULL)
 
-	# Get the object name (i.e. "x" if obj = x (the variable x) or obj = "x" (the string "x"))
+	# Get the object name (i.e. "x" either if obj = x (the variable x) or obj = "x" (the string "x"))
 	# by evaluating the deparse(substitute()) expression in the environment of the calling function n levels up.
 	obj_parent_name = eval(expr, envir=parent.frame(n+1))
-	
+
 	# Check if obj_parent was given as a variable name or as a string
-	if (length(grep("\"", obj_parent_name)) > 0)  # this is TRUE when the value of obj_parent_name is already a string (e.g. obj_parent_name = "\"x\"" when obj_parent = "x")
-		obj_parent_name = gsub("\"", "", obj_parent_name)  # Remove the internal quotes from the object name
-	
+	# This is checked by looking for starting and ending double quotes by looking for '\"'.
+	# NOTE that it's important to look for thess quotes at the beginning and at the end of the name because
+	# there may be quotes in the middle and they should not be removed!
+	# (this is especially true when the name is e.g. "\"as.environment(\"package:stats\")\"" where we should
+	# NOT remove the quotes enclosing 'package:stats'! --> this would make obj_find() fail when called on
+	# as.environment("package:stats")$aov)
+	if (length(grep("^\".*\"$", obj_parent_name)) > 0)  # this is TRUE when the value of obj_parent_name is already a string (e.g. obj_parent_name = "\"x\"" when obj_parent = "x")
+		obj_parent_name = gsub("^\"|\"$", "", obj_parent_name)  # Remove the internal quotes from the object name
+
 	return(obj_parent_name)
 }

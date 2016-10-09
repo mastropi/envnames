@@ -1,10 +1,11 @@
-#' Create a data frame with address-name pairs of environments
+#' Create a lookup table with address-name pairs of environments
 #' 
-#' Return a data frame containing the address-name pairs of user-defined, system and package environments
-#' in the workspace or within a given environment.
+#' Return a data frame containing the address-name pairs of user-defined, system, package, and namespace
+#' environments in the workspace or within a given environment.
 #' 
 #' @param envir environment where environments are searched for. Defaults to NULL which means that all environments
-#' in the whole workspace should be searched for and all packages in the \code{search()} path should be returned.
+#' in the whole workspace should be searched for and all packages in the \code{search()} path should be returned
+#' including their namespace environments.
 #' 
 #' @details
 #' The search for environments is recursive, meaning that a search is carried out for environments defined
@@ -12,9 +13,18 @@
 #' 
 #' The search within packages is always on \emph{exported objects} only.
 #' 
+#' If \code{envir} is the global environment ,the lookup table includes all system,
+#' package, and namespace environments in the \code{search()} path, as well as all user-defined environments
+#' found in the global environment (with recursive search).
+#' 
+#' If \code{envir=NULL} the lookup table includes all system, package, and namespace environments
+#' in the \code{search()} path, as well as all user-defined environments found in \emph{any} of those
+#' environments (with recursive search).
+#' 
 #' @return A data frame containing the following six columns:
 #' \itemize{
-#' \item{\code{type}} type of environment ("user" for user-defined environments or "system" for system or package environments).
+#' \item{\code{type}} type of environment ("user" for user-defined environments "system/package"
+#' for system or package environments), and "namespace" for namespace environments.
 #' \item{\code{location}} location of the environment (only for user-defined environments, in which case the system
 #' environment or package where the environment resides is shown). Note that this may be different from the parent
 #' environment if the parent environment was set during creation with the \code{parent=} option of the
@@ -26,8 +36,8 @@
 #' \item{\code{path}} path to the environment (through e.g. different environments or packages).
 #' \item{\code{name}} name of the environment.
 #' }
-#' The \code{type} column is used to distinguish between user-defined environments and package or system environments
-#' which are also listed in the output data frame when \code{envir=NULL}.
+#' The \code{type} column is used to distinguish between user-defined environments, package or system environments,
+#' and namespace environments, which are also listed in the output data frame when \code{envir=NULL}.
 #' 
 #' The data frame is empty if no environments are found in the given environment.
 #' 
@@ -53,7 +63,15 @@ get_env_names = function(envir=NULL) {
   env_table = NULL
 
 	#-------------------------- 1. First level search of environments ---------------------------
+	### 1a) Look for user-defined environments either within the given 'envir' environment or
+	### within the whole workspace (i.e. within all system and package environments reachable via the search() path)
 	if (is.null(envir)) {
+	  envir_orig = NULL
+	  # If envir=NULL, we now set it to .GlobalEnv because all the process following this step should be
+	  # the same as when the user passed envir=.GlobalEnv (the only different part of this process is precisely
+	  # this step where we look for environments in ALL loaded packages).
+	  envir = .GlobalEnv
+
 		# Look for environments defined in the WHOLE workspace (including packages listed in the search() path)
 		# The following returns an ARRAY with the environments in all packages in the search() path
 		# The names attribute of the array is the package where the environment stored in the corresponding element
@@ -82,6 +100,7 @@ get_env_names = function(envir=NULL) {
 			},
 			silent=TRUE)
 	} else {
+	  envir_orig = envir
 		# Look for environments present ONLY in the specified non-NULL envir environment (this can be a user-defined environment with new.env() or a package)
 		# NOTE: Either of the two statements below work (one of them is commented out)
 		# Note that in the first option we need to use the option envir=envir in the get() function,
@@ -98,7 +117,7 @@ get_env_names = function(envir=NULL) {
 				}, silent=TRUE )
 	}
 
-	# Continue only if there was no error so far and if environments were found
+	# Continue only if there was no error so far
   if (!inherits(env_names, "try-error")) {
 		# Initialize the output table to a data frame
 		env_table = data.frame(	type=character(0),
@@ -111,27 +130,37 @@ get_env_names = function(envir=NULL) {
 												
 		# Continue processing if either:
 		# - any environments were found or
-		# - the whole workspace is searched for (envir=NULL) in which case we should retrieve
-		# all system and package environments as well.
-		if (length(env_names) > 0 || is.null(envir)) {
-			if (is.null(envir)) {
-				# Get the address-name pairs of all system/package environments (e.g. .GlobalEnv, package:stats, package:base, etc.)
+		# - the whole workspace is searched for in which case we should include all system, package, and
+		# namespace environments in the lookup table.
+		# (Note that this is the caes when the user passed either envir=NULL or
+		# envir=.GlobalEnv, but since in the former case envir was set to .GlobalEnv (at the very top)
+		# here we just test for envir=.GlobalEnv to take care of this case.)
+		if (length(env_names) > 0 || is.null(envir_orig)) {
+			if (is.null(envir_orig)) {
+				### 1b) Get the address-name pairs of all system/package/namespace environments (e.g. .GlobalEnv, package:stats, package:base, etc.)
 				allenvs = search()
+				
+				#-- System and packages
 				env_addresses_packages = vapply(search(), function(x) { get_obj_address(as.environment(x), envir=.GlobalEnv) }, FUN.VALUE=character(1))
-				## NOTE: FUN.VALUE in the vapply() function is a required parameter.
-				## It specifies the type and length of the value returned by the function called by vapply().
-				## In this case (FUN.VALUE=character(1)) we are saying that the function should return
-				## a vector of length 1 of type character.
+  				## NOTE: FUN.VALUE in the vapply() function is a required parameter.
+  				## It specifies the type and length of the value returned by the function called by vapply().
+  				## In this case (FUN.VALUE=character(1)) we are saying that the function should return
+  				## a vector of length 1 of type character.
+					
+				#-- Namespaces
+				# Store the namespace environment of each package as well!
+				# (for instance, the functions defined by each package are defined in their namespace environment
+				# so this allows us to easily retrieve the environment of a function (e.g. "base" for the mean() function))
+				env_addresses_namespaces = envnames:::get_namespace_addresses()
 			} else {
 				# Set the addresses of packages to an array of 0 length (because this array is used below)
 				env_addresses_packages = c()
+				env_addresses_namespaces = c()
 			}
 	
 			#-------------------------- 2. Recursive search of environments ---------------------------
 			# Extend the list of environments found in step 1 by recursively searching for environments within each
 			# of those environments.
-			# If envir=NULL, we now set it to .GlobalEnv so that the crawl function goes over all environments defined
-			# in the workspace (i.e. the global environment)
 			# Otherwise we recursively search just for the environments inside the given 'envir' environment. 
 		  if (length(env_names) == 0) {
 		    # Initialize env_full_names and env_addresses to an empty array, which will be updated below with
@@ -139,9 +168,6 @@ get_env_names = function(envir=NULL) {
 		    env_full_names = character(0)
 		    env_addresses = character(0)
 		  } else {
-		    if (is.null(envir)) {
-		      envir = .GlobalEnv
-		    }
 		    env_full_names = envnames:::unlist_with_names( tapply(env_names,
 		                                                          INDEX=names(env_names),  # This is the BY group of the analysis
 		                                                          FUN=envnames:::crawl_envs, c(), c(), envir) )
@@ -166,10 +192,10 @@ get_env_names = function(envir=NULL) {
 			# with environments and in particular is needed by obj_find() to know how to resolve the environment
 			# where an object is found from the environment name, whether using eval() for user-defined environments
 			# or as.environment() for system or package environments.
-			env_types = c(rep("user", length(env_full_names)), rep("system", length(env_addresses_packages)))
-			env_locations = c( names(env_full_names), rep(NA, length(env_addresses_packages)) )
-			env_addresses = c(env_addresses, env_addresses_packages)
-	    env_full_names = c(env_full_names, names(env_addresses_packages))
+			env_types = c(rep("user", length(env_full_names)), rep("system/package", length(env_addresses_packages)), rep("namespace", length(env_addresses_namespaces)))
+			env_locations = c( names(env_full_names), rep(NA, length(env_addresses_packages)), rep(NA, length(env_addresses_namespaces)) )
+			env_addresses = c(env_addresses, env_addresses_packages, env_addresses_namespaces)
+			env_full_names = c(env_full_names, names(env_addresses_packages), names(env_addresses_namespaces))
 			# Separate the root and the name from env_full_names
 			env_roots_and_names = sapply(env_full_names, FUN=envnames:::extract_last_member)
 			env_paths = unlist( env_roots_and_names["root",] )

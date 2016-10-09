@@ -17,8 +17,8 @@
 #' the environments in the workspace will not change. 
 #' See the @details for more information on its structure.
 #' 
-#' @param silent whether to run in silent mode. If FALSE, how the function crawls the different function
-#' environments is shown. Defaults to \code{TRUE}. 
+#' @param silent whether to run in silent mode. If FALSE, the calling chain is shown in an intuitive way.
+#' Defaults to \code{TRUE}. 
 #' 
 #' @return A data frame with the following columns:
 #' \itemize{
@@ -66,20 +66,9 @@ get_fun_calling_chain = function(n=NULL, envmap=NULL, silent=TRUE) {
 
 	# Iterate on the history of calling functions up to level n if n is not NULL
   while (!identical(env, globalenv())) {
-		# Get the address of the execution environment of the calling function at level n
-    env_address = get_obj_address(env, envir=NULL)
-			## NOTES:
-			## - No need to enclose 'env' in quote()
-			## - envir=NULL makes the environment 'env' be searched in the whole workspace
-			## (e.g. not only in the global environment for instance)
-
 		# Get the name of the enclosing environment of the calling function at level n
-		# It's important that we first try to retrieve the environment name using the built-in
-		# environmentName() function because the enclosing environment could be a package namespace
-		# and namespaces are not part of the search() environments... so they don't show up in the environment
-		# address-name pairs table created by get_env_names(). 
-		# This is in fact the case when using the wrapper get_fun_calling() to call get_fun_calling_chain()
-		# since the enclosing environment of get_fun_calling() is "namespace:envnames"!! 
+    # First try to retrieve the environment name with the built-in function environmentName()
+    # If this fails we then  call environment_name.
 		env_enclosing_name = environmentName(env_enclosing)
 		if (env_enclosing_name == "") {
 			env_enclosing_name = environment_name(env_enclosing, envmap=envmap)
@@ -93,12 +82,12 @@ get_fun_calling_chain = function(n=NULL, envmap=NULL, silent=TRUE) {
 		calling_fun_name = get_fun_name(nback+1)
 
 		# Show detailed info
-		if (!silent) {
-			cat("\n* nback:", nback, ", env_enclosing_name", env_enclosing_name, "\n")
-			cat("Address of calling environment at level", nback, ":", env_address, "\n")
-			cat("Name of enclosing environment of calling function at level", nback, ":", env_enclosing_name, "\n")
-			cat("Name of calling function at level", nback, ":", calling_fun_name, "\n")
-		}
+#		if (!silent) {
+#			cat("\n* nback:", nback, ", env_enclosing_name", env_enclosing_name, "\n")
+#			cat("Address of calling environment at level", nback, ":", envnames:::address(env), "\n")
+#			cat("Name of enclosing environment of calling function at level", nback, ":", env_enclosing_name, "\n")
+#			cat("Name of calling function at level", nback, ":", calling_fun_name, "\n")
+#		}
 
 		# Add the information on the calling function to the output data frame
 		envfun = paste(env_enclosing_name, "$", calling_fun_name, sep="")
@@ -113,12 +102,19 @@ get_fun_calling_chain = function(n=NULL, envmap=NULL, silent=TRUE) {
     env = parent.frame(nback+1)
     env_enclosing = parent.env(env)
   }
-	if (!silent && identical(env, globalenv())) {
-  	cat("Reached global environment\n")
-	}
+#	if (!silent && identical(env, globalenv())) {
+# 	cat("Reached global environment\n")
+#	}
 
 	# Returned data frame (either the full chain or just one entry)
 	if (is.null(n) || n <= 0) {
+		if (!silent) {
+			# Show the calling chain in an intuitive way
+			cat("Function calling chain:\n", paste(fun_calling_chain$envfun[order(fun_calling_chain$level, decreasing=TRUE)], collapse=" -> "), "\n")
+		}
+		# The calling chain is returned in reverse order so that the calling chain goes from top to bottom
+		fun_calling_chain = fun_calling_chain[order(fun_calling_chain$level, decreasing=TRUE), ]
+		rownames(fun_calling_chain) = 1:nrow(fun_calling_chain)
 		return(fun_calling_chain)
 	} else {
 		# Return just the information on the calling function n levels back from the function calling get_fun_calling_chain()

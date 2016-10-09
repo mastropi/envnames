@@ -82,7 +82,7 @@ environment_name <- function(env, envir=NULL, envmap=NULL, byaddress=TRUE, ignor
 
 	# Flavor of the environment functions... (for reference)
   #env_current = environment()
-  #env_parent = parent.env(env_current)
+  #env_parent = parent.env(env_current)   # this is the enclosure of the current execution environment which may be different from parent.frame()! In fact, in general parent.env() of the execution environment is the global environment...
   #env_calling = parent.frame()
 
   # Setup the address-name pairs of the environments defined in envir if the envmap variable is not passed
@@ -94,9 +94,8 @@ environment_name <- function(env, envir=NULL, envmap=NULL, byaddress=TRUE, ignor
 		# Variable used to store the indices of the envmap lookup table where the environment is found
 		indfound = numeric(0)
 
-		# Look for 'env' as an potential environment object in the address-name lookup table
-		# only when it is NOT given as a memory address
-		# (i.e. a string as in "<0x00000000119dba68>")
+		# Look for 'env' as a potential environment object in the address-name lookup table
+		# only when it is NOT given as a memory address (i.e. a string as in "<0x00000000119dba68>")
 		# If it's given as a memory address search directly for that memory address in the lookup table
 		# This special case is needed because get_obj_address() will return the memory address of variable
 		# 'env' and this is *not* what we want when 'env' is directly a memory address; we just want to

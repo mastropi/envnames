@@ -7,7 +7,15 @@ library(testthat)
 library(envnames)
 context("Environment names")
 
+# NOTE THE NEED TO RUN WITH with(globalenv()) BECAUSE THE OBJECTS ARE DEFINED IN THE GLOBAL ENVIRONMENT
+# AND NOT IN THE ENVIRONMENT DEFINED BY testthat.
+with(globalenv(), {
+
 # 1.- Prepare the workspace -----------------------------------------------
+# IMPORTANT: MAKE SURE THAT THE GLOBAL ENVIRONMENT IS CLEAN, WHICH MAY NOT BE THE CASE WHEN RUNNING
+# THE TESTS THROUGH testthat (e.g. using the Check tool in RStudio or calling devtools::test())
+rm(list=ls())
+
 # Create new environments
 # Environments in .GlobalEnv: Note the need to specifically require the environment to be created in .GlobalEnv
 # either by calling with() or assign() as shown below.
@@ -22,14 +30,14 @@ context("Environment names")
 # Note that function with_envvar() was originally part of the devtools package but is now part of
 # the withr package, which is "A set of functions to run code 'with' safely and temporarily
 # modified global state." (Ref: https://cran.r-project.org/web/packages/withr/withr.pdf)
-with(globalenv(), env1 <- new.env())
-with(globalenv(), env2 <- new.env())
+env1 <- new.env()
+env2 <- new.env()
 assign("env3", new.env(), envir=globalenv())
 assign("env_of_envs", new.env(), envir=globalenv())    # User-defined environment that will contain other environments
 # Environment inside a user-defined environment
 with(env_of_envs, env11 <- new.env()) # Environment defined inside environment \code{env_of_envs}
 # Environment that is a copy of another one
-with(globalenv(), e <- env1)
+e <- env1
 # Environment with the same name as another one in a different environment
 with(env_of_envs, env1 <- new.env())
 
@@ -51,6 +59,13 @@ get_env_names(envir=env_of_envs)
 
 
 # 3.- TEST! ---------------------------------------------------------------
+test_that("T0) the environment name of a named environment (e.g system or package environment) is correctly returned", {
+  # skip("not now")
+  # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
+  expected = "base"
+  expect_equal(environment_name(baseenv()), expected)
+})
+
 test_that("T1) the environment name is correctly returned when the environment variable is given as a variable (in all environments)", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
@@ -94,16 +109,29 @@ test_that("T7) the environment name of an object given as a string containing th
   expect_equal(environment_name(get_obj_address(globalenv()$env_of_envs$env11), envir=globalenv()$env_of_envs), "env11")
 })
 
-test_that("T11) standardized environment names (globalenv and baseenv)", {
+test_that("T10) standardized environment names (globalenv and baseenv)", {
   expect_equal(environment_name(globalenv()), "R_GlobalEnv")
   expect_equal(environment_name(baseenv()), "base")
 })
 
-test_that("T12) all environments matching the same memory address are returned when byaddress=TRUE", {
-  skip("*** FAILS WHEN RUN UNDER CHECK BUT DOESN'T FAIL WHEN RUN HERE! ***")
+test_that("T11) all environments matching the same memory address are returned when byaddress=TRUE", {
+  skip("*** FAILS WHEN RUN UNDER CHECK BUT DOESN'T FAIL WHEN RUN HERE OR WHEN TESTING THE PACKAGE! WHY??? ***")
   expected = c("e", "env_of_envs$env1", "env1")
   names(expected) = rep("R_GlobalEnv", 3)
   expect_equal(environment_name(env1, byaddress=TRUE), expected)
+})
+
+test_that("T21) the name of an environment defined inside a function is correctly returned", {
+  # test 1
+  expected = "envfun"
+  # Function inside which an environment is defined containing other environments
+  f = function() {
+    envfun = new.env()
+    with(envfun, e <- new.env())
+    environment_name(envfun, envir=sys.frame(sys.nframe()))
+  }
+  observed = f()
+  expect_equal(observed, expected)
 })
 
 # Extreme cases
@@ -114,4 +142,7 @@ test_that("T90) invalid 'env' variable returns NULL", {
 
 
 # 4.- Cleanup -------------------------------------------------------------
-with(globalenv(), rm(list=c("env1", "env2", "env3", "env_of_envs", "e")))
+rm(list=ls())
+
+})  # with(globalenv())
+

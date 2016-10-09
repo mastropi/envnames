@@ -157,6 +157,185 @@ extract_last_member = function(full_name) {
 	return(list(root=root, name=name))
 }
 
+#' Check whether a string corresponds to the name of an environment
+#' 
+#' The input string is checked as a valid environment name. The environment can be a named environment
+#' (system or package) or a user-defined environment.
+#' 
+#' @param x string to evaluate that may represent an environment
+#' @param envir environment where \code{x} should be evaluated.
+#'
+#' @return A list with two elements:
+#' \itemize{
+#' \item{\code{found}} whether the string contained in \code{x} is the name of an existing environment
+#' in the workspace
+#' \item{\code{env_name}} the name of the environment (after stripping out any system environments such
+#' as globalenv(), baseenv() or a package environment) (for instance "globalenv()$env$env1" is returned
+#' as "env$env1"), or NULL if no environment was found corresponding to the name given in \code{x}.
+#' }
+check_environment = function(x, envir) {
+  # Initialize the output variables
+  found = FALSE
+  env_name = NULL
+
+  # The check whether the string x is an environment name is done via an envmap lookup table computed
+  # on the whole workspace, but x is evaluated on the environment n+1 levels up, where n is the number
+  # of levels to go up from the calling environment.
+  # Note that we need to do all this and cannot simply check whether is.environment(x) is TRUE
+  # because x is a string!! (not an environment per se, only what the string refers to may be
+  # an environment).
+
+  # Get the address of the "presumed" environment
+  x_address = try( envnames:::address( eval(parse(text=x), envir=envir) ), silent=TRUE )
+  if (!inherits(x_address, "try-error")) {
+    # Search for the address in the envmap lookup table constructed for the whole workspace
+    # (note that we should create the table on the whole workspace because the object may be referred to
+    # as e.g. globalenv()$y or baseenv()$y or as.environment("package:envnames")$e, etc., and creating
+    # the lookup table for the calling environment (+n levels) would NOT include any packages in the lookup table)
+    envmap_all = get_env_names()
+    ind = which(envmap_all[,"address"] == x_address)
+    if (length(ind) > 0) {
+      env_name = envmap_all[ind, "pathname"] 
+      found = TRUE
+    }
+  }
+
+  return(list(found=found, env_name=env_name))
+}
+
+#' Check if an object name contains a valid environment path
+#' 
+#' Check if a string may represent a valid object name with full environment path to the object
+#' as in \code{globalenv()$env$x}. The string should \emph{not} end with \code{]} or \code{)} because
+#' that makes the whole expression an invalid name (e.g. \code{globalenv()$v[1]}).
+#' 
+#' Optionally a check of whether the path points to a valid environment inside a given environment
+#' is performed by calling \code{check_environment}.
+#' 
+#' @param x string to be checked.
+#' @param checkenv flag indicating whether the environment path should be checked for valid environment
+#' as well. Defaults to FALSE.
+#' @param envir environment where \code{x} should be evaluated when also checking the environment.
+#' Only used when \code{checkenv=TRUE}.
+#'
+#' @return A list containing the following elements:
+#' 
+#' When \code{checkenv=FALSE}:
+#' \itemize{
+#' \item{\code{ok}} boolean indicating whether the string may be a valid object name
+#' \item{\code{path}} path to the name
+#' \item{\code{name}} the name itself with no path.
+#' }
+#' 
+#' When \code{checkenv=TRUE} and when the string given in \code{x} is deemed to be a possible valid object,
+#' the following additional elements:
+#' \itemize{
+#' \item{\code{env_found}} flag indicating whether the string indicating the path to the object name
+#' referenced by \code{x} is the name of an existing environment in the workspace
+#' \item{\code{env_name}} the name of the environment (after stripping out any system environments such
+#' as globalenv(), baseenv() or a package environment) (for instance "globalenv()$env$env1" is returned
+#' as "env$env1"), or NULL if no environment is found corresponding to the path given in \code{x}.
+#' }
+#' 
+check_object_with_path = function(x, checkenv=FALSE, envir=NULL) {
+  # Outpu variables
+  ok = FALSE
+  x_root = NULL
+  x_name = NULL
+  check_path = list(env_found=FALSE, env_name=NULL)
+
+  # Check if the object name contains '$' separators (as in globalenv()$env1$x) but it does NOT end
+  # with "]" or ")" which would mean that it actually refers to an array
+  # or function and we should not consider it as a valid name (e.g. globalenv()$env1$v[1])
+  # (because it refers to something else, e.g. element 1 of an array)
+  x_name_ok = grep("\\$.*[^]|)]$", x)
+  if (length(x_name_ok) > 0) {
+    # Extract the presumed environment name from the expression (e.g. from "globalenv()$env1$x")
+    x_root_and_name = envnames:::extract_last_member(x)
+    x_root = x_root_and_name$root
+    x_name = x_root_and_name$name
+    ok = TRUE
+    
+    if (checkenv) {
+      # Check now whether x_root is a valid environment name
+      check_path = check_environment(x_root, envir)
+    }
+  }
+
+  if (checkenv) {
+    return(list(ok=ok, path=x_root, name=x_name, env_found=check_path$found, env_name=check_path$env_name))
+  } else {
+    return(list(ok=ok, path=x_root, name=x_name))
+  }
+}
+
+#' Check if an object exists in a given environment
+#' 
+#' Check if an object exists in a given environment or any parent environment from the given environment in
+#' the way that the \link{eval} function does it by default.
+#' 
+#' @param obj object to check.
+#' @param envir environment where its existence is checked.
+#' 
+#' @details
+#' If the object is not found in the \code{envir} environment it is searched in any parent environment
+#' of \code{envir}.
+#' 
+#' @return A list containing three elements:
+#' \itemize{
+#' \item{\code{found}} flag indicating whether the object was found
+#' \item{\code{eval}} result of the evaluation of \code{obj} either in \code{envir} or in a parent environment
+#' where it was found.
+#' \item{\code{address}} memory address of the object found.
+#' }
+check_object_exists = function(obj, envir) {
+  # The existence of the object is checked by trying to evaluate the object in the 'envir' environment
+  # IT IS IMPORTANT TO EVALUATE THE OBJECT AND NOT JUST TRY TO RETRIEVE ITS MEMORY ADDRESS
+  # BECAUSE IF THE OBJECT IS NULL, STILL A MEMORY ADDRESS WILL BE RETURNED!! (since 'NULL' has its own memory address)
+  obj_eval = try( eval(obj, envir=envir), silent=TRUE )
+  # Get the memory address as well to return to the outside world
+  obj_address = try( with(envir, envnames:::address(obj)), silent=TRUE )
+  if (!is.null(obj_eval) && !inherits(obj_address, "try-error")) {
+    found = TRUE
+  } else {
+    # Try evaluating the object without restricting it to 'envir'
+    # We would get here if the user e.g. called obj_find() using a with() statement but
+    # explicitly referring to e.g. the global environment as in:
+    #   with(env1, obj_find(globalenv()$env2$x))
+		# We implement this behaviour because if we run with(env1, globalenv()$env2$x)
+		# we will get the value of x inside the globalenv()$env2 environment.
+		obj_eval = try( eval(obj), silent=TRUE )
+    obj_address = try( envnames:::address(obj), silent=TRUE )
+    if (!is.null(obj_eval) && !inherits(obj_address, "try-error")) {
+      found = TRUE
+    } else {
+      # No more options to try at this point!
+      obj_eval = NULL
+      obj_address = NULL
+      found = FALSE
+    }
+  }
+
+  return(list(found=found, eval=obj_eval, address=obj_address))
+}
+
+#' Return the memory address of namespace environments
+#' 
+#' This function returns the memory address of all the namespace environments of the packages found
+#' in the \code{search()} path.
+#' 
+#' @return Array containing the namespace addresses as values and the package names as names (in the form
+#' of e.g. "package:base")
+get_namespace_addresses = function() {
+  unlist( sapply(search(), function(x) { 
+    if(length(grep("^package:", x)) > 0) {
+      namespace = getNamespace(gsub("^package:", "", x))
+      namespace_address = get_obj_address(namespace, envir=.GlobalEnv)
+      return(namespace_address)
+    }
+  }) )
+}
+
 #' Check whether a string is a memory address
 #' 
 #' Check whether an object represents a valid memory address. If the object does not exist or is not of the
@@ -239,7 +418,9 @@ unlist_with_names = function(alist) {
 
 	# Unlist the list into an array and add back the names of each list element as the array names 
 	arr = unlist(alist, use.names=FALSE)				# Unlist the list into an array and...
-	names(arr) = arr_names											# use the names to identify where each element came from in the original list.
+	if (!is.null(arr)) {  # It's important to check this because the array resulting from the call to unlist() above may be NULL (meaning that it is NOT an array!) (this may happen even if 'alist' is not null, for instance when all its elements are NULL!)
+	  names(arr) = arr_names										# Use the names to identify where each element came from in the original list.
+	}
 	
 	return(arr)
 }

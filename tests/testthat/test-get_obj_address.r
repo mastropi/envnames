@@ -7,27 +7,35 @@ library(testthat)
 library(envnames)
 context("Object addresses")
 
-
-# 1.- Prepare the workspace -----------------------------------------------
+# NOTE THE NEED TO RUN WITH with(globalenv()) BECAUSE THE OBJECTS ARE DEFINED IN THE GLOBAL ENVIRONMENT
+# AND NOT IN THE ENVIRONMENT DEFINED BY testthat.
 with(globalenv(), {
-  x <- 1
-  env1 <- new.env()
-  env_of_envs <- new.env()
-  env_of_envs$env11 <- new.env()
-  env_of_envs$env11$z <- 50
-  env1$x <- 3;
-  env1$y <- 2;
-  objects <- c("x", "y")
-  packages <- c(as.environment("package:stats"), as.environment(".GlobalEnv"))
-})
+  
+# 1.- Prepare the workspace -----------------------------------------------
+
+# IMPORTANT: MAKE SURE THAT THE GLOBAL ENVIRONMENT IS CLEAN, WHICH MAY NOT BE THE CASE WHEN RUNNING
+# THE TESTS THROUGH testthat (e.g. using the Check tool in RStudio or calling devtools::test())
+rm(list=ls())
+
+x <- 1
+env1 <- new.env()
+env_of_envs <- new.env()
+env_of_envs$env11 <- new.env()
+env_of_envs$env11$z <- 50
+env1$x <- 3;
+env1$y <- 2;
+objects <- c("x", "y")
+packages <- c(as.environment("package:stats"), as.environment(".GlobalEnv"))
 
 
 # 2.- TEST! ---------------------------------------------------------------
 test_that("T1) addresses of objects referenced through an environment (e.g. env1$x) are correctly returned", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
-  addresses <- sapply(globalenv()$objects, FUN=get_obj_address, envir=env1)
-  expect_equal(as.vector(addresses), c(envnames:::address(globalenv()$env1$x), envnames:::address(globalenv()$env1$y)))
+  addresses = sapply(globalenv()$objects, FUN=get_obj_address, envir=env1)
+  expected = c(envnames:::address(globalenv()$env1$x), envnames:::address(globalenv()$env1$y))
+  observed = as.vector(addresses)
+  expect_equal(observed, expected)
     ## Note: use as.vector(addresses) because o.w. the test fails because the names of the array elements do not match, but not the values
 })
 
@@ -67,22 +75,41 @@ test_that("T5) the address of objects passed as expressions in specified environ
   expect_equal(get_obj_address(globalenv()$objects[1], envir=globalenv()), envnames:::address(globalenv()$x))
 })
 
-test_that("T6) the address returned for an object referenced via its environment (as in env1$x) is the memory address of the object", {
+test_that("T6a) the address returned for an object referenced via its environment (as in env1$x) is the memory address of the object", {
   # skip ("not now")
   # browser()
-  expect_equal(get_obj_address(globalenv()$env1$x), envnames:::address(globalenv()$env1$x))
+  expected = envnames:::address(globalenv()$env1$x)
+  names(expected) = "env1"
+  observed = get_obj_address(globalenv()$env1$x)
+  expect_equal(observed, expected)
+})
+
+test_that("T6b) the address referenced with the full path from within another environment using the with() statement
+          is correctly returned (THIS IS QUITE TRICKY!!)", {
+  # skip ("not now")
+  expected = envnames:::address(globalenv()$env1$x)
+  names(expected) = "env1"
+  observed = with(env_of_envs, get_obj_address(globalenv()$env1$x))
+  expect_equal(observed, expected)
 })
 
 test_that("T7) the address returned for a non-existing object is NULL", {
   # skip ("not now")
   # browser()
+  # test 1
   expect_equal(get_obj_address("klajsdklfj"), NULL)
+  # test 2: inside an environment
+  expect_equal(get_obj_address(env1$dfsdf), NULL)
+  # test 3: now from a specified environment
+  expect_equal(get_obj_address(env1$dfsdf, envir=env1), NULL)
 })
 
-test_that("T8) the address returned for an object when the variable passed as environment of evaluation is not an environment, is NULL", {
+test_that("T8) the address returned for an object when the variable passed as environment of evaluation
+          is not an environment, is NULL, and the appropriate error message is shown", {
   # skip ("not now")
   # browser()
   expect_equal(get_obj_address(x, envir=globalenv()$env1$x), NULL)
+  expect_message(get_obj_address(x, envir=globalenv()$env1$x), "*'3' is not a valid environment*")
 })
 
 test_that("T9) the address returned for an object stored in a deeply nested environment is correct", {
@@ -100,4 +127,6 @@ test_that("T10) the address of objects passed as memory address is NULL", {
 
 
 # 3.- Cleanup -------------------------------------------------------------
-with(globalenv(), rm(list=c("env1", "env_of_envs", "objects", "packages")))
+rm(list=ls())
+
+})  # with(globalenv())

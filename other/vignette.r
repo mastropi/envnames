@@ -1,3 +1,9 @@
+# Vignettes should be placed inside directory vignettes
+# Ref: R for Developers course
+
+# To create the vignette Rmd document:
+use_vignette("QuickStart", pkg="../envnames")
+# Ref: EARL London 2015, workshop on Package Development
 
  
 # EXAMPLE TO SHOW IN THE VIGNETTE... 

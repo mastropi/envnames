@@ -84,46 +84,69 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 			}
 			
 			if (is.null(obj_address)) {
-				#--------------- 2. Try to retrieve the object address after evaluating the object --------
-				# This is the case when e.g. obj is an expression as in 'objects[1]'
-				obj_eval <- try(eval(obj, envir=envir), silent=TRUE)
-				if (inherits(obj_eval, "try-error")) {
-					# Note that we do NOT show any messages when the object is not found, because the object name cannot
-					# always be obtained by deparse(substitute(obj)). In order to get the actual name we need to go back
-					# to the n-th calling function and this is a little long to do --see how I did it in get_obj_name()
-					# (using a WHILE loop)
-					#cat("Object '", deparse(substitute(obj)), "' does not exist in environment '", deparse(substitute(envir)), "'\n", sep="")
-					obj_address = NULL
-				} else {
-					#------------- 2a.- Check if the evaluated object above is an environment ---------------
-					if (is.environment(obj_eval)) {
-						# When the evaluated object is an evironment we should get the address directly
-						# (i.e. without getting the evaluated object's name first, because get_obj_name() on an environment object
-						# returns "environment" which is not useful for the environment address retrieval
-						obj_address = envnames:::address(obj_eval)
-					} else {
-						#----------- 2b.- Do the same as step 1 but now for the evaluated object --------------
-						# This case is for instance when obj_eval = "x" and "x" may be the name of an object in the given environment 
-						# Do the same we tried in step 1 but now for the evaluated object
-						obj_name = get_obj_name(obj_eval, n=n, silent=TRUE)
-						if (!is.null(obj_name) && obj_name != "" && exists(obj_name, envir=envir, inherits=FALSE)) {
-							obj_address = envnames:::address(eval(as.name(obj_name), envir=envir))
-						} else {
-							obj_address = NULL
-						}
-					}
-				}
+			  #---- 2.- Check if 'obj' was given as an expression that includes the environment path -----
+			  # This is the case when e.g. obj = env1$x, where env1 is an environment
+			  # To check this we first check if the path to the object name is an environment and if so
+			  # simply try to get the object's address directly
+			  # NOTE that we need to test that the path is actually an environment because it may be another
+			  # object (e.g. a list) and in that case the address of object is meaningless because it is
+			  # different for each run of the get_obj_address() function! (e.g. if we call get_obj_address(alist$x))
+			  obj_name_check = check_object_with_path(obj_name, checkenv=TRUE)
+			  if (obj_name_check$ok && obj_name_check$env_found) {
+          # Check if the object exists in the 'envir_actual' environment or any parent environment
+			    check_obj_exist = check_object_exists(obj, envir)
+			    if (check_obj_exist$found) {
+			      # Get the address of the object found
+			      obj_address = check_obj_exist$address
+			    }
+        }
+
+			  if (is.null(obj_address)) {
+			    # Still the object's address could not be retrieved...
+
+			    #------------ 3. Try to retrieve the object's address after evaluating the object --------
+			    # This is the case when e.g. obj is an expression as in 'objects[1]'
+			    obj_eval <- try(eval(obj, envir=envir), silent=TRUE)
+			    if (inherits(obj_eval, "try-error")) {
+			      # Note that we do NOT show any messages when the object is not found, because the object name cannot
+			      # always be obtained by deparse(substitute(obj)). In order to get the actual name we need to go back
+			      # to the n-th calling function and this is a little long to do --see how I did it in get_obj_name()
+			      # (using a WHILE loop)
+			      #cat("Object '", deparse(substitute(obj)), "' does not exist in environment '", deparse(substitute(envir)), "'\n", sep="")
+			      obj_address = NULL
+			    } else {
+			      #------------- 3a.- Check if the evaluated object above is an environment ---------------
+			      if (is.environment(obj_eval)) {
+			        # When the evaluated object is an evironment we should get the address directly
+			        # (i.e. without getting the evaluated object's name first, because get_obj_name() on an environment object
+			        # returns "environment" which is not useful for the environment address retrieval
+			        obj_address = envnames:::address(obj_eval)
+			      } else {
+			        #----------- 2b.- Do the same as step 1 but now for the evaluated object --------------
+			        # This case is for instance when obj = alist$z whose value obj_eval = "x"
+			        # Since "x" may be the name of an object in the given environment, we search for "x" now.
+			        # Do the same we tried in step 1 but now for the evaluated object
+			        obj_name = get_obj_name(obj_eval, n=n, silent=TRUE)
+			        if (!is.null(obj_name) && obj_name != "" && exists(obj_name, envir=envir, inherits=FALSE)) {
+			          obj_address = envnames:::address(eval(as.name(obj_name), envir=envir))
+			        } else {
+			          obj_address = NULL
+			        }
+			      }
+			    }
+			  }
 			}
-			
+
 			return(obj_address)
 	}
 
 	# Look for the object inside the environment specified in envir or in the whole workspace when envir=NULL
 	if (is.null(envir)) {
-		# Get the name of the environments where the object is found
-		envir_names = obj_find(obj, n=n+1)	# n+1 means that 'obj' should be resolved 1 level up from the n levels
-																				# passed to get_obj_address(), since we are now going into one level deeper
-																				# (by calling obj_find())
+		# Look for the object in the whole workspace (globalsearch=TRUE) and
+	  # get the name of the environments where the object is found
+		envir_names = obj_find(obj, globalsearch=TRUE, n=n+1)	# n+1 means that 'obj' should be resolved 1 level up from the n levels
+																				                  # passed to get_obj_address(), since we are now going into one level deeper
+																				                  # (by calling obj_find())
 
 		if (is.null(envir_names)) {
 			# => The object was not found anywhere
@@ -160,9 +183,9 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 			# Iterate on the environments found
 			obj_addresses = character(0)
 			for (envir_name in envir_names) {
-				# Convert env_name to an environment as follows:
-				# a) check that envir_name is not NA (which happens when the object is a system or package environment
-				# (because their path information is missing and their location is set to NA in the envmap table
+				# Convert envir_name to an environment as follows:
+				# a) check that envir_name is not NA (which happens when the object is a system or package environment,
+				# because their path information is missing and their location is set to NA in the envmap table
 				# created by get_env_names())
 				# => get their address directly by calling get_obj_address0()
 				# Note that in this case we could still have other elements returned in envir_names above since
@@ -177,14 +200,18 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 				# do exist since they were returned by the call to obj_find() above.
 				#
 				if (is.na(envir_name)) {
-					# System or package environment
-					# Note that we don't simply call envnames:::address(obj) because obj may be given as an expression (e.g. globalenv())
-					# Note also that system and package environments are accessible through the search() path and that's why we use
-					# envir=.GlobalEnv in this case. In addition note that when the envir parameter is not NULL
-					# we don't even get to this point since these statements are part of the block 'if (is.null(envir))'. 
+					# This means that 'obj' is a system or package environment
+					# Note that:
+				  # - we don't simply call envnames:::address(obj) because obj may be given as an expression (e.g. globalenv())
+					# - system and package environments are accessible through the search() path and that's why we use
+					# envir=.GlobalEnv in this case.
+				  # - setting envir=.GlobalEnv is not a problem of overriding the 'envir' parameter because
+				  # we don't even get to this point when the envir parameter is set to a particular environment
+				  # since these statements are part of the block 'if (is.null(envir))'. 
 					obj_addresses = c(obj_addresses, get_obj_address0(obj, envir=.GlobalEnv, n=n+1))
 				} else {
-					# User-defined environment
+					# Check whether the environment is user-defined or a named environment (system or package)
+				  # First try to see if we can resolve it as a system or package environment with as.environment()...
 					e = try( as.environment(envnames:::destandardize_env_name(envir_name)), silent=TRUE )
 					if (inherits(e, "try-error")) {
 						# It's a user-defined environment
@@ -203,6 +230,6 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 	} else {
 		obj_addresses = get_obj_address0(obj, envir=envir, n=n+1)	# n+1 means that we want to resolve 'obj' 1 level up from the n levels passed to get_obj_address(), since we are now going into one level deeper (by calling get_obj_address0())
 	}
-	
+
 	return(obj_addresses)
 }
