@@ -129,7 +129,7 @@ get_env_names = function(envir=NULL) {
 														stringsAsFactors=FALSE)
 												
 		# Continue processing if either:
-		# - any environments were found or
+		# - at least one environment was found or
 		# - the whole workspace is searched for in which case we should include all system, package, and
 		# namespace environments in the lookup table.
 		# (Note that this is the caes when the user passed either envir=NULL or

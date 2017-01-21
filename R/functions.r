@@ -26,6 +26,8 @@
 #' @return An array containing the path to each environment found inside the \code{envir} environment
 #' and its sub-environments. This array is concatenated to whatever paths are already listed in the
 #' \code{env_path_list} object passed to the function.
+#' 
+#' @keywords internal
 crawl_envs = function(env_names, path, env_path_list, envir=.GlobalEnv) {
   # Before going through the different environments in env_names, add the current path to the environment list
   # (because we need to keep all the nodes of the environments tree, not only the leaves of the tree)
@@ -77,6 +79,8 @@ crawl_envs = function(env_names, path, env_path_list, envir=.GlobalEnv) {
 #' @return Either an updated \code{env_path_list} with the environments found so far in the environments tree
 #' or TRUE, which indicates that a leaf in the environments tree found inside the \code{envir} environment
 #' has been reached.
+#' 
+#' @keywords internal
 get_envs = function(env_name, path, env_path_list, envir=.GlobalEnv) {
 	# Update the path array by adding the name of the currently analyzed environment
 	path_to_here = c(path, env_name)
@@ -138,6 +142,8 @@ get_envs = function(env_name, path, env_path_list, envir=.GlobalEnv) {
 #' and \code{name}, containing the last name in the object expression.
 #' The \code{root} is empty when there is no \code{$} in the input string.
 #' Ex: \code{extract_last_member("obj$x$y")} returns \code{list(root="obj$x", name="y")}.
+#' 
+#' @keywords internal
 extract_last_member = function(full_name) {
 	if (!is.character(full_name)) {
 		return(NULL)
@@ -173,6 +179,8 @@ extract_last_member = function(full_name) {
 #' as globalenv(), baseenv() or a package environment) (for instance "globalenv()$env$env1" is returned
 #' as "env$env1"), or NULL if no environment was found corresponding to the name given in \code{x}.
 #' }
+#' 
+#' @keywords internal
 check_environment = function(x, envir) {
   # Initialize the output variables
   found = FALSE
@@ -237,6 +245,7 @@ check_environment = function(x, envir) {
 #' as "env$env1"), or NULL if no environment is found corresponding to the path given in \code{x}.
 #' }
 #' 
+#' @keywords internal
 check_object_with_path = function(x, checkenv=FALSE, envir=NULL) {
   # Outpu variables
   ok = FALSE
@@ -288,6 +297,8 @@ check_object_with_path = function(x, checkenv=FALSE, envir=NULL) {
 #' where it was found.
 #' \item{\code{address}} memory address of the object found.
 #' }
+#' 
+#' @keywords internal
 check_object_exists = function(obj, envir) {
   # The existence of the object is checked by trying to evaluate the object in the 'envir' environment
   # IT IS IMPORTANT TO EVALUATE THE OBJECT AND NOT JUST TRY TO RETRIEVE ITS MEMORY ADDRESS
@@ -326,6 +337,8 @@ check_object_exists = function(obj, envir) {
 #' 
 #' @return Array containing the namespace addresses as values and the package names as names (in the form
 #' of e.g. "package:base")
+#' 
+#' @keywords internal
 get_namespace_addresses = function() {
   unlist( sapply(search(), function(x) { 
     if(length(grep("^package:", x)) > 0) {
@@ -343,6 +356,8 @@ get_namespace_addresses = function() {
 #' 
 #' @param x object to check.
 #' @return boolean indicating whether the given object represents a valid memory address. 
+#' 
+#' @keywords internal
 is_memory_address = function(x) {
 	result = FALSE
 
@@ -376,6 +391,8 @@ is_memory_address = function(x) {
 #'
 #' @return The name of the environment, where the global environment is represented as "R_GlobalEnv" and the
 #' base environment is shown as "base".
+#' 
+#' @keywords internal
 standardize_env_name = function(env_name) {
 	# Use "R_GlobalEnv" for the global environment and "base" for the base environment
 	# to be consistent with the output of environmentName()
@@ -394,6 +411,8 @@ standardize_env_name = function(env_name) {
 #'
 #' @return The name of the environment, where the global environment is represented as ".GlobalEnv" and the
 #' base environment is represented as "package:base".
+#' 
+#' @keywords internal
 destandardize_env_name = function(env_name) {
 	# Use "R_GlobalEnv" for the global environment and "base" for the base environment
 	# to be consistent with the output of environmentName()
@@ -411,6 +430,8 @@ destandardize_env_name = function(env_name) {
 #' @param alist list to unlist.
 #' 
 #' @return Whenever possible, an array whose names attribute is set to the names of the elements of the list.
+#' 
+#' @keywords internal
 unlist_with_names = function(alist) {
 	# Get the lengths ana names of each list element
 	lengths = sapply(alist, FUN=length)					# Number of elements in each list element

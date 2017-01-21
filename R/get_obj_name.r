@@ -116,7 +116,15 @@ get_obj_name = function(obj, n=0, silent=FALSE) {
 
 	# Get the object name (i.e. "x" either if obj = x (the variable x) or obj = "x" (the string "x"))
 	# by evaluating the deparse(substitute()) expression in the environment of the calling function n levels up.
+	# --> Note that I set the warning level option "warn" to -1 so that no warning message is shown when the
+	# object is not found. Otherwise we would get the message "restarted interrupted promise evaluation"
+	# which has to do with the program having tried already to evaluate the object before (namely
+	# in the WHILE loop above) unsuccesfully.
+	# Ref: http://stackoverflow.com/questions/20596902/r-avoiding-restarting-interrupted-promise-evaluation-warning
+	option_warn = options("warn")$warn
+	options(warn=-1)
 	obj_parent_name = eval(expr, envir=parent.frame(n+1))
+  options(warn=option_warn)
 
 	# Check if obj_parent was given as a variable name or as a string
 	# This is checked by looking for starting and ending double quotes by looking for '\"'.

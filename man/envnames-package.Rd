@@ -24,7 +24,10 @@ The package currently contains 8 visible functions. Following is a guideline on 
 
 Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 }
-\references{N/A}
+\references{
+Motivation for developing this package:
+\link{https://stat.ethz.ch/pipermail/r-help/2010-July/245646.html}
+}
 \keyword{ package }
 \keyword{ environment }
 \seealso{ \code{\link{environmentName} } in the base package for the built-in function that retrieves environment names of packages.}
@@ -38,7 +41,6 @@ env_of_envs = new.env()               # User-defined environment that contains o
 with(env_of_envs, env11 <- new.env()) # Environment defined inside environment \code{env_of_envs}
 
 # Retrieve the environment name
-# Note the use of quote() to enclose the environment variable
 environment_name(env1)                       # "env1"
 environment_name(env3)                       # "env3"
 environment_name(env9)                       # NULL (env9 does not exist)

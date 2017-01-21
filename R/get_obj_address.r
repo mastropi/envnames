@@ -152,7 +152,8 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 			# => The object was not found anywhere
 			# BUT check now if obj has already a valid and sensible memory address.
 			# This is the case when e.g. obj = globalenv()$env1$x
-			# which is not considered a valid object name (by get_obj_name() due to the requirements by parse())
+			# which is not considered a valid object name (by get_obj_name() --which is called by obj_find() above--
+		  # due to the requirements by parse()).
 			# NOTE HOWEVER that if, in the above example, 'globalenv()$env1$x' exists and is a scalar and 'obj' is
 			# 'globalenv()$env1$x[2]' (i.e. an out of range reference to x which yields NA) WE STILL GET A MEMORY ADDRESS
 			# (the memory address allocated to NA I presume) but this memory address is meaningless, as it has nothing
@@ -161,15 +162,26 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 		
 			# Now try to evaluate the object... this is to test if its evaluation gives something sensible
 			# before making us retrieve its memory address.
+		  # --> Note that I set the warning level option "warn" to -1 so that no warning message is shown when the
+		  # object is not found. Otherwise we would get the message "restarted interrupted promise evaluation"
+		  # which has to do with the program having tried already to evaluate the object before (namely
+		  # in get_obj_name() through the obj_find() call above) unsuccesfully.
+		  # Ref: http://stackoverflow.com/questions/20596902/r-avoiding-restarting-interrupted-promise-evaluation-warning
+		  option_warn = options("warn")$warn
+		  options(warn=-1)
 			obj_eval = try( eval(obj, envir=.GlobalEnv), silent=TRUE )
+			options(warn=option_warn)
 			# Now check that the evaluated result is not the same as the object itself meaning that the object
 			# is not just a simple string like "3" or "3aaddd", or a memory address given as a string, etc.
 			# in which case we do NOT want to retrieve the memory address because it is meaningless.
-			# (this check is done by the comparison of deparse(substitute(obj)) with obj_eval whose vaules are different
-			# --after stripping any additional quotes from deparse(substitute())-- only in non-trivial cases
-			# (as the ones that we want to avoid just mentioned))
+			# We would fall into this situation for example when 'obj' is v[1], i.e. an expression that gives another
+			# object (in this case the content of element 1 of array v)
+			# (this check is done by comparing deparse(substitute(obj)) with obj_eval whose values are different
+			# --after stripping any additional quotes from deparse(substitute()) as done by the gsub() function--
+			# only in non-trivial cases (where "trivial" means the cases that just mentioned above "3", "3aaddd", etc.))
 			if (!inherits(obj_eval, "try-error") &&
 					!is.null(obj_eval) &&
+					!is.environment(obj_eval) &&
 					gsub("\"", "", deparse(substitute(obj))) != obj_eval) {
 				# This means there is a chance that the object is not simply a string like "x" or a number like 3, etc.
 				obj_addresses = try( envnames:::address(obj), silent=TRUE )

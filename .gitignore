@@ -3,3 +3,4 @@
 .RData
 *.o
 *.dll
+inst/doc
