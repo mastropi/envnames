@@ -2,22 +2,21 @@ Package: envnames
 Type: Package
 Title: Track user-defined environment names
 Version: 0.3.0
-Date: 2016-10-04
+Date: 2017-01-22
 Author: Daniel Mastropietro
 Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 Description: A set of functions to keep track of user-defined
-    environment names which cannot be retrieved with the base function \code{environmentName()}.
-    The main function for this purpose is \code{environment_name()} which returns the name of the given
+    environment names which cannot be retrieved with the built-in function `environmentName`.
+    The main function for this purpose is `environment_name` which returns the name of the given
     environment.
-    The package also provides additional functionality such as:
-    \itemize{
-    \item A function (\code{obj_find()}) to search for objects which extends the functionality of \code{exists()}
-    and \code{find()} in that objects are searched also within all user-defined environments.
-    \item An easy way (using \code{get_fun_calling_chain()}) to get the stack of calling functions, compared to the
-    currently existing function \code(sys.call()).
-    \item A function (\code{get_obj_address()}) to return the memory address of an object.
-    \item A function (\code{get_env_names()}) that creates a table of environment names and their memory addresses
-    (used internally by \code{environment_name()} to return the names of user-defined environments).
+    The package also provides additional functionality such as:  
+    - A function (`obj_find`) to search for objects which extends the functionality of `exists`
+    and `find` in that objects are searched also within all user-defined environments.  
+    - An easy way (using `get_fun_calling_chain` to get the stack of calling functions, compared to the
+    built-in function `sys.call`.  
+    - A function (`get_obj_address`) to return the memory address of an object.  
+    - A function (`get_env_names`) that creates a table of environment names and their memory addresses
+    (used internally by `environment_name` to return the names of user-defined environments).
     }
 License: GPL
 Suggests: knitr, rmarkdown, testthat

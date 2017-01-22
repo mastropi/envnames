@@ -52,7 +52,8 @@ with(env1,
 test_that("T1) the function calling chain with several functions in the chain is correctly created", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
-  expected = data.frame(level=as.character(c(2, 1, 0)), fun=c("f", "g", "h"), env=c("env1", "env2", "R_GlobalEnv"), envfun=c("env1$f", "env2$g", "R_GlobalEnv$h"), stringsAsFactors=FALSE)
+  expected = data.frame(fun=c("h", "g", "f"), env=c("R_GlobalEnv", "env2", "env1"), envfun=c("R_GlobalEnv$h", "env2$g", "env1$f"), stringsAsFactors=FALSE)
+  rownames(expected) = 1:nrow(expected) - 1
   observed = with(globalenv(), env1$f())   # NOTE: We could also use globalenv()$env1$f() (although initially it did not work)
   expect_equal(observed, expected)
 })
@@ -60,7 +61,8 @@ test_that("T1) the function calling chain with several functions in the chain is
 test_that("T2) the function calling chain when the calling function is defined in an environment nested within
           a *package* environment is correctly created", {
   skip("still to complete")
-  expected = data.frame(level=character(0), fun=character(0), env=character(0), envfun=character(0), stringsAsFactors=FALSE)
+  expected = data.frame(fun=character(0), env=character(0), envfun=character(0), stringsAsFactors=FALSE)
+  rownames(expected) = 1:nrow(expected) - 1
   observed = with(envnames:::env_test, f())
   expect_equal(observed, expected)
 })

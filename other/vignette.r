@@ -19,18 +19,24 @@ h <- function(x, silent=TRUE) {
   # Check if calling function is env1$f or env2$f
   if (fun_calling == "env1$f") { x = x + 1 }
   else if (fun_calling == "env2$f") { x = x + 2 }
+
   
-  cat("sys.call:\n")
-  print(sys.call(-1))
-  cat("str\n")
-  print(str(sys.call(-1)))
-  #print(deparse(sys.call(1)))
-  cat("function name:", gsub(pattern="^([A-Za-z0-9]+)(\\({1})(.*)(\\){1})$",replacement="\\1",x=deparse(sys.call(-1))), "\n")
-    ## Ref: http://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine
-  print(sapply(sys.calls(), "[[", 1)[[2]])
-  print(class(sapply(sys.calls(), "[[", 1)[[2]]))
-  # if (grep("env1$f", sys.call(sys.parent(1)))) { x = x + 1 }
-  # else if (grep("env2$f", sys.call(sys.parent(1)))) { x = x + 2 }
+  # Do the same using sys.call(): much more complicated!
+  # cat("Returned value by sys.call:\n")
+  #print(sys.call(-1))
+  # cat("\tas a string\n")
+  #print(str(sys.call(-1)))
+  # print(deparse(sys.call(1)))
+  # Extract the name of the calling function (very complicated!!)
+  fun_calling_syscall = gsub(pattern="^([A-Za-z0-9]+)(\\({1})(.*)(\\){1})$",replacement="\\1",x=deparse(sys.call(-1)))
+  ## Ref: http://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine
+  #print(sapply(sys.calls(), "[[", 1)[[2]])
+  #print(class(sapply(sys.calls(), "[[", 1)[[2]]))
+  # The following apparently doesn't work: I get the error in grep(): "argument is of length 0"
+  #if (grep("env1$f", sys.call(sys.parent(1)))) { x = x + 1 }
+  #else if (grep("env2$f", sys.call(sys.parent(1)))) { x = x + 2 }
+  if (fun_calling_syscall == "env1$f") { x = x + 1 }
+  else if (fun_calling_syscall == "env2$f") { x = x + 2 }
 
   if (!silent) {
     # Show calling environment without using envnames package (i.e. using environmentName()) and using envnames::get_fun_calling()
