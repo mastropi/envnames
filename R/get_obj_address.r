@@ -106,7 +106,15 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 
 			    #------------ 3. Try to retrieve the object's address after evaluating the object --------
 			    # This is the case when e.g. obj is an expression as in 'objects[1]'
+			    # Note that we set the warn option to -1 (i.e. remove warnings) in order to
+			    # avoid the warning message "restarting interrupted promise evaluation"
+			    # when the obj object does not exist. This happens when the program already
+			    # tried to evaluate the object unsuccessfully.
+			    # See for more info: http://stackoverflow.com/questions/20596902/r-avoiding-restarting-interrupted-promise-evaluation-warning
+			    option_warn = options("warn")$warn
+			    options(warn=-1)
 			    obj_eval <- try(eval(obj, envir=envir), silent=TRUE)
+			    options(warn=option_warn)
 			    if (inherits(obj_eval, "try-error")) {
 			      # Note that we do NOT show any messages when the object is not found, because the object name cannot
 			      # always be obtained by deparse(substitute(obj)). In order to get the actual name we need to go back

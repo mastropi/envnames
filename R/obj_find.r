@@ -313,7 +313,7 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 		  # exists somewhere and we would be looking for it whereas that has nothing to do with the original request!)
 		  # - however, if obj = alist$v and alist$v resolves to a variable name, say "x", then we would like to
 		  # look for the object called "x". This is done in step 4 below.
-		  obj_with_path = check_object_with_path(obj_name, envir, checkenv=TRUE)
+		  obj_with_path = envnames:::check_object_with_path(obj_name, envir, checkenv=TRUE)
 		  if (obj_with_path$ok && obj_with_path$env_found) {
 		    # Check if the object can be resolved in the 'envir' environment (where the search for the object
 		    # is being carried out) or in any parent environment.
@@ -355,7 +355,15 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 		    # Note that the object is evaluated in the environment n levels up from the current environment
 		    # (this is the meaning of 'n', i.e. how many levels up should 'obj' be evaluated)
 		    # or in any parent environment until it is found.
+		    # Note also that we set the warn option to -1 (i.e. remove warnings) in order to
+		    # avoid the warning message "restarting interrupted promise evaluation"
+		    # when the obj object does not exist. This happens when the program already
+		    # tried to evaluate the object unsuccessfully.
+		    # See for more info: http://stackoverflow.com/questions/20596902/r-avoiding-restarting-interrupted-promise-evaluation-warning
+		    option_warn = options("warn")$warn
+		    options(warn=-1)
 		    obj_eval <- try(eval(obj, envir=parent.frame(n+1)), silent=TRUE)
+		    options(warn=option_warn)
 		    if (!inherits(obj_eval, "try-error")) {
 		      if (is.list(obj_eval) && length(obj_eval) == 1) {
 		        # Extract the single element of the list as obj_eval (this is the case for example when

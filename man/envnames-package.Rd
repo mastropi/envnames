@@ -5,18 +5,18 @@
 \title{Track user-defined environment names}
 \description{The main goal of this package is to overcome the limitation of the built-in \code{\link{environmentName}} function of the base package which cannot retrieve the name of an environment unless it is a package or the global environment.
 
-The envnames package solves this problem by creating a lookup table that maps environment names to their memory addresses. Using this lookup table, it is possible to retrieve the name of any environment where an object resides or, from within a function, to retrieve the calling stack showing the function names and the environment names where they reside. The latter can be done with just a function call, i.e. in a much easier way than using the R function sys.call().
+The envnames package solves this problem by creating a lookup table that maps environment names to their memory addresses. Using this lookup table, it is possible to retrieve the name of any environment where an object resides or, from within a function, to retrieve the calling stack showing the function names and their enclosing environment name, i.e. the environment where the functions have been defined. The latter can be done with just a function call, i.e. in a much easier way than using the R function sys.call().
 
-All function in this package follow the underscore_separated and all-lower-case naming convention (e.g. \code{environment_name()})
+All functions in this package follow the underscore-separated and all-lower-case naming convention (e.g. \code{environment_name()})
 }
 \details{
 The package currently contains 8 visible functions. Following is a guideline on how to use the package to keep track of user-defined environment names and retrieve the calling functions stack from within a function:
 
-1) Use \link{environment_name} to retrieve the name of an environment created with \code{\link{new.env}}.
+1) Use \code{\link{environment_name}} to retrieve the name of an environment created with \code{\link{new.env}}.
 
 2) Use \code{\link{obj_find}} to find the environments where a given object is defined.
 
-3) Use \code{\link{get_fun_calling}(n)} from within a function to retrieve the name of the calling function \code{n} levels up in the calling stack together with the environment name where they reside.
+3) Use \code{\link{get_fun_calling}(n)} from within a function to retrieve the name of the calling function \code{n} levels up in the calling stack together with their enclosing environment name.
 
 4) Use \code{\link{get_fun_calling_chain}} from within a function to get the calling functions stack.
 }
