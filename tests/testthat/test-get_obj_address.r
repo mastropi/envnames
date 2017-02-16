@@ -125,6 +125,14 @@ test_that("T10) the address of objects passed as memory address is NULL", {
   expect_equal(get_obj_address("<000000000C330188>"), NULL)
 })
 
+#---------------------------------- Extreme cases -----------------------------------
+test_that("T90) the address of NA or NULL is NULL", {
+  # skip ("not now")
+  # browser()
+  expect_equal(get_obj_address(NA), NULL)
+  expect_equal(get_obj_address(NULL), NULL)
+})
+#---------------------------------- Extreme cases -----------------------------------
 
 # 3.- Cleanup -------------------------------------------------------------
 rm(list=ls())

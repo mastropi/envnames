@@ -23,7 +23,12 @@ with(env_of_envs, { env2 <- new.env(); zz <- 6; env2$zz <- 7 })
 env1$x <- 3
 y = "x"
 zz = 44
+yy = "zz"
+# Array of variable NAMES
 v = c("x", "y", "z")
+# Array of variable SYMBOLS (which is actually stored as a list by R!)
+vquote = c(quote(x), quote(y), quote(z))
+# A list of mixed variables
 alist = list(z="x", v="env_of_envs$zz", u=2)
 
 
@@ -137,15 +142,26 @@ test_that("T7a) if object v exists in the global environment and also in another
   expect_equal(observed, expected)
 })
 
-test_that("T7b) an object referenced by another variable (e.g. y = \"x\") should be passed with quote(as.name())", {
+test_that("T7b) an object referenced by another variable (e.g. y = \"x\") is found (WITHOUT needing to enclose as.name() in quote())", {
   # skip("not now")
-  # Correct call
-  expected = "env1"
-  observed = obj_find(quote(as.name(y)))
+  # Case when the symbol referenced by 'y' exists in the calling environment
+  expected = c("env_of_envs", "env_of_envs$env2", "R_GlobalEnv")
+  observed = obj_find(as.name(yy))
   expect_equal(observed, expected)
-  # Incorrect call: not enclosing in quote() returns NULL
-  expected = NULL
+  # Case when the symbol referenced by 'y' does NOT exist but exists in another environment
+  expected = "env1"
   observed = obj_find(as.name(y))
+  expect_equal(observed, expected)
+})
+
+test_that("T7c) obj_find() can be called within sapply() on an array of object names or object symbols (which is actually a list)", {
+  # Test 1
+  expected = list(x="env1", y="R_GlobalEnv", z=NULL)
+  observed = sapply(v, obj_find)
+  expect_equal(observed, expected)
+  # Test 2
+  expected = list("env1", "R_GlobalEnv", NULL)
+  observed = sapply(vquote, obj_find)
   expect_equal(observed, expected)
 })
 
@@ -273,7 +289,7 @@ test_that("T90) a non-existing object is not found and no error is raised", {
   expect_equal(observed, expected)
 })
 
-test_that("T90) using get() on a variable that refers to a non existing objects returns NULL", {
+test_that("T91) using get() on a variable that refers to a non existing objects returns NULL", {
   # skip("not now")
   # test 1
   expected = NULL
@@ -286,6 +302,12 @@ test_that("T90) using get() on a variable that refers to a non existing objects 
   # test 3
   expected = NULL
   observed = obj_find(get(y), envir=env1)    # NULL because get() is evaluated in the global environment where x does not exist
+  expect_equal(observed, expected)
+})
+
+test_that("T92) looking for 'NA' returns NULL", {
+  expected = NULL
+  observed = obj_find(NA)
   expect_equal(observed, expected)
 })
 #--------------------- Searches for non-existent objects ------------------

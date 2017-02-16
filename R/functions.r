@@ -379,6 +379,15 @@ is_memory_address = function(x) {
 	return(result)
 }
 
+#' Check whether an object contains a valid logical value
+#' 
+#' @param x object to check. A scalar is assumed.
+#' @return boolean indicating whether the scalar object contains a valid logical value (i.e. TRUE or FALSE)
+#' and is not NA nor NULL, and has positive length.
+is_logical = function(x) {
+  return(!is.na(x) && !is.null(x) && is.logical(x) && length(x) > 0)
+}
+
 #' Standardize the name of an environment
 #' 
 #' This function standardizes the name of an environment so that environment names are consistent

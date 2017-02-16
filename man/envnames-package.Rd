@@ -7,7 +7,8 @@
 
 The envnames package solves this problem by creating a lookup table that maps environment names to their memory addresses. Using this lookup table, it is possible to retrieve the name of any environment where an object resides or, from within a function, to retrieve the calling stack showing the function names and their enclosing environment name, i.e. the environment where the functions have been defined. The latter can be done with just a function call, i.e. in a much easier way than using the R function sys.call().
 
-All functions in this package follow the underscore-separated and all-lower-case naming convention (e.g. \code{environment_name()})
+*Conventions*
+All functions in this package follow the underscore-separated and all-lower-case naming convention (e.g. \code{environment_name()}).
 }
 \details{
 The package currently contains 8 visible functions. Following is a guideline on how to use the package to keep track of user-defined environment names and retrieve the calling functions stack from within a function:
@@ -26,7 +27,7 @@ Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 }
 \references{
 Motivation for developing this package:
-\link{https://stat.ethz.ch/pipermail/r-help/2010-July/245646.html}
+\url{https://stat.ethz.ch/pipermail/r-help/2010-July/245646.html}
 }
 \keyword{ package }
 \keyword{ environment }

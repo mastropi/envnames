@@ -22,7 +22,7 @@ The envnames package solves this problem by creating a lookup table that maps en
 
 During the development process, additional tools were added to this basic functionality, which includes:
 
-- extending the functionality of the `exists` function by searching objects inside user-defined environments (in addition to the global environment and packages). This is done by the `obj_find` function.  
+- extending the functionality of the `exists` function by searching objects inside user-defined environments and nested environments (in addition to the global environment and packages), as well as searching objects that are the results of expressions. This is done by the `obj_find` function.  
 - simplifying the process of retrieving the calling function name and the stack of calling functions currently provided by `sys.call`. This is done by the `get_fun_calling` and `get_fun_calling_chain` functions.  
 - retrieving the memory address of an object. This is done by the `get_obj_address` function.  
 
@@ -81,6 +81,56 @@ environment_name(non_existing_env)
 ```
 
 ## Check the existence of an object with `obj_find()`
+With the `obj_find()` function we can check if an object exists in any existing environment. All environments --including global, packages and user-defined environments-- are crawled to search for the object. This includes any environment that are defined within other environments. The function returns a character array with all the environments where the object was found.
+
+Objects to search for can be specified either as a symbol or as a string. Ex: `obj_find(x)` and `obj_find("x")` both look for an object called "x". They can also be the result of an expression as in `v[1]`.
+
+The function returns `NULL` if the object is not found or if the expression is invalid. For instance `obj_find(unquote(quote(x)))` returns `NULL` because the `unquote()` function does not exist in R.
+
+### Examples
+Let's define a couple of objects in the environments already defined above:
+
+```{r}
+x <- 5
+env1$x <- 3
+with(env_of_envs, env21$y <- 5)
+with(env1, {
+  vars_as_string <- c("x", "y", "z")
+  vars_quoted <- c(quote(x), quote(y), quote(z))
+})
+```
+
+Now let's look for these objects:
+```{r}
+obj_find(x)
+obj_find(y)
+obj_find(vars_as_string)
+```
+
+Let's also look for the objects defined in `vars_as_string` and `vars_quoted`.
+```{r}
+obj_find(env1$vars_as_string[1])  # Here we are looking for the object 'x'
+obj_find(env1$vars_as_string[2])  # Here we are looking for the object 'y'
+obj_find(env1$vars_as_string[3])  # Here we are looking for the object 'z' which does not exist
+```
+
+or using `sapply()`:
+
+```{r}
+with(env1, sapply(vars_as_string, obj_find) )
+sapply(env1$vars_quoted, obj_find)
+```
+We can also search for objects given as a symbol:
+
+```{r}
+obj_find(as.name("x"))
+```
+
+Finally, we can also search for objects defined in packages:
+
+```{r}
+obj_find(aov)
+```
 
 ## Retrieve the function calling stack with `get_fun_calling_chain()`
 Following is an example that shows the difference between using the `sys.call` function already available in base R and the package function `get_fun_calling_chain` to retrieve the calling stack. 
@@ -95,8 +145,8 @@ Let's show the example...
 1) First define a couple of environments:
 
 ```{r}
-env1 <- new.env()
-env2 <- new.env()
+env11 <- new.env()
+env12 <- new.env()
 ```
 
 2) Now define an example function `h` to be called by two different functions `f` defined in two different user-environments. This function `h` does something different depending on which function `f` called it.
@@ -109,24 +159,24 @@ h <- function(x, silent=TRUE) {
 
   # Do a different operation on input parameter x depending on the calling function
   fun_calling = get_fun_calling()
-  if (fun_calling == "env1$f") { x = x + 1 }
-  else if (fun_calling == "env2$f") { x = x + 2 }
+  if (fun_calling == "env11$f") { x = x + 1 }
+  else if (fun_calling == "env12$f") { x = x + 2 }
 
   return(x)
 }
 ```
 
-3) Define the two calling functions `f`, respectively in environments `env1` and `env2`:
+3) Define the two calling functions `f`, respectively in environments `env11` and `env12`:
 
 ```{r}
-with(env1,
+with(env11,
   f <- function(x, silent=TRUE) {
     fun_calling_chain = get_fun_calling_chain()
     return(h(x, silent=silent))
   }
 )
 
-with(env2,
+with(env12,
   f <- function(x, silent=TRUE) {
     fun_calling_chain = get_fun_calling_chain()
     return(h(x, silent=silent))
@@ -136,67 +186,44 @@ with(env2,
 
 4) Run these functions `f` and take note of their output.
 
-- Output from `env1$f()`:
+- Output from `env11$f()`:
 
 ```{r, echo=FALSE}
 silent = FALSE
 x = 0
-cat("\nWhen h(x) is called by env1$f(x=", x, ") the output is: ", env1$f(x, silent=silent), "\n", sep="")
+cat("\nWhen h(x) is called by env11$f(x=", x, ") the output is: ", env11$f(x, silent=silent), "\n", sep="")
 ```
 
-- Output from `env2$f()`:
+- Output from `env12$f()`:
 
 ```{r, echo=FALSE}
 silent = FALSE
 x = 0
-cat("\nWhen h(x) is called by env2$f(x=", x, ") the output is: ", env2$f(x, silent=silent), "\n", sep="")
+cat("\nWhen h(x) is called by env12$f(x=", x, ") the output is: ", env12$f(x, silent=silent), "\n", sep="")
 ```
 
 Note how easy it was to decide what action to take based on the `f()} function calling `h()} and perform a different operation.
 
 ## Retrieve the memory address of an object with `get_obj_address()}
+Following are examples of using the `get_obj_address()` function to retrieve the memory address of an object The object can be given either as a symbol or as a name, although the former is preferred because it is safer in terms of returning the correct object's memory address and not for instance the memory address of a string.
 
+The object is first searched for using `obj_find()` and if it exists, its memory address is returned as a named array containing the names of all the environments where the object is found. If the object is not found, `NULL` is returned.
 
+For example, the following calls return all the same result:
 
-
-## Vignette Info
-
-Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
-
-## Styles
-
-The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
-
-    output: 
-      rmarkdown::html_vignette:
-        css: mystyles.css
-
-## Figures
-
-The figure sizes have been customised so that you can easily put two images side-by-side. 
-
-```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
+```{r}
+get_obj_address(x)
+get_obj_address("x")
+with(env1, get_obj_address(x))
 ```
 
-You can enable figure captions by `fig_caption: yes` in YAML:
+Note especially the last case, where calling `get_obj_address()` from within the `env1` environment still searches for the object everywhere.
 
-    output:
-      rmarkdown::html_vignette:
-        fig_caption: yes
+We can restrict the memory address returned by making the environment where the object is located explicit --by either using the `$` notation or the `envir` parameter of `get_obj_address()`. In this case only the address of the specified object is returned, even if other objects with the same name exist within the specified environment. A few examples follow:
 
-Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
-
-## More Examples
-
-You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
-
-```{r, echo=FALSE, results='asis'}
-knitr::kable(head(mtcars, 10))
+```{r}
+get_obj_address(env1$x)
+get_obj_address("env1$x")
+get_obj_address(x, envir=env1)
 ```
 
-Also a quote using `>`:
-
-> "He who gives up [code] safety for [code] speed deserves neither."
-([via](https://twitter.com/hadleywickham/status/504368538874703872))

@@ -187,8 +187,8 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 			# (this check is done by comparing deparse(substitute(obj)) with obj_eval whose values are different
 			# --after stripping any additional quotes from deparse(substitute()) as done by the gsub() function--
 			# only in non-trivial cases (where "trivial" means the cases that just mentioned above "3", "3aaddd", etc.))
-			if (!inherits(obj_eval, "try-error") &&
-					!is.null(obj_eval) &&
+			if (!is.null(obj_eval) && !is.na(obj_eval) &&
+			    !inherits(obj_eval, "try-error") &&
 					!is.environment(obj_eval) &&
 					gsub("\"", "", deparse(substitute(obj))) != obj_eval) {
 				# This means there is a chance that the object is not simply a string like "x" or a number like 3, etc.

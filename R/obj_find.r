@@ -331,7 +331,7 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 				# by calling exists() as e.g.:
 				#		exists(obj_name, envir=eval(parse(text=env_name)))
 				# where e.g. obj_name = "x" and env_name = "env_of_envs$env1" (note that the $ is accepted by eval()!)
-		    check_obj_exist = check_object_exists(obj, envir)
+		    check_obj_exist = envnames:::check_object_exists(obj, envir)
 		    if (check_obj_exist$found) {
 		      # Assign the environment extracted from the object name (i.e. the full environment path)
 					# as the environment name to return by the function (env_full_names)
@@ -351,7 +351,7 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 
 		  if (is.null(env_full_names)) {
 		    # If still the object was not found... give it a last chance!
-		    ### 4.- Try to see if obj is an expression whose *evaluation* can be found
+		    ### 4.- Try to see if obj is an expression whose *evaluation* (see more below)
 		    # Note that the object is evaluated in the environment n levels up from the current environment
 		    # (this is the meaning of 'n', i.e. how many levels up should 'obj' be evaluated)
 		    # or in any parent environment until it is found.
@@ -359,11 +359,53 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 		    # avoid the warning message "restarting interrupted promise evaluation"
 		    # when the obj object does not exist. This happens when the program already
 		    # tried to evaluate the object unsuccessfully.
-		    # See for more info: http://stackoverflow.com/questions/20596902/r-avoiding-restarting-interrupted-promise-evaluation-warning
+		    # We re-establish the original warn value further down after different try() calls
+		    # have been carried out.
+		    # See more at: http://stackoverflow.com/questions/20596902/r-avoiding-restarting-interrupted-promise-evaluation-warning
 		    option_warn = options("warn")$warn
 		    options(warn=-1)
 		    obj_eval <- try(eval(obj, envir=parent.frame(n+1)), silent=TRUE)
+
+		    #--- Check first if obj_eval yields an error or resolves to a value but obj is still a valid object to search for 
+		    # This check is two-fold:
+		    # - on one side we check whether the evaluated object obj_eval and the original object obj are different
+		    # - on the other side we check whether the try( eval() ) call above yielded an error.
+		    # If any of these is the case, obj_eval is replaced with obj, because obj may contain the object
+		    # we are looking for.
+		    # This happens for instance when:
+		    # - obj = as.name(y) where y = "x", i.e. a string we are treating as a symbol (because of as.name())
+		    # - obj = v[[1]] where v is a list of symbols, as in v = c(quote(x), quote(y)) (note that is a 
+		    # list in this case NOT an array! --R behaviour, presumably because each element of the "array" is
+		    # storing a complicated object)
+		    # In these examples, x is the object we are looking for and two situations may happen,
+		    # which derive respectively into the two checks mentioned above:
+		    # - either x exist in the calling environment n levels up (therefore obj_eval contains
+		    # the evaluation of x --e.g. 3)
+		    #   --> in this case obj_eval != obj so we should assign obj to obj_eval so that we can
+		    #       look for object x (not for the value 3 as an object!)
+		    # - or x does not exist in the calling environment n levels up 
+		    #   --> in this case the try(eval()) yields an error so we should assign obj to obj_eval
+		    #       so that we can look for object x.
+		    # Note that this does not happen if obj = v[1] in the above example (i.e. only one pair of brackets,
+		    # not two as in [[1]]), because in that case v[1] is a list and the above try(eval()) does not give an error.
+		    is_obj_eval_different_from_obj <- try(obj_eval != obj, silent=TRUE)
+		    if (envnames:::is_logical(is_obj_eval_different_from_obj) &&
+  		        ## Need to first check if the result of the above comparison is a valid logical value
+  		        ## (e.g. has length > 0 or is not NA) because if obj_eval or obj are NULL or NA
+  		        ## the comparison will yield logical(0) or NA and an error will be raised.
+		        ( inherits(obj_eval, "try-error") ||
+		          inherits(is_obj_eval_different_from_obj, "try-error") ||  # If there was an error in 'obj_eval != obj_name' then it means that the result of the comparison is TRUE
+		          !inherits(is_obj_eval_different_from_obj, "try-error") && is_obj_eval_different_from_obj) ) {
+		      # => Assign the searched object to obj_eval
+		      # This is the case when e.g. obj = v[[1]], i.e. an element of a list
+		      # containing a name (e.g. 'x') that does not exist in the calling environment 
+		      # n levels up (meaning that the try(eval(obj)) above returns an error)
+		      # But if this is the case, we still want to search for symbol 'x'.
+		      obj_eval <- try(obj, silent=TRUE)
+		    }
 		    options(warn=option_warn)
+
+		    #--- Now process obj_eval
 		    if (!inherits(obj_eval, "try-error")) {
 		      if (is.list(obj_eval) && length(obj_eval) == 1) {
 		        # Extract the single element of the list as obj_eval (this is the case for example when
@@ -410,9 +452,13 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 		        # can be any kind of object and that object may not accept a comparison with a string (for instance
 		        # if the obj_eval is a function like e.g. 'mean')
 		        is_obj_eval_different_from_obj_name = try( obj_eval != obj_name, silent=TRUE )
-		        if (!is.null(obj_eval) &&
-		            !inherits(is_obj_eval_different_from_obj_name, "try-error") && is_obj_eval_different_from_obj_name ||
-		            inherits(is_obj_eval_different_from_obj_name, "try-error")) { # If there was an error in 'obj_eval != obj_name' then it means that the result of the comparison is FALSE => we can recurse to look for obj_eval)
+		        if (envnames:::is_logical(is_obj_eval_different_from_obj_name) &&
+  		            ## Need to first check if the result of the above comparison is a valid logical value
+		              ## (e.g. has length > 0 or is not NA) because if obj_eval or obj are NULL or NA
+  		            ## the comparison will yield logical(0) or NA and an error will be raised.
+		            ( !is.null(obj_eval) &&
+		              (inherits(is_obj_eval_different_from_obj_name, "try-error") || # If there was an error in 'obj_eval != obj_name' then it means that the result of the comparison is TRUE => we can recurse to look for obj_eval)
+		               !inherits(is_obj_eval_different_from_obj_name, "try-error") && is_obj_eval_different_from_obj_name)) ) {
 		          # Repeat the obj_find() process on the EVALUATED object
 		          # This is important when e.g. alist$v = "env1$x" and object 'x' exists in environment "env1"
 		          # Note that we use envir=envir_orig, in order to repeat exactly the original call to obj_find()
