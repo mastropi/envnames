@@ -66,7 +66,7 @@ test_that("T0) the environment name of a named environment (e.g system or packag
   expect_equal(environment_name(baseenv()), expected)
 })
 
-test_that("T1) the environment name is correctly returned when the environment variable is given as a variable (in all environments)", {
+test_that("T1) the environment name is correctly returned when the environment variable is given as a symbol (in all environments)", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
   expected = c("env2")
@@ -115,10 +115,12 @@ test_that("T10) standardized environment names (globalenv and baseenv)", {
 })
 
 test_that("T11) all environments matching the same memory address are returned when byaddress=TRUE", {
-  skip("*** FAILS WHEN RUN UNDER CHECK BUT DOESN'T FAIL WHEN RUN HERE OR WHEN TESTING THE PACKAGE! WHY??? ***")
+  skip("*** FAILS WHEN RUN UNDER CHECK BUT DOESN'T FAIL WHEN RUN HERE OR WHEN TESTING THE PACKAGE! WHY??? when doing Check I don't see what is printed here... so I don't know what went wrong ***")
   expected = c("e", "env_of_envs$env1", "env1")
   names(expected) = rep("R_GlobalEnv", 3)
-  expect_equal(environment_name(env1, byaddress=TRUE), expected)
+  observed = environment_name(env1, byaddress=TRUE)
+  print(observed)
+  expect_equal(observed, expected)
 })
 
 test_that("T21) the name of an environment defined inside a function is correctly returned", {
@@ -134,7 +136,7 @@ test_that("T21) the name of an environment defined inside a function is correctl
   expect_equal(observed, expected)
 })
 
-# Extreme cases
+#------------------ Extreme cases
 test_that("T90) invalid 'env' variable returns NULL", {
   expect_equal(environment_name(NULL), NULL)
   expect_equal(environment_name("not an environment nor an address"), NULL)

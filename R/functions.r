@@ -215,7 +215,8 @@ check_environment = function(x, envir) {
 #' 
 #' Check if a string may represent a valid object name with full environment path to the object
 #' as in \code{globalenv()$env$x}. The string should \emph{not} end with \code{]} or \code{)} because
-#' that makes the whole expression an invalid name (e.g. \code{globalenv()$v[1]}).
+#' that makes the whole expression an invalid name and therefore it should not be considered as a name
+#' (e.g. \code{globalenv()$v[1]} refers to element 1 of array v and such thing is not the name of an object).
 #' 
 #' Optionally a check of whether the path points to a valid environment inside a given environment
 #' is performed by calling \code{check_environment}.
@@ -283,7 +284,8 @@ check_object_with_path = function(x, checkenv=FALSE, envir=NULL) {
 #' Check if an object exists in a given environment or any parent environment from the given environment in
 #' the way that the \link{eval} function does it by default.
 #' 
-#' @param obj object to check.
+#' @param obj object to check. It must be a name or symbol in order to check if it exists. If it is a string
+#' representing an object name, the function returns that the object does not exist.
 #' @param envir environment where its existence is checked.
 #' 
 #' @details
@@ -299,31 +301,46 @@ check_object_with_path = function(x, checkenv=FALSE, envir=NULL) {
 #' }
 #' 
 #' @keywords internal
-check_object_exists = function(obj, envir) {
-  # The existence of the object is checked by trying to evaluate the object in the 'envir' environment
-  # IT IS IMPORTANT TO EVALUATE THE OBJECT AND NOT JUST TRY TO RETRIEVE ITS MEMORY ADDRESS
-  # BECAUSE IF THE OBJECT IS NULL, STILL A MEMORY ADDRESS WILL BE RETURNED!! (since 'NULL' has its own memory address)
-  obj_eval = try( eval(obj, envir=envir), silent=TRUE )
-  # Get the memory address as well to return to the outside world
-  obj_address = try( with(envir, envnames:::address(obj)), silent=TRUE )
-  if (!is.null(obj_eval) && !inherits(obj_address, "try-error")) {
-    found = TRUE
+check_object_exists = function(obj, envir=globalenv()) {
+  # Check first if the object is NULL, NA or a string, in which case we should return that the object does not exist
+  # In fact, the case for NULL and NA is obvious, and for string,s we don't search for a string as it doesn't make sense
+  # (or if we wanted to accept strings representing object names, it would unnecessarily complicate the function too much)
+  # We must enclose the check expression in a try() block because obj may not exist in the evaluation environment, although
+  # it may exist in other environments and this is what this function is all about --i.e. about finding where the object exists)
+  # Also note that before checking if obj is NA we check that it is not an environment because is.na() on an environment
+  # gives a warning that we want to avoid.
+  is_obj_null_na_string = try( is.null(obj) || (!is.environment(obj) && is.na(obj)) || is_string(obj), silent=TRUE )
+  if (!inherits(is_obj_null_na_string, "try-error") && is_obj_null_na_string) {
+    obj_eval = NULL
+    obj_address = NULL
+    found = FALSE
   } else {
-    # Try evaluating the object without restricting it to 'envir'
-    # We would get here if the user e.g. called obj_find() using a with() statement but
-    # explicitly referring to e.g. the global environment as in:
-    #   with(env1, obj_find(globalenv()$env2$x))
-		# We implement this behaviour because if we run with(env1, globalenv()$env2$x)
-		# we will get the value of x inside the globalenv()$env2 environment.
-		obj_eval = try( eval(obj), silent=TRUE )
-    obj_address = try( envnames:::address(obj), silent=TRUE )
-    if (!is.null(obj_eval) && !inherits(obj_address, "try-error")) {
+    # The existence of the object is checked by trying to evaluate the object in the 'envir' environment
+    # We first evaluate the object before retrieving its memory address to be on the safer side, because
+    # the memory address may have a value even if the object does not exist or the evaluated argument is not
+    # an object (for instance a number has a memory address)
+    # Note that NULL and NA values have been already screened above
+    obj_eval = try( eval(substitute(obj), envir=envir), silent=TRUE )
+    if (!inherits(obj_eval, "try-error")) {
       found = TRUE
+      obj_address = try( eval( parse(text=paste("envnames:::address(", deparse(substitute(obj)), ")")), envir=envir ), silent=TRUE )
     } else {
-      # No more options to try at this point!
-      obj_eval = NULL
-      obj_address = NULL
-      found = FALSE
+      # Try evaluating the object without restricting it to 'envir'
+      # We would get here if the user e.g. called obj_find() using a with() statement but
+      # explicitly referring to e.g. the global environment as in:
+      #   with(env1, obj_find(globalenv()$env2$x))
+  		# We implement this behaviour because if we run with(env1, globalenv()$env2$x)
+  		# we will get the value of x inside the globalenv()$env2 environment.
+  		obj_eval = try( eval(substitute(obj)), silent=TRUE )
+  		if (!inherits(obj_eval, "try-error")) {
+  		  found = TRUE
+  		  obj_address = try( eval( parse(text=paste("envnames:::address(", deparse(substitute(obj)), ")")) ), silent=TRUE )
+  		} else {
+        # No more options to try at this point!
+        obj_eval = NULL
+        obj_address = NULL
+        found = FALSE
+      }
     }
   }
 
@@ -386,6 +403,17 @@ is_memory_address = function(x) {
 #' and is not NA nor NULL, and has positive length.
 is_logical = function(x) {
   return(!is.na(x) && !is.null(x) && is.logical(x) && length(x) > 0)
+}
+
+#' Check whether an object is a string.
+#' 
+#' The result of this function is different from is.character(x) since this function returns TRUE
+#' for an array of character values!
+#' 
+#' @param x object to check.
+#' @return boolean indicating whether the object is a string.
+is_string = function(x) {
+  return(get_obj_name(x, n=1) == x)
 }
 
 #' Standardize the name of an environment

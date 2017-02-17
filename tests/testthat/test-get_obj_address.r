@@ -25,6 +25,8 @@ env_of_envs$env11$z <- 50
 env1$x <- 3;
 env1$y <- 2;
 objects <- c("x", "y")
+alist <- list("x", "y", "z", "nonexistent")
+alist_named <- list(var1="x", var2="y", var3="z", var4="nonexistent")
 packages <- c(as.environment("package:stats"), as.environment(".GlobalEnv"))
 
 
@@ -46,16 +48,7 @@ test_that("T2) addresses of packages are correctly returned", {
   expect_equal(addresses, c(envnames:::address(as.environment("package:stats")), envnames:::address(as.environment(".GlobalEnv"))))
 })
 
-test_that("T3) the address of an object passed as a string is correctly returned (in different environments)", {
-  # skip ("not now")
-  # browser()
-  expected = envnames:::address(globalenv()$env1)
-  names(expected) = "R_GlobalEnv"
-  expect_equal(get_obj_address("env1"), expected)
-  expect_equal(get_obj_address("x", envir=globalenv()$env1), envnames:::address(globalenv()$env1$x))
-})
-
-test_that("T4) the address of an object passed as an object is correctly returned (in different environments)", {
+test_that("T4) the address of an object is correctly returned in different environments", {
   # skip ("not now")
   # browser()
   expected = envnames:::address(globalenv()$env1)
@@ -65,7 +58,8 @@ test_that("T4) the address of an object passed as an object is correctly returne
   expect_equal(get_obj_address(x, envir=globalenv()$env1), envnames:::address(globalenv()$env1$x))
 })
 
-test_that("T5) the address of objects passed as expressions in specified environments is correctly returned
+test_that("T5a) the address of objects passed as expressions in specified environments is correctly returned
+            (2017/02/17) WHAT FOLLOWS IS NO LONGER TRUE (I FIXED THIS AND ADDED 3 NEW TESTS TO PROVE THAT on globalenv()$objects[2])
             (note that if we run this WITHOUT specifying the environment the address changes every time, because
             a new memory address is allocated to the result of globalenv()$objects[1], i.e. to 'x' which is
             the value of element 1 of 'objects'", {
@@ -73,6 +67,29 @@ test_that("T5) the address of objects passed as expressions in specified environ
   # browser()
   expect_equal(get_obj_address(globalenv()$objects[1], envir=globalenv()$env1), envnames:::address(globalenv()$env1$x))
   expect_equal(get_obj_address(globalenv()$objects[1], envir=globalenv()), envnames:::address(globalenv()$x))
+
+  expect_equal(get_obj_address(globalenv()$objects[2])[[1]], envnames:::address(globalenv()$env1$y))
+  expect_equal(get_obj_address(globalenv()$objects[2], envir=globalenv()$env1), envnames:::address(globalenv()$env1$y))
+  expect_equal(get_obj_address(objects[2])[[1]], envnames:::address(env1$y))
+})
+
+test_that("T5b) sapply() works on arrays, unnamed lists, and named lists", {
+  # skip ("not now")
+  # browser()
+  # On arrays
+  expected = list(x=get_obj_address(x), y=get_obj_address(y))
+  observed = sapply(objects, get_obj_address)
+  expect_equal(observed, expected)
+
+  # On unnamed lists
+  expected = list(get_obj_address(x), get_obj_address(y), get_obj_address(z), get_obj_address(nonexistent))
+  observed = sapply(alist, get_obj_address)
+  expect_equal(observed, expected)
+
+  # On named lists
+  expected = list(var1=get_obj_address(x), var2=get_obj_address(y), var3=get_obj_address(z), var4=get_obj_address(nonexistent))
+  observed = sapply(alist_named, get_obj_address)
+  expect_equal(observed, expected)
 })
 
 test_that("T6a) the address returned for an object referenced via its environment (as in env1$x) is the memory address of the object", {
@@ -115,7 +132,7 @@ test_that("T8) the address returned for an object when the variable passed as en
 test_that("T9) the address returned for an object stored in a deeply nested environment is correct", {
   # skip ("not now")
   # browser()
-  expect_equal(get_obj_address("z", envir=globalenv()$env_of_envs$env11), envnames:::address(globalenv()$env_of_envs$env11$z))
+  expect_equal(get_obj_address(z, envir=globalenv()$env_of_envs$env11), envnames:::address(globalenv()$env_of_envs$env11$z))
 })
 
 test_that("T10) the address of objects passed as memory address is NULL", {
@@ -126,11 +143,22 @@ test_that("T10) the address of objects passed as memory address is NULL", {
 })
 
 #---------------------------------- Extreme cases -----------------------------------
-test_that("T90) the address of NA or NULL is NULL", {
+test_that("T90) the address of NA, NULL or a string is NULL (even if the object referenced by the string exists)", {
   # skip ("not now")
   # browser()
   expect_equal(get_obj_address(NA), NULL)
   expect_equal(get_obj_address(NULL), NULL)
+  expect_equal(get_obj_address("env1$x"), NULL)
+  expect_equal(get_obj_address("x"), NULL)
+})
+
+# This was the previous test I had in place to test that the address of an object given as a string is correctly returned
+test_that("T3) the address of an object passed as a string is correctly returned (in different environments)", {
+  skip ("no longer true: we now return always NULL for strings")
+  expected = envnames:::address(globalenv()$env1)
+  names(expected) = "R_GlobalEnv"
+  expect_equal(get_obj_address("env1"), expected)
+  expect_equal(get_obj_address("x", envir=globalenv()$env1), envnames:::address(globalenv()$env1$x))
 })
 #---------------------------------- Extreme cases -----------------------------------
 

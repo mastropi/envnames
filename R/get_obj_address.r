@@ -1,52 +1,54 @@
 #' Return the memory address of an object
 #' 
-#' @param obj object whose memory address is requested. It can be given as a variable name, a string with
-#' a variable name, or an expression.
+#' @param obj object whose memory address is requested. It can be given as a variable name or an expression.
+#' Strings representing object names are not interpreted and return NULL.
 #' @param envir environment where the object should be searched for. All parent environments of
-#' \code{envir} are searched as well.
+#' \code{envir} are searched as well. Defaults to \code{NULL} which means that it should be searched in the
+#' whole workspace (including packages and user-defined environments).
 #' @param n number of levels to go up from the calling function environment to resolve the name
 #' of \code{obj}. It defaults to 0 which implies the calling environment.
 #'
 #' @details
-#' The environment name should \emph{not} be part of the object name \code{obj}
-#' (e.g. something like \code{env$x} is \emph{not} valid).
-#' The call \code{get_obj_address(x, envir=env)} should be used instead.
+#' Strings return \code{NULL} but strings can be the result of an expression passed as argument to this function.
+#' In that case, the string is interpreted as an object and its memory address is returned if the object exists.
 #' 
-#' If \code{obj} is already a memory address, it is returned unchanged.
-#' 
-#' @return The memory address of the input object given as a string enclosed in <>
+#' @return The 16-digit memory address of the input object given as a string enclosed in <>
 #' (e.g. \code{"<0000000005E90988>"}), or NULL under any of the following situations:
 #' \itemize{
+#' \item the object is \code{NULL}, \code{NA}, or a string
+#' \item the object is a constant (e.g. \code{TRUE}, \code{3}, etc.)
 #' \item the object does not exist in the given environment
 #' \item the object is an expression that cannot be evaluated in the given environment
-#' \item the object is a non-character constant (e.g. TRUE, 3, etc.)
-#' \item the object refers to an unnamed list (e.g. '[[1]] 3', where '[[1]]' is the unnamed list)
-#' \item the object is a character constant which however does not resolve to an existing variable in the
-#' given environment. That is, the result of running e.g. \code{eval(as.name("aaa"))} is an error.
 #' }
 #' 
-#' Note that for the last three cases, although the cited elements (constants, unnamed lists) have a memory
-#' address, this address is meaningless as it changes with every invocation of the function. For instance, running
+#' Note that for the last case, although constants have a memory address, this address is meaningless as
+#' it changes with every invocation of the function. For instance, running
 #' envnames:::address(3) several times will show a different memory address each time, and that is why
-#' we chose to return NULL in those cases.
+#' \code{get_obj_address} returns NULL in those cases.
 #' 
 #' When \code{envir=NULL} (the default) or when an object exists in several environments,
-#' the memory address is returned for all of them where the object is found. In that case, the addresses are
-#' stored in an array whose names attribute contains the environment names where the object is found.
+#' the memory address is returned for all of the environments where the object is found. In that case, the addresses are
+#' stored in an array whose names attribute shows the environments where the object is found.
 #' 
 #' @examples
 #' env1 = new.env()
 #' env1$x = 3                       # x defined in environment 'env1'
-#' x = 4                            # x defined in the Global Environment  
-#' get_obj_address(x, envir=env1)   # Searches for object 'x' in the 'env1' environment
-#' get_obj_address("x", envir=env1) # Searches for object 'x' in the 'env1' environment
-#' get_obj_address(x)               # Searches for 'x' everywhere in the workspace and
-#'                                  # returns an array with the memory address of all its occurrences. 
+#' x = 4                            # x defined in the Global Environment
+#' get_obj_address(env1$x)          # returns the memory address of the object 'x' defined in the 'env1' environment
+#' get_obj_address(x, envir=env1)   # same as above
+#' get_obj_address(x)               # Searches for object 'x' everywhere in the workspace and
+#'                                  # returns a named array with the memory address of all its occurrences,
+#'                                  # where the names are the names of the environments where x was found.
 #' 
 #' # Memory addresses of objects whose names are stored in an array and retrieved using sapply()
 #' env1$y <- 2;
 #' objects <- c("x", "y")
 #' sapply(objects, FUN=get_obj_address, envir=env1)	# Note that the address of object "x" is the same as the one returned above by get_obj_address(x, envir=env1)
+#' 
+#' # Memory address of elements of a list
+#' alist <- list("x")
+#' get_obj_address(alist[[1]])      # memory address of object 'x'
+#' get_obj_address(alist[1])        # same result
 get_obj_address = function(obj, envir=NULL, n=0) {
 # NOTE: (2016/07/26) This function is needed to avoid an error when requesting the address() of an object that
 # does not exist. This function returns NULL in such case instead of an error message!
@@ -91,19 +93,19 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 			  # NOTE that we need to test that the path is actually an environment because it may be another
 			  # object (e.g. a list) and in that case the address of object is meaningless because it is
 			  # different for each run of the get_obj_address() function! (e.g. if we call get_obj_address(alist$x))
-			  obj_name_check = check_object_with_path(obj_name, checkenv=TRUE)
+			  obj_name_check = envnames:::check_object_with_path(obj_name, checkenv=TRUE)
 			  if (obj_name_check$ok && obj_name_check$env_found) {
           # Check if the object exists in the 'envir_actual' environment or any parent environment
-			    check_obj_exist = check_object_exists(obj, envir)
+			    check_obj_exist = envnames:::check_object_exists(obj, envir)
 			    if (check_obj_exist$found) {
 			      # Get the address of the object found
 			      obj_address = check_obj_exist$address
 			    }
-        }
+       }
 
-			  if (is.null(obj_address)) {
+			 if (is.null(obj_address)) {
 			    # Still the object's address could not be retrieved...
-
+			    
 			    #------------ 3. Try to retrieve the object's address after evaluating the object --------
 			    # This is the case when e.g. obj is an expression as in 'objects[1]'
 			    # Note that we set the warn option to -1 (i.e. remove warnings) in order to
@@ -141,11 +143,34 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 			          obj_address = NULL
 			        }
 			      }
+			      if (is.null(obj_address)) {
+			        # Still the object's address could not be retrieved
+			        # Last chance
+			        # This is the case when e.g. obj = as.name("x"), i.e. obj = x and therefore we simply need to get the address of x.
+			        # Note that in this case obj_name above is "as.name(\"x\")" and that's why we were not able to retrieve
+			        # the object address so far (although obj was found when computing obj_eval!)
+			        obj_address = try( eval( parse(text=paste("envnames:::address(", deparse(obj), ")")), envir=envir ), silent=TRUE )
+			      }
 			    }
 			  }
 			}
 
 			return(obj_address)
+	}
+
+	# Initialize the output variable
+	obj_addresses = NULL
+	
+	# First check whether the object is NULL, NA o a string, in which case we return NULL
+	# In fact, we don't want to retrieve the address of a string, because this changes for every call to the function!
+	# (note: although this worked correctly for get_obj_address("x"), it failed for get_obj_address("env1$x") (it gave an incorrect
+	# memory address) and fixing it to make it work properly was too complicated and not really necessary)
+	# Note that we need to set the warning option to -1 to avoid a warning when calling is.na(obj) on an environment object...
+	# Also note that before checking if obj is NA we check that it is not an environment because is.na() on an environment
+	# gives a warning.
+	is_obj_null_na_string = try( is.null(obj) || (!is.environment(obj) && is.na(obj)) || envnames:::is_string(obj), silent=TRUE )
+	if (!inherits(is_obj_null_na_string, "try-error") && is_obj_null_na_string) {
+	  return(NULL)
 	}
 
 	# Look for the object inside the environment specified in envir or in the whole workspace when envir=NULL
@@ -156,50 +181,7 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 																				                  # passed to get_obj_address(), since we are now going into one level deeper
 																				                  # (by calling obj_find())
 
-		if (is.null(envir_names)) {
-			# => The object was not found anywhere
-			# BUT check now if obj has already a valid and sensible memory address.
-			# This is the case when e.g. obj = globalenv()$env1$x
-			# which is not considered a valid object name (by get_obj_name() --which is called by obj_find() above--
-		  # due to the requirements by parse()).
-			# NOTE HOWEVER that if, in the above example, 'globalenv()$env1$x' exists and is a scalar and 'obj' is
-			# 'globalenv()$env1$x[2]' (i.e. an out of range reference to x which yields NA) WE STILL GET A MEMORY ADDRESS
-			# (the memory address allocated to NA I presume) but this memory address is meaningless, as it has nothing
-			# to do with x... however, I think this is still ok, because it is the user's responsibility to pass an
-			# object that makes sense...
-		
-			# Now try to evaluate the object... this is to test if its evaluation gives something sensible
-			# before making us retrieve its memory address.
-		  # --> Note that I set the warning level option "warn" to -1 so that no warning message is shown when the
-		  # object is not found. Otherwise we would get the message "restarted interrupted promise evaluation"
-		  # which has to do with the program having tried already to evaluate the object before (namely
-		  # in get_obj_name() through the obj_find() call above) unsuccesfully.
-		  # Ref: http://stackoverflow.com/questions/20596902/r-avoiding-restarting-interrupted-promise-evaluation-warning
-		  option_warn = options("warn")$warn
-		  options(warn=-1)
-			obj_eval = try( eval(obj, envir=.GlobalEnv), silent=TRUE )
-			options(warn=option_warn)
-			# Now check that the evaluated result is not the same as the object itself meaning that the object
-			# is not just a simple string like "3" or "3aaddd", or a memory address given as a string, etc.
-			# in which case we do NOT want to retrieve the memory address because it is meaningless.
-			# We would fall into this situation for example when 'obj' is v[1], i.e. an expression that gives another
-			# object (in this case the content of element 1 of array v)
-			# (this check is done by comparing deparse(substitute(obj)) with obj_eval whose values are different
-			# --after stripping any additional quotes from deparse(substitute()) as done by the gsub() function--
-			# only in non-trivial cases (where "trivial" means the cases that just mentioned above "3", "3aaddd", etc.))
-			if (!is.null(obj_eval) && !is.na(obj_eval) &&
-			    !inherits(obj_eval, "try-error") &&
-					!is.environment(obj_eval) &&
-					gsub("\"", "", deparse(substitute(obj))) != obj_eval) {
-				# This means there is a chance that the object is not simply a string like "x" or a number like 3, etc.
-				obj_addresses = try( envnames:::address(obj), silent=TRUE )
-				if (inherits(obj_addresses, "try-error")) {
-					obj_addresses = NULL
-				}
-			} else {
-				obj_addresses = NULL
-			}
-		} else {
+		if (!is.null(envir_names)) {
 			# Iterate on the environments found
 			obj_addresses = character(0)
 			for (envir_name in envir_names) {
@@ -244,7 +226,7 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 			# UNLESS the object was found in only one environment and the object is a system or package environment
 			# (which is identified by the fact that envir_names == NA).
 			if ( !(length(envir_names) == 1 && is.na(envir_names)) ) {
-				names(obj_addresses) = envir_names
+			  names(obj_addresses) = envir_names
 			}
 		}
 	} else {

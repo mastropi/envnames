@@ -79,6 +79,16 @@ Finally, if we try to retrieve the environment name of a non-existing environmen
 ```{r}
 environment_name(non_existing_env)
 ```
+### Find out whether a memory address is the address of an environment and if so, get the environment name
+Now suppose we have a memory address and we would like to know if that memory address corresponds to an environment.
+We can simply call `environment_name()` with the memory address as argument, as follows:
+
+```{r}
+env1_obj_address = get_obj_address(env1)
+environment_name(env1_obj_address)
+```
+
+Of course in practice we would not call the `get_obj_address()` function to get the environment's memory address; we would simply type in the memory address we are after. Note that this memory address must be a 16-digit address enclosed in `< >`, as in: `"<0000000011D7A150>"`.
 
 ## Check the existence of an object with `obj_find()`
 With the `obj_find()` function we can check if an object exists in any existing environment. All environments --including global, packages and user-defined environments-- are crawled to search for the object. This includes any environment that are defined within other environments. The function returns a character array with all the environments where the object was found.
@@ -204,16 +214,15 @@ cat("\nWhen h(x) is called by env12$f(x=", x, ") the output is: ", env12$f(x, si
 
 Note how easy it was to decide what action to take based on the `f()} function calling `h()} and perform a different operation.
 
-## Retrieve the memory address of an object with `get_obj_address()}
-Following are examples of using the `get_obj_address()` function to retrieve the memory address of an object The object can be given either as a symbol or as a name, although the former is preferred because it is safer in terms of returning the correct object's memory address and not for instance the memory address of a string.
+## Retrieve the memory address of an object with `get_obj_address()
+Following are examples of using the `get_obj_address()` function to retrieve the memory address of an object The object can be given either as a symbol or as an expression. In the latter case, the memory address of the result of the expression is returned. If the result is another expression, the process is not continued: just the memory address of such expression is returned.
 
 The object is first searched for using `obj_find()` and if it exists, its memory address is returned as a named array containing the names of all the environments where the object is found. If the object is not found, `NULL` is returned.
 
-For example, the following calls return all the same result:
+For example, the following calls return the same result:
 
 ```{r}
 get_obj_address(x)
-get_obj_address("x")
 with(env1, get_obj_address(x))
 ```
 
@@ -223,7 +232,7 @@ We can restrict the memory address returned by making the environment where the 
 
 ```{r}
 get_obj_address(env1$x)
-get_obj_address("env1$x")
 get_obj_address(x, envir=env1)
 ```
 
+Note there is a slight difference between calling `get_obj_address()` using the `$` notation and calling it with the `envir=` parameter: in the latter case, the result is an _unnamed_ array.

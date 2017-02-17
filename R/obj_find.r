@@ -351,7 +351,7 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 
 		  if (is.null(env_full_names)) {
 		    # If still the object was not found... give it a last chance!
-		    ### 4.- Try to see if obj is an expression whose *evaluation* (see more below)
+		    ### 4.- Try to see if obj is an expression whose *evaluation* exists (see more on the next line)
 		    # Note that the object is evaluated in the environment n levels up from the current environment
 		    # (this is the meaning of 'n', i.e. how many levels up should 'obj' be evaluated)
 		    # or in any parent environment until it is found.
@@ -394,7 +394,7 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
   		        ## (e.g. has length > 0 or is not NA) because if obj_eval or obj are NULL or NA
   		        ## the comparison will yield logical(0) or NA and an error will be raised.
 		        ( inherits(obj_eval, "try-error") ||
-		          inherits(is_obj_eval_different_from_obj, "try-error") ||  # If there was an error in 'obj_eval != obj_name' then it means that the result of the comparison is TRUE
+		          inherits(is_obj_eval_different_from_obj, "try-error") ||  # If there was an error in 'obj_eval != obj' then it means that the result of the comparison is TRUE
 		          !inherits(is_obj_eval_different_from_obj, "try-error") && is_obj_eval_different_from_obj) ) {
 		      # => Assign the searched object to obj_eval
 		      # This is the case when e.g. obj = v[[1]], i.e. an element of a list
