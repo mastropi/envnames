@@ -108,7 +108,8 @@ get_env_names = function(envir=NULL) {
 		#env_names = try( Filter(function(x) "environment" %in% class(get(x, envir=envir)), ls(envir)), silent=TRUE )
 		env_names = try( {
 					envs = with(envir, Filter(function(x) "environment" %in% class(get(x)), ls()))
-					envir_name = get_obj_name(envir, n=1)
+#					envir_name = get_obj_name(envir, n=1)
+					envir_name = deparse(substitute(envir))
 					# Standardize the names of the environment so that the global and the base environments are always shown
 					# the same way, regardless of how the 'envir' parameter is passed.
 					envir_name = envnames:::standardize_env_name(envir_name)

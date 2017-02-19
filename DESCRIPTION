@@ -2,22 +2,20 @@ Package: envnames
 Type: Package
 Title: Track user-defined environment names
 Version: 0.3.0
-Date: 2017-01-22
+Date: 2017-02-19
 Author: Daniel Mastropietro
 Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 Description: A set of functions to keep track of user-defined
     environment names which cannot be retrieved with the built-in function `environmentName`.
     The main function for this purpose is `environment_name` which returns the name of the given
     environment.
-    The package also provides additional functionality such as:  
-    - A function (`obj_find`) to search for objects which extends the functionality of `exists`
-    and `find` in that objects are searched also within all user-defined environments.  
-    - An easy way (using `get_fun_calling_chain` to get the stack of calling functions, compared to the
+    The package also provides additional functionality, the most important of which are:  
+    - A function (`obj_find`) to search for objects that extends the functionality of `exists`
+    as follows: objects are searched recursively within all user-defined environments as well.  
+    - An easy way to get the stack of calling functions (using `get_fun_calling_chain`), or just
+    the calling function with its enclosing environment (using `get_fun_calling`), compared to the
     built-in function `sys.call`.  
-    - A function (`get_obj_address`) to return the memory address of an object.  
-    - A function (`get_env_names`) that creates a table of environment names and their memory addresses
-    (used internally by `environment_name` to return the names of user-defined environments).
-    }
+    - A function (`get_obj_address`) to retrieve the memory address of an object.  
 License: GPL
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr

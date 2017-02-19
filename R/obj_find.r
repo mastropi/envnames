@@ -1,8 +1,8 @@
-#' Find an object in the workspace or in a given environment
+#' Find an object in the workspace including user-defined environments
 #' 
 #' Look for an object in the whole workspace and return the environment(s) where it is found. User-defined environments
-#' are also searched, which makes this function different from the base function \link{find}.
-#' Optionally, the search can be limited to a specified environment, as opposed being carried out in the whole workspace.
+#' are also searched, which makes this function different from the base functions \link{find} or \link{exists}.
+#' Optionally, the search can be limited to a specified environment, as opposed to carrying it out in the whole workspace.
 #' Still, all user-defined environments defined inside the specified environment are searched.
 #' 
 #' @param obj object to be searched given as the object itself or as a character string. If given as an object,
@@ -11,10 +11,10 @@
 #' Defaults to \code{NULL} which means \code{obj} is searched in the calling environment (i.e. in the environment
 #' calling this function), unless \code{globalsearch=TRUE} in which case it is searched in the whole workspace.
 #' @param globalsearch when \code{envir=NULL} it specifies whether the search for \code{obj} should be done
-#' globally, i.e. in the whole workspace, or within the calling environment.
+#' globally, i.e. in the whole workspace, or just within the calling environment.
 #' @param n non-negative integer indicating the number of levels to go up from the calling function environment
 #' to evaluate \code{obj}. It defaults to 0 which implies that \code{obj} is evaluated in the environment
-#' of the calling function (i.e. the function that calls \code{obj_find()}.
+#' of the calling function (i.e. the function that calls \code{obj_find()}).
 #' @param silent run in silent mode? If not, the search history is shown,
 #' listing all the environments that are searched for object \code{obj}. Defaults to TRUE.
 #' 
@@ -31,17 +31,17 @@
 #' 
 #' In particular, compared to:
 #' \itemize{
-#' \item{\code{find}} \code{obj_find} searches for objects inside user-defined environments while \code{find} is not
+#' \item{\code{find}:} \code{obj_find} searches for objects inside user-defined environments while \code{find} is not
 #' able to do so (see examples).
-#' \item{\code{exists}} \code{obj_find} \emph{never} searches for objects in the parent environment of \code{envir}
+#' \item{\code{exists}:} \code{obj_find} \emph{never} searches for objects in the parent environment of \code{envir}
 #' when \code{envir} is not \code{NULL}, as does \code{exists} when its \code{inherits} parameter is set to \code{TRUE},
 #' the default. If it is wished to search for objects in parent environments, simply set \code{envir} to \code{NULL}
 #' and \code{globalsearch} to \code{TRUE}, in which case the object will be searched in the whole workspace
 #' and the environments where it is found will be returned.
 #' }
 #' 
-#' When the object is found, a vector containing the names of all the environments where the object is found is
-#' returned. Thes names may include the names of user-defined environments.
+#' When the object is found, an array containing the names of all the environments where the object is found is
+#' returned. These names may include the names of user-defined environments.
 #' 
 #' When \code{envir} is not \code{NULL} attached packages are not included in the search for \code{obj},
 #' unless of course \code{envir} is itself a package environment.
@@ -53,11 +53,9 @@
 #' and all its parent environments.
 #' \item if the expression is an attribute of a list, data frame, or array, the object contained in this
 #' attribute is searched for. Ex: if \code{alist$var = "x"} then object \code{x} is searched. 
-#' \item if the object to search is a variable \emph{name} as one returned by \link{as.name}, then the variable
-#' name should be \code{quote}'d. Ex: y = "x"; obj_find(quote(as.name(y))) 
 #' }  
 #' 
-#' @return A vector containing the names of the environments where the object \code{obj} is found.
+#' @return An array containing the names of the environments where the object \code{obj} is found.
 #' 
 #' @examples 
 #' # Define a variable in the global environment
@@ -70,11 +68,11 @@
 #' env1$y = 5
 #' 
 #' # Look for objects
-#' obj_find(x)                  # "env1" "env1$envx" ".GlobalEnv"
-#' obj_find("x")                # "env1" "env1$envx" ".GlobalEnv"
+#' obj_find(x)                  # "env1" "env1$envx" "R_GlobalEnv"
+#' obj_find("x")                # "env1" "env1$envx" "R_GlobalEnv"
 #' obj_find("x", envir=env1)    # "env1" "envx" (as the search is limited to the env1 environment)
 #' obj_find("y")                # "env1"
-#' obj_find(nonexistentObject)  # NULL (note that NO error is raised even if the object does not exist)
+#' obj_find(nonexistent)        # NULL (note that NO error is raised even if the object does not exist)
 obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 
 	# Function that searches for an object among the environments included in the 'envmap' lookup table.
@@ -440,7 +438,7 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 		        # The environment of functions is retrieved by the environmnet() function, which is the environment
 		        # where the function is defined.
 		        env = environment(obj_eval)
-		        env_full_names = environment_name(env, envir=envir, envmap=envmap, byaddress=TRUE)
+		        env_full_names = environment_name(env, envir=envir, envmap=envmap, byname=FALSE)
 		      }
 
 		      if (is.null(env_full_names)) {

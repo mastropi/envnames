@@ -38,6 +38,8 @@ assign("env_of_envs", new.env(), envir=globalenv())    # User-defined environmen
 with(env_of_envs, env11 <- new.env()) # Environment defined inside environment \code{env_of_envs}
 # Environment that is a copy of another one
 e <- env1
+# Environment inside env_of_envs that is a copy of another one with the same name sitting in globalenv()
+assign("env2", globalenv()$env2, envir=env_of_envs)
 # Environment with the same name as another one in a different environment
 with(env_of_envs, env1 <- new.env())
 
@@ -69,21 +71,23 @@ test_that("T0) the environment name of a named environment (e.g system or packag
 test_that("T1) the environment name is correctly returned when the environment variable is given as a symbol (in all environments)", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
-  expected = c("env2")
-  names(expected) = "R_GlobalEnv"
-  expect_equal(environment_name(env2), expected)
+#  expected = c("env_of_envs$env2", "env2")
+  expected = c("env2", "env_of_envs$env2")
+  names(expected) = c("R_GlobalEnv", "R_GlobalEnv")
+  observed = environment_name(env2)
+  expect_equal(sort(observed), sort(expected))
   expect_equal(environment_name(env11, envir=globalenv()$env_of_envs), "env11")
 })
 
 test_that("T2) the environment name is correctly returned when environment variable enclosed in quote()", {
   # skip("this test should NOT pass: in fact environmentName(quote(globalenv())) returns the empty string")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
-  expected = c("env2")
-  names(expected) = "R_GlobalEnv"
-  expect_equal(environment_name(quote(env2)), expected)
-  # (2016/10/02) The following works though... (because envir is specified. The problem when envir is NULL is 
-  # with obj_find(obj) called from get_obj_address() which returns NULL when obj is e.g. 'quote(env1)')
+  expected = c("env2", "env_of_envs$env2")
+  names(expected) = c("R_GlobalEnv", "R_GlobalEnv")
+  observed = environment_name(quote(env2))
+  expect_equal(sort(observed), sort(expected))
   expect_equal(environment_name(quote(env11), envir=globalenv()$env_of_envs), "env11")
+  expect_equivalent(environment_name(quote(env11)), "env_of_envs$env11")
 })
 
 test_that("T3) the environment name is NULL when the environment does not exist", {
@@ -91,9 +95,10 @@ test_that("T3) the environment name is NULL when the environment does not exist"
 })
 
 test_that("T5) the environment name is correctly returned when given as an environment (e.g. <environment: 0x0000000019942d08>)", {
-  expected = "env2"
-  names(expected) = "R_GlobalEnv"
-  expect_equal(environment_name(as.environment(globalenv()$env2)), expected)
+  expected = c("env_of_envs$env2", "env2")
+  names(expected) = c("R_GlobalEnv", "R_GlobalEnv")
+  observed = environment_name(as.environment(globalenv()$env2))
+  expect_equal(sort(observed), sort(expected))
   expect_equal(environment_name(as.environment(globalenv()$env_of_envs$env11), envir=globalenv()$env_of_envs),  "env11")
 })
 
@@ -102,10 +107,11 @@ test_that("T6) the environment name of an object given as a string which does no
   expect_equal(environment_name("0x000000001806d1b8"), NULL)
 })
 
-test_that("T7) the environment name of an object given as a string containing the memory address of an environemnt returns the name of the environment", {
-  expected = "env2"
-  names(expected) = "R_GlobalEnv"
-  expect_equal(environment_name(get_obj_address(globalenv()$env2)), expected)
+test_that("T7) the environment name of an object given as a string containing the memory address of an environemnt returns the name of all environments with that memory address", {
+  expected = c("env_of_envs$env2", "env2")
+  names(expected) = c("R_GlobalEnv", "R_GlobalEnv")
+  observed = environment_name(get_obj_address(globalenv()$env2))
+  expect_equal(sort(observed), sort(expected))
   expect_equal(environment_name(get_obj_address(globalenv()$env_of_envs$env11), envir=globalenv()$env_of_envs), "env11")
 })
 
@@ -114,13 +120,29 @@ test_that("T10) standardized environment names (globalenv and baseenv)", {
   expect_equal(environment_name(baseenv()), "base")
 })
 
-test_that("T11) all environments matching the same memory address are returned when byaddress=TRUE", {
-  skip("*** FAILS WHEN RUN UNDER CHECK BUT DOESN'T FAIL WHEN RUN HERE OR WHEN TESTING THE PACKAGE! WHY??? when doing Check I don't see what is printed here... so I don't know what went wrong ***")
+test_that("T11) all environments matching the same memory address are returned when byname=FALSE", {
+#  skip("*** FAILS WHEN RUN UNDER CHECK BUT DOESN'T FAIL WHEN RUN HERE OR WHEN TESTING THE PACKAGE! WHY??? when doing Check I don't see what is printed here... so I don't know what went wrong ***
+#  OK: Reason is that the order of the environments returned by the environment_name() function is different when running the tests and when running the Check!! I solved this by using sort() below")
   expected = c("e", "env_of_envs$env1", "env1")
   names(expected) = rep("R_GlobalEnv", 3)
-  observed = environment_name(env1, byaddress=TRUE)
-  print(observed)
-  expect_equal(observed, expected)
+  observed = environment_name(env1, byname=FALSE)
+  expect_equal(sort(observed), sort(expected))
+})
+
+test_that("T12) only the environments having the same name are returned when byname=TRUE, even if they share the same memory address", {
+#  skip("*** FAILS WHEN RUN UNDER CHECK BUT DOESN'T FAIL WHEN RUN HERE OR WHEN TESTING THE PACKAGE! WHY??? when doing Check I don't see what is printed here... so I don't know what went wrong ***")
+  expected = c("env_of_envs$env2", "env2")
+  names(expected) = c("R_GlobalEnv", "R_GlobalEnv")
+  observed = environment_name(env2, byname=TRUE)
+  expect_equal(sort(observed), sort(expected))
+})
+
+test_that("T13) only the environments having the same name are returned when byname=TRUE, even if they have different memory addresses", {
+  #  skip("*** FAILS WHEN RUN UNDER CHECK BUT DOESN'T FAIL WHEN RUN HERE OR WHEN TESTING THE PACKAGE! WHY??? when doing Check I don't see what is printed here... so I don't know what went wrong ***")
+  expected = c("env_of_envs$env1", "env1")
+  names(expected) = c("R_GlobalEnv", "R_GlobalEnv")
+  observed = environment_name(env1, byname=TRUE)
+  expect_equal(sort(observed), sort(expected))
 })
 
 test_that("T21) the name of an environment defined inside a function is correctly returned", {

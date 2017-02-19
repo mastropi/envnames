@@ -17,14 +17,21 @@ with(globalenv(), {
 # THE TESTS THROUGH testthat (e.g. using the Check tool in RStudio or calling devtools::test())
 rm(list=ls())
 
-x <- 1
+# Environments
+e <- new.env()
 env1 <- new.env()
 env_of_envs <- new.env()
 env_of_envs$env11 <- new.env()
 env_of_envs$env11$z <- 50
-env1$x <- 3;
-env1$y <- 2;
-objects <- c("x", "y")
+
+# Variables
+x <- 1
+env1$x <- 3
+env1$y <- 2
+e$variable_in_e <- 10
+
+# Arrays and lists
+objects <- c("x", "y", "z", "nonexistent")
 alist <- list("x", "y", "z", "nonexistent")
 alist_named <- list(var1="x", var2="y", var3="z", var4="nonexistent")
 packages <- c(as.environment("package:stats"), as.environment(".GlobalEnv"))
@@ -34,9 +41,9 @@ packages <- c(as.environment("package:stats"), as.environment(".GlobalEnv"))
 test_that("T1) addresses of objects referenced through an environment (e.g. env1$x) are correctly returned", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
-  addresses = sapply(globalenv()$objects, FUN=get_obj_address, envir=env1)
-  expected = c(envnames:::address(globalenv()$env1$x), envnames:::address(globalenv()$env1$y))
-  observed = as.vector(addresses)
+  expected = envnames:::address(env1$x)
+  names(expected) = "env1"
+  observed = get_obj_address(env1$x)
   expect_equal(observed, expected)
     ## Note: use as.vector(addresses) because o.w. the test fails because the names of the array elements do not match, but not the values
 })
@@ -76,8 +83,12 @@ test_that("T5a) the address of objects passed as expressions in specified enviro
 test_that("T5b) sapply() works on arrays, unnamed lists, and named lists", {
   # skip ("not now")
   # browser()
+
+  # First check that get_obj_address(nonexistent) is NULL
+  expect_equal(get_obj_address(nonexistent), NULL)
+
   # On arrays
-  expected = list(x=get_obj_address(x), y=get_obj_address(y))
+  expected = list(x=get_obj_address(x), y=get_obj_address(y), z=get_obj_address(z), nonexistent=get_obj_address(nonexistent))
   observed = sapply(objects, get_obj_address)
   expect_equal(observed, expected)
 
@@ -89,6 +100,12 @@ test_that("T5b) sapply() works on arrays, unnamed lists, and named lists", {
   # On named lists
   expected = list(var1=get_obj_address(x), var2=get_obj_address(y), var3=get_obj_address(z), var4=get_obj_address(nonexistent))
   observed = sapply(alist_named, get_obj_address)
+  expect_equal(observed, expected)
+  
+  # Now specify a specific environment through the envir= option
+  expected = list(envnames:::address(env1$x), envnames:::address(env1$y), NULL, NULL)
+  names(expected) = objects
+  observed = sapply(objects, FUN=get_obj_address, envir=env1)
   expect_equal(observed, expected)
 })
 
@@ -152,8 +169,14 @@ test_that("T90) the address of NA, NULL or a string is NULL (even if the object 
   expect_equal(get_obj_address("x"), NULL)
 })
 
+test_that("T91) the address of an object in an environment called 'e' is correctly returned. This may be an issue because
+          there is a local variable called 'e' in get_obj_address() that I have at some point seen conflicting with
+          the environment 'e' the object we are looking for is located... (this was fixed now --2017/02/19)", {
+  expect_equivalent(get_obj_address(variable_in_e), envnames:::address(e$variable_in_e))
+})
+
 # This was the previous test I had in place to test that the address of an object given as a string is correctly returned
-test_that("T3) the address of an object passed as a string is correctly returned (in different environments)", {
+test_that("T3OLD) the address of an object passed as a string is correctly returned (in different environments)", {
   skip ("no longer true: we now return always NULL for strings")
   expected = envnames:::address(globalenv()$env1)
   names(expected) = "R_GlobalEnv"

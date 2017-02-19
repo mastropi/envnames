@@ -51,7 +51,7 @@
 #' get_obj_name(TRUE)					# NULL
 #' get_obj_name(v[1])					# NULL, and a message of invalid object name is shown
 #' 
-#' # Example of use to parse input parameters
+#' # Example of parsing input parameters to functions
 #' test = function(x) {
 #'	# Store in x the value of the object passed as parameter, regardless of whether the object is passed 
 #'	# as object per se (e.g. x=y) or passed as a string representing the object name (e.g. x="y").
@@ -63,7 +63,7 @@
 #' }
 #' y = 3
 #' test(y)                    # Returns 4
-#' test("y")                  # Returns 4
+#' test("y")                  # Also returns 4
 get_obj_name = function(obj, n=0, silent=FALSE) {
 	# NOTES:
 	# - When n=0, this whole process is equivalent to doing the following in the calling function:
@@ -111,6 +111,8 @@ get_obj_name = function(obj, n=0, silent=FALSE) {
 
   # Expression to evaluate at the parent.frame(n) environment where object 'obj_parent' needs to be 'substitute'd
   # with the value it received when the function was called
+  # The goal here is to get the name of the evaluation (substitution) of obj_parent in that environment, by using deparse()
+  # Note that this works regardless of the object class: it works for environments, calls, etc!
 	expr = tryCatch(parse(text=paste("deparse(substitute(", obj_parent, "))")), error=function(e) if(!silent) error_NotValidExpression(obj_parent), silent=TRUE )
 	if (!is.expression(expr)) return(NULL)
 

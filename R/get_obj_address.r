@@ -145,11 +145,13 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 			      }
 			      if (is.null(obj_address)) {
 			        # Still the object's address could not be retrieved
-			        # Last chance
+			        # Last chance, we check whether 'obj' is a name or symbol and in that case we get its address
 			        # This is the case when e.g. obj = as.name("x"), i.e. obj = x and therefore we simply need to get the address of x.
 			        # Note that in this case obj_name above is "as.name(\"x\")" and that's why we were not able to retrieve
 			        # the object address so far (although obj was found when computing obj_eval!)
-			        obj_address = try( eval( parse(text=paste("envnames:::address(", deparse(obj), ")")), envir=envir ), silent=TRUE )
+			        if (is.symbol(obj)) {
+			          obj_address = try( eval( parse(text=paste("envnames:::address(", deparse(obj), ")")), envir=envir ), silent=TRUE )
+			        }
 			      }
 			    }
 			  }
@@ -166,9 +168,13 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 	# (note: although this worked correctly for get_obj_address("x"), it failed for get_obj_address("env1$x") (it gave an incorrect
 	# memory address) and fixing it to make it work properly was too complicated and not really necessary)
 	# Note that we need to set the warning option to -1 to avoid a warning when calling is.na(obj) on an environment object...
-	# Also note that before checking if obj is NA we check that it is not an environment because is.na() on an environment
-	# gives a warning.
-	is_obj_null_na_string = try( is.null(obj) || (!is.environment(obj) && is.na(obj)) || envnames:::is_string(obj), silent=TRUE )
+	# Also note that before checking if obj is NA we check that it is not an environment and not a symbol because is.na()
+	# gives a warning in those cases!
+	# I also set the warn option to -1 because sometimes we get the warning regarding "promised evaluation".
+	option_warn = options("warn")$warn
+	options(warn=-1)
+	is_obj_null_na_string = try( is.null(obj) || (!is.environment(obj) && !is.symbol(obj) && is.na(obj)) || envnames:::is_string(obj), silent=TRUE )
+	options(warn=option_warn)
 	if (!inherits(is_obj_null_na_string, "try-error") && is_obj_null_na_string) {
 	  return(NULL)
 	}
@@ -214,10 +220,15 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 				} else {
 					# Check whether the environment is user-defined or a named environment (system or package)
 				  # First try to see if we can resolve it as a system or package environment with as.environment()...
-					e = try( as.environment(envnames:::destandardize_env_name(envir_name)), silent=TRUE )
+				  e <- try( as.environment(envnames:::destandardize_env_name(envir_name)), silent=TRUE )
 					if (inherits(e, "try-error")) {
 						# It's a user-defined environment
-						e = eval(parse(text=envir_name))
+					  # Note that we evaluate the expression in envir=parent.frame(). This is important to void name collision
+					  # when envir_name happens to be "e" (i.e. the user has defined an environment with name "e"), whose name
+					  # is the same as the local variable 'e' we have just created above!
+					  # If we do not use envir=parent.frame(), the LOCAL 'e' variable is evaluated, and since 'e' is of class
+					  # try-error, we will not store what we want to store in 'e' (i.e. the environment associated to envir_name)
+					  e = eval(parse(text=envir_name), envir=parent.frame())
 					}
 					obj_addresses = c(obj_addresses, get_obj_address0(obj, envir=e, n=n+1))	# n+1 means that we want to resolve 'obj' 1 level up from the n levels passed to get_obj_address(), since we are now going into one level deeper (by calling get_obj_address0())
 				}

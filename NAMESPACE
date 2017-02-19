@@ -1,6 +1,7 @@
 useDynLib(envnames, .registration=TRUE)
 
 #export(testenv)				# Used for testing the search for environments defined in a package (see global_definitions.r)
+export(address)
 export(environment_name)
 export(get_env_name)
 export(get_env_names)
