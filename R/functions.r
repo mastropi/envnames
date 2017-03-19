@@ -282,10 +282,9 @@ check_object_with_path = function(x, checkenv=FALSE, envir=NULL) {
 #' Check if an object exists in a given environment
 #' 
 #' Check if an object exists in a given environment or any parent environment from the given environment in
-#' the way that the \link{eval} function does it by default.
+#' the way that the \link{eval} function does by default.
 #' 
-#' @param obj object to check. It must be a name or symbol in order to check if it exists. If it is a string
-#' representing an object name, the function returns that the object does not exist.
+#' @param obj object to check. It can be given as a symbol or as a string.
 #' @param envir environment where its existence is checked.
 #' 
 #' @details
@@ -297,20 +296,19 @@ check_object_with_path = function(x, checkenv=FALSE, envir=NULL) {
 #' \item{\code{found}} flag indicating whether the object was found
 #' \item{\code{eval}} result of the evaluation of \code{obj} either in \code{envir} or in a parent environment
 #' where it was found.
-#' \item{\code{address}} memory address of the object found.
+#' \item{\code{address}} memory address of the object found. IMPORTANT: This memory address is NOT the object's memory
+#' address when the object is given as a string, as in that case the memory address contains the memory address of the
+#' string! (which varies every time, even if the string is the same, because every time the string allocates a different
+#' memory address)
 #' }
 #' 
 #' @keywords internal
 check_object_exists = function(obj, envir=globalenv()) {
-  # Check first if the object is NULL, NA or a string, in which case we should return that the object does not exist
-  # In fact, the case for NULL and NA is obvious, and for string,s we don't search for a string as it doesn't make sense
-  # (or if we wanted to accept strings representing object names, it would unnecessarily complicate the function too much)
+  # Check first if the object is NULL or NA, in which case we should return that the object does not exist
   # We must enclose the check expression in a try() block because obj may not exist in the evaluation environment, although
   # it may exist in other environments and this is what this function is all about --i.e. about finding where the object exists)
-  # Also note that before checking if obj is NA we check that it is not an environment because is.na() on an environment
-  # gives a warning that we want to avoid.
-  is_obj_null_na_string = try( is.null(obj) || (!is.environment(obj) && is.na(obj)) || is_string(obj), silent=TRUE )
-  if (!inherits(is_obj_null_na_string, "try-error") && is_obj_null_na_string) {
+  is_obj_null_na = is_null_or_na(obj)
+  if (is_obj_null_na) {
     obj_eval = NULL
     obj_address = NULL
     found = FALSE
@@ -402,10 +400,27 @@ is_memory_address = function(x) {
 #' @return boolean indicating whether the scalar object contains a valid logical value (i.e. TRUE or FALSE)
 #' and is not NA nor NULL, and has positive length.
 is_logical = function(x) {
-  return(!is.na(x) && !is.null(x) && is.logical(x) && length(x) > 0)
+  return(!is.null(x) && !is.na(x) && is.logical(x) && length(x) > 0)
+}
+
+#' Check whether an object is NULL or NA.
+#' 
+#' This function silently handles special cases for which is.null() and is.na() may return a warning, such as functions objects.
+#' (e.g. the warning "Warning message: In is.na(g) : is.na() applied to non-(list or vector) of type 'closure')"
+#' 
+#' @param x object to check.
+#' @return boolean indicating whether the object is NULL or NA.
+is_null_or_na = function(x) {
+  op.warn = options("warn")$warn; on.exit( options(warn=op.warn) )
+  options(warn=-1)
+  output = try( is.null(x) || (is_logical(is.na(x)) && is.na(x)), silent=TRUE )
+  if (inherits(output, "try-error")) output = FALSE
+  return(output)
 }
 
 #' Check whether an object is a string.
+#' 
+#' WARNING: This function fails when the value of x is "x"!! (i.e. it returns TRUE even when object 'x' is NOT a string per se --i.e. it was not passed as "x")
 #' 
 #' The result of this function is different from is.character(x) since this function returns TRUE
 #' for an array of character values!
@@ -413,7 +428,12 @@ is_logical = function(x) {
 #' @param x object to check.
 #' @return boolean indicating whether the object is a string.
 is_string = function(x) {
-  return(get_obj_name(x, n=1) == x)
+  # TODO: Fix the WARNING mentioned above... is it possible?
+  # Note that we evaluate the object name two environments up, this is because we want to get the name of the object
+  # *stored* in the variable used to call is_string(). Ex: if we call is_string(obj), we don't want the name of 'obj'
+  # (which would be the result if we used n=1) but the name of the object *stored* in 'obj' (e.g. "env1$x")... and this
+  # is obtained by using n=2.
+  return(get_obj_name(x, n=2, eval=FALSE) == x)
 }
 
 #' Standardize the name of an environment

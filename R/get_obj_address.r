@@ -62,8 +62,8 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 			}
 
 			#------------------ 1. Try to retrieve the object address using 'obj' as is -----------------
-			# Get the name of the object stored in 'obj'. That is if obj=x, this returns "x".
-			obj_name = get_obj_name(obj, n=n, silent=TRUE)
+			# Get the name of the object in the calling function (i.e. the object stored in 'obj'. That is if obj=x, this returns "x")
+			obj_name = get_obj_name(obj, n=n+1, silent=TRUE)
 			if (!is.null(obj_name) && obj_name != "" && exists(obj_name, envir=envir, inherits=FALSE)) {
 				## NOTE: The conditions !is.null() and != "" are in place because these are not valid arguments for the
 				## exists() function. All the other names including invalid names such as "<a" are valid arguments for exists(). 
@@ -136,7 +136,7 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 			        # This case is for instance when obj = alist$z whose value obj_eval = "x"
 			        # Since "x" may be the name of an object in the given environment, we search for "x" now.
 			        # Do the same we tried in step 1 but now for the evaluated object
-			        obj_name = get_obj_name(obj_eval, n=n, silent=TRUE)
+			        obj_name = get_obj_name(obj_eval, n=n+1, silent=TRUE)
 			        if (!is.null(obj_name) && obj_name != "" && exists(obj_name, envir=envir, inherits=FALSE)) {
 			          obj_address = envnames:::address(eval(as.name(obj_name), envir=envir))
 			        } else {
@@ -162,8 +162,8 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 
 	# Initialize the output variable
 	obj_addresses = NULL
-	
-	# First check whether the object is NULL, NA o a string, in which case we return NULL
+
+	# First check whether the object is NULL, NA or a string, in which case we return NULL
 	# In fact, we don't want to retrieve the address of a string, because this changes for every call to the function!
 	# (note: although this worked correctly for get_obj_address("x"), it failed for get_obj_address("env1$x") (it gave an incorrect
 	# memory address) and fixing it to make it work properly was too complicated and not really necessary)

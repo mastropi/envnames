@@ -43,8 +43,8 @@ get_obj_value = function(obj) {
 	# Note that the evaluation in eval() is done on parent.frame(2), i.e. on the environment two levels up
 	# from this function. That is:
 	# - get_obj_value() is expected to be called from a function to parse the value of a parameter
-	# - the name of the parameter is returned by get_obj_name(obj, n=1)
-	# - this parameter needs to be evaluated in the function calling that function!
+	# - the name of the parameter is returned by get_obj_name(obj, n=1) (i.e. the name of the object in the function calling get_obj_value())
+	# - this parameter needs to be evaluated in the function *calling* that function!
 	# (which is 2 levels up from get_obj_value())
 	# Ex:
 	# test = function(x) {
@@ -55,12 +55,12 @@ get_obj_value = function(obj) {
 	# test(y)    # returns 4
 	# test("y")  # returns 4
 	# In this example, the name of x inside function test() as returned by the get_obj_name() call done in this
-	# function (get_obj_value) is "y"; the value of as.name("y") is 3 when evaluated in the calling environment
+	# function (get_obj_value) is "y"; the value of as.symbol("y") is 3 when evaluated in the calling environment
 	# to test() which is parent.frame(2) from within get_obj_value(). Note that x should contain the *value*
 	# of the variable received as parameter (e.g. 3), NOT the variable as a symbol ('y'), o.w. x+1 fails.
 	# In fact, whenever 'x' is used inside a function, the function says: "give me the *value* of the variable
 	# referenced by 'x')
-	value = try( eval(as.name(get_obj_name(obj, n=1, silent=TRUE)), parent.frame(2)), silent=TRUE )
+	value = try( eval(as.symbol(get_obj_name(obj, n=1, silent=TRUE)), parent.frame(2)), silent=TRUE )
 	if (inherits(value, "try-error")) {
 		return(obj)
 	} else {

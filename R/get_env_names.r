@@ -104,7 +104,7 @@ get_env_names = function(envir=NULL) {
 		# Look for environments present ONLY in the specified non-NULL envir environment (this can be a user-defined environment with new.env() or a package)
 		# NOTE: Either of the two statements below work (one of them is commented out)
 		# Note that in the first option we need to use the option envir=envir in the get() function,
-		# and this is because the list of variables returned by ls(envir) reside in the envir environment.
+		# and this is because the variables returned by ls(envir) reside in the envir environment.
 		#env_names = try( Filter(function(x) "environment" %in% class(get(x, envir=envir)), ls(envir)), silent=TRUE )
 		env_names = try( {
 					envs = with(envir, Filter(function(x) "environment" %in% class(get(x)), ls()))

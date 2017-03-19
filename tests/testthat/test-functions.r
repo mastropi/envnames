@@ -23,9 +23,7 @@ env1 <- new.env()
 env1$x <- 3;
 env1$y <- 2;
 
-# check_obj_exists() ------------------------------------------------------
-library(testthat)
-
+# check_object_exists() ------------------------------------------------------
 test_that("T1) objects defined in an environment are found and their memory address is correct", {
   expected = list(found=TRUE, eval=eval(env1$y), address=envnames:::address(env1$y))
 observed = envnames:::check_object_exists(y, envir=env1)
@@ -73,20 +71,25 @@ test_that("T5) objects defined in a package are found and their memory address i
   expect_equal(observed, expected)
 })
 
+test_that("T6) objects given as strings are found if the object referenced by the string exists,
+          ALTHOUGH their memory address should not be considered as VALID because they are the memory address of the string, NOT of the object!", {
+  expected = list(found=TRUE, eval="env1$x")
+  observed = envnames:::check_object_exists("env1$x")
+  observed$address = NULL   # Do not compare the 'address' attribute
+  expect_equal(observed, expected)
+})
+
 #----- Extreme cases ------
-test_that("T90) NULL, NA or strings return 'not found'", {
+test_that("T91) NULL and NA return 'not found'", {
   expected = list(found=FALSE, eval=NULL, address=NULL)
   observed = envnames:::check_object_exists(NULL)
   expect_equal(observed, expected)
   expected = list(found=FALSE, eval=NULL, address=NULL)
   observed = envnames:::check_object_exists(NA)
   expect_equal(observed, expected)
-  expected = list(found=FALSE, eval=NULL, address=NULL)
-  observed = envnames:::check_object_exists("env1$x")
-  expect_equal(observed, expected)
 })
 
-test_that("T91) non-existing objects return 'not found'", {
+test_that("T92) non-existing objects return 'not found'", {
   expected = list(found=FALSE, eval=NULL, address=NULL)
   observed = envnames:::check_object_exists(nonexistent)
   expect_equal(observed, expected)
@@ -94,6 +97,6 @@ test_that("T91) non-existing objects return 'not found'", {
   observed = envnames:::check_object_exists(nonexistent, envir=env1)
   expect_equal(observed, expected)
 })
-# check_obj_exists() ------------------------------------------------------
+# check_object_exists() ------------------------------------------------------
 
 })

@@ -97,13 +97,14 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 	# Parameter env_full_names is both an input and output parameter that is updated with the new environments
 	# that are found with this search.
 	look_for = function(obj, envmap, env_full_names, n, envir=NULL, silent=TRUE) {
-	  # Get the name of obj in the calling environment + n levels (where n is the parameter passed to obj_find())
-	  # (this is the same as running get_obj_name(obj, n=n) in the calling function environment, i.e.
+	  # Get the name of obj in the calling environment of the function calling this function + n levels up
+	  # (where n is the parameter passed to obj_find())
+	  # (this is the same as running get_obj_name(obj, n=n+1) in the calling function environment, i.e.
 	  # in the main body of obj_find(), where in fact we have already run that, but here we are constructing
 	  # obj_name again as a *local* variable --and this is crucial because there are two places in the main
 	  # body of obj_find() where this function can be called: in one place it's called with 'obj' as parameter
 	  # and in the other place it's called with 'obj_eval' as parameter => obj_name needs to be computed again!)
-	  obj_name = get_obj_name(obj, n=n+1, silent=TRUE)
+	  obj_name = get_obj_name(obj, n=n+2, silent=TRUE)
 
 	  # Look for this object in the environments defined in the 'envir' environment
 		i = 0
@@ -146,7 +147,7 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 		}
 
 		return(env_full_names)
-	}
+	} # look_for()
 
 	# Store the original environment passed in 'envir' in case we need to call obj_find() recursively
 	# (in order to search for the *evaluated* 'obj' (obj_eval) as done at the very end of this process),
@@ -189,9 +190,9 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
   )
   if (error) return(invisible(NULL))
 
-	# Extract the name of the object
+	# Extract the name of the object in the calling function
 	# (i.e. the string of the object passed in obj when obj is NOT a string --e.g. when obj = x => obj_name = "x")
-	obj_name = get_obj_name(obj, n=n, silent=TRUE)
+	obj_name = get_obj_name(obj, n=n+1, silent=TRUE)
 	# Check if obj_name is not NULL and it's not an empty string, o.w. the exists() function below gives an error
 	# (the gsub() function removes blanks in the value of obj_name so that if the user passes "   ",
 	# nchar() still returns 0, meaning that the name of the object is an empty string)
