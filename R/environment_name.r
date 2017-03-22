@@ -4,7 +4,7 @@
 #' but extending its functionality to retrieving the names of user-defined environments as well.
 #' 
 #' @param env environment whose name is of interest.
-#' It can be given as an object of class environment, or as a string with the name of the environment,
+#' It can be given as an object of class environment, as a string with the name of the environment,
 #' or as a string with the memory address of the environment.
 #' The latter is useful to find out if a given memory address is the reference of an environment object.
 #' Note that the variable passed may or may \emph{not} exist in the calling environment, as the purpose
@@ -13,9 +13,10 @@
 #' the whole workspace, including packages and user-defined environments, recursively.
 #' @param envmap data frame containing a lookup table with name-address pairs of environment names and
 #' addresses to be used when searching for environment \code{env}. Defaults to NULL which means that the
-#' lookup table is constructed on the fly with the environments defined in the \code{envir} environment.
+#' lookup table is constructed on the fly with the environments defined in the \code{envir} environment
+#' --if not NULL--, or in the whole workspace if \code{envir=NULL}.
 #' See the details section for more information on its structure.
-#' @param byname flag indicating whether the match for \code{env} is based on its name or on its
+#' @param matchname flag indicating whether the match for \code{env} is based on its name or on its
 #' memory address. In the latter case all environments sharing the same memory address of the given
 #' environment are returned. Such scenario happens when, for instance, different
 #' environment objects have been defined equal to another environment (as in \code{env1 <- env}.
@@ -31,7 +32,7 @@
 #' In both cases, if \code{envir=NULL} the search is carried out in the whole workspace. 
 #'  
 #' It may happen that more than one environment exist with the same memory address (for instance
-#' if an environment is a copy of another environment). In such case, if \code{byname=FALSE},
+#' if an environment is a copy of another environment). In such case, if \code{matchname=FALSE},
 #' the names of ALL the environments matching \code{env}'s memory address are returned. Otherwise,
 #' only the environments matching the given name are returned.
 #' 
@@ -56,11 +57,11 @@
 #' \code{for (e in c(globalenv(), baseenv())) { print(environment_name(e, ignore="e")) }}
 #' 
 #' @return
-#' If \code{byname=FALSE} (the default), an array containing the names of all the environments
+#' If \code{matchname=FALSE} (the default), an array containing the names of all the environments
 #' (defined in the \code{envir} environment if \code{envir} is not NULL) having the same memory address
 #' as the \code{env} environment.
 #' 
-#' If \code{byname=TRUE}, the environment name given in \code{env} is used in addition to the memory
+#' If \code{matchname=TRUE}, the environment name given in \code{env} is used in addition to the memory
 #' address to check the matched environments (potentially many if they have the same memory address)
 #' so that only the environments having the same name and address as the \code{env} environment are returned.
 #' Note that several environments may be found if environments with the same name are defined in
@@ -77,22 +78,22 @@
 #' 
 #' @examples
 #' env1 <- new.env()
-#' environment_name(env1)                   # "env1"
+#' environment_name(env1)                   		# "env1"
 #' 
 #' env1_address = get_obj_address(env1)
-#' environment_name(env1_address)           # "env1"
+#' environment_name(env1_address)           		# "env1"
 #' 
 #' # Create a copy of the above environment
 #' env1_copy <- env1
-#' environment_name(env1)                   # "env1" "env1_copy"
+#' environment_name(env1)                   		# "env1" "env1_copy"
 #' # Retrieve just the env1 environment name
-#' environment_name(env1, byname=TRUE)      # "env1"
+#' environment_name(env1, matchname=TRUE)   		# "env1"
 #' 
 #' # An environment within another environment
 #' with(env1, envx <- new.env())
-#' environment_name(env1$envx)              # "env1$envx" "env1_copy$envx"
-#' environment_name(env1$envx, byname=TRUE) # NULL, because the environment name is "envx", NOT "env1$envx"
-environment_name <- function(env, envir=NULL, envmap=NULL, byname=FALSE, ignore=NULL) {
+#' environment_name(env1$envx)              		# "env1$envx" "env1_copy$envx"
+#' environment_name(env1$envx, matchname=TRUE) 	# NULL, because the environment name is "envx", NOT "env1$envx"
+environment_name <- function(env, envir=NULL, envmap=NULL, matchname=FALSE, ignore=NULL) {
 # todo:
 # 1) [DONE-2016/08/13] (2016/03/30) Add the functionality of receiving a memory address in the env parameter and retrieving
 #    the environment name associated to the address (of course if the associated variable exists and is
@@ -106,7 +107,7 @@ environment_name <- function(env, envir=NULL, envmap=NULL, byname=FALSE, ignore=
 #		 correctly returns the environment 'env1' (i.e. environment_name(environment(env1$f)) returns "env1")  
 
   # Output variable
-  env_full_names = NULL
+  env_names = NULL
 
 	# Flavor of the environment functions... (for reference)
   #env_current = environment()
@@ -130,7 +131,14 @@ environment_name <- function(env, envir=NULL, envmap=NULL, byname=FALSE, ignore=
 		# search for the given memory address in the envmap lookup table... so no need to call get_obj_address()
 		# in that case.
 		if (!envnames:::is_memory_address(env)) {
-			env_addresses = get_obj_address(env, envir=envir, n=1)
+			# We now call get_obj_address() to first look for 'env' in the given 'envir' environment --if not NULL--
+			# or in the whole workspace when envir=NULL, and then retrieve its memory address (if 'env' is found).
+			# NOTE that we don't simply call envnames:::address() to get the memory address of 'env' because:
+			# - 'env' can be given as a string (i.e. with the environment name as a string)
+			# - even if 'env' is given as an environment object, it could exist in different environments
+			# and we would like to retrieve ALL of them. This is also the reason why I am calling the variable
+			# where the returned value is stored as a plural name ("addresses" instead of "address").
+			env_addresses = get_obj_address(env, envir=envir, envmap=envmap, n=1)
 
 			# Now look for the addresses returned in the envmap lookup table created above
 			# But first check if the match should be done by ADDRESS or instead by the NAME of the environment
@@ -138,7 +146,7 @@ environment_name <- function(env, envir=NULL, envmap=NULL, byname=FALSE, ignore=
 			# of the 'env' environment are returned)
 			# This is important because several environments may exist that point to the same memory address
 			# (e.g. by doing e = globalenv(), e will have the same memory address as the global environment)
-			if (!byname) {
+			if (!matchname) {
 				# Look just for the address (the name of the environment doesn't matter)
 				# Note that this search can return more than one match even if there is only one environment with
 				# the name of the 'env' environment, and the reason is that there may be several environments
@@ -148,28 +156,33 @@ environment_name <- function(env, envir=NULL, envmap=NULL, byname=FALSE, ignore=
 				# Look for the address AND the name of the environment in the envmap data frame
 				# Note that this search can ALSO return more than one match since an environment with the same
 				# name may be present in different environments or packages.
-				
+
 				# Get the name of the environment given in 'env'
 				env_name = get_obj_name(env, n=1, silent=TRUE)
-				
+
 				indfound = which(envmap[,"address"] %in% env_addresses & envmap[,"name"] == env_name)
 			}			
 		} else {
 			# 'env' is given as a memory address
 			# => search for this memory address in the envmap table
-			# Note that in this case we don't care about the value of parameter 'byname' because
+			# Note that in this case we don't care about the value of parameter 'matchname' because
 			# there is no name associated to 'env' so the match will for sure be by address only!!
 			indfound = which(envmap[,"address"] == env)
 		}
 
+		# Clean up the matched environments: in the case both "function" and "proper" environments matched, keep just the "proper" environments
+		indfound = envnames:::clean_up_matching_environments(envmap, indfound)
+
 		# If any environments are found construct the output variable
     if (length(indfound) > 0) {
-      # Location (used when envir=NULL) and full name of the matching environments
-      # (as.character() is used to remove any factor attribute)
-      env_locations = as.character(envmap[indfound,"location"])
-      env_full_names = as.character(envmap[indfound,"pathname"])
+      # Get the locations and names of the environments found
+			env_locations = ifelse( envmap[indfound,"path"] == "",
+															as.character(envmap[indfound,"location"]),
+															paste(as.character(envmap[indfound,"location"]), as.character(envmap[indfound,"path"]), sep="$")
+														)
+      env_names = as.character(envmap[indfound,"name"])
 			# Standardize the environment names (in case the global environment or the base environment are present)
-			env_full_names = sapply(env_full_names, FUN=envnames:::standardize_env_name, USE.NAMES=FALSE)
+			env_names = sapply(env_names, FUN=envnames:::standardize_env_name, USE.NAMES=FALSE)
 
       # Check if the user asked to ignore some of the environments found and if so remove them from the output
 			# This is useful when we are calling environment_name() from e.g. a loop on a set of environments
@@ -178,30 +191,37 @@ environment_name <- function(env, envir=NULL, envmap=NULL, byname=FALSE, ignore=
 			if (!is.null(ignore)) {
 				# Standardize ignore in case it's the global environment or the base environment
 				ignore = sapply(ignore, FUN=envnames:::standardize_env_name)
-				indkeep = which( !(env_full_names %in% ignore) )
-				env_full_names = env_full_names[indkeep]
+				indkeep = which( !(env_names %in% ignore) )
+				env_names = env_names[indkeep]
 			}
 
 			# Store the location of the environments found as the names attribute of array env_name when:
-			# - envir=NULL and
-			# - it's not the case that there is only one environment found and the environment is a system
+			# - envir=NULL (i.e. the search for the environment is in the whole workspace) AND
+			# - we are not in the situation that only one environment was found and such environment is a system
 			# or package environment. 
       # In fact, envir=NULL means that the user doesn't know where the environment is located
       # (i.e. in which package) and may want to know where it is.
 			# In addition, there may be several environments matching 'env' if different variables point to the
-			# the same environment (that's why we also add the names when length(env_full_names) > 1).
+			# the same environment (that's why we also add the names when length(env_names) > 1).
 			# Finally, when the environment whose name was requested is one of the system or package environments
 			# and that is the only environment found, then simply show its name.
       # This is the same logic implemented in function get_obj_address() when envir=NULL (although implemented
 			# differently there because of the different information available in that case)
       if (is.null(envir) &&
-					!(length(env_full_names) == 1 && sapply(env_full_names, envnames:::destandardize_env_name) %in% search())) {
-        names(env_full_names) = env_locations
+					!(length(env_names) == 1 && sapply(env_names, envnames:::destandardize_env_name) %in% search())) {
+        names(env_names) = env_locations
       }
 		}
   }
 
-  return(env_full_names)
+	# When the env_names array has a names attribute (containing the locations of the environments found),
+	# sort the array by the names attribute (so that locations appear alphabetically sorted)
+	if (!is.null(names(env_names))) {
+		ord = order(names(env_names))
+		env_names = env_names[ord]
+	}
+
+  return(env_names)
 }
 
 get_env_name <- environment_name

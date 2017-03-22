@@ -163,6 +163,40 @@ extract_last_member = function(full_name) {
 	return(list(root=root, name=name))
 }
 
+#' Clean up the list of environments matching a memory address in an environment map.
+#'
+#' @param envmap data frame with the name-address pairs of environments having at least a column
+#' called "type" that specifies the type of environment, for which "function" is used to indicate
+#' a function execution environment.  
+#' @param indfound array containing the indices in envmap giving the environments to clean up
+#' (typically these are the environments that match a given memory address).
+#' @return an array containing the indices in \code{indfound} after cleanup.
+#' 
+#' @details
+#' A cleaned list of matched environments from \code{envmap} should either:
+#' \itemize{
+#' \item contain ONLY ONE function execution environment,
+#' \item contain one ore more user-defined or named environments.
+#' }
+#' If none of the above is the case, all function execution environments are removed from the list
+#' of matching environments, i.e. removed from the \code{indfound} array. 
+clean_up_matching_environments = function(envmap, indfound) {
+	# If the memory address of the matched environments correspond to a function execution environment,
+	# there should be only ONE occurrence in indfound...
+	# If this is not the case it means that the execution environment of the function is a proper environment
+	# (i.e. a user environment or named environment) and that environment should be the one to retrieve
+	# => we should eliminate all the matches of function execution environments from indfound)
+	# So far I observed this when eval() is one of the functions in the calling chain for which the global environment
+	# is the execution environment (probably because the eval() function is asked to evaluate an expression in the global environment)
+	if ("function" %in% envmap[indfound,"type"] && length(indfound) > 1 ) {
+		# Keep in indfound just the index of the environment that is NOT a function execution environment
+		# because that's the one we want to retrieve (e.g. the global environment)
+		indfound = indfound[ envmap[indfound, "type"] != "function" ]
+	}
+
+	return(indfound)
+}
+
 #' Check whether a string corresponds to the name of an environment
 #' 
 #' The input string is checked as a valid environment name. The environment can be a named environment
@@ -202,8 +236,13 @@ check_environment = function(x, envir) {
     # the lookup table for the calling environment (+n levels) would NOT include any packages in the lookup table)
     envmap_all = get_env_names()
     ind = which(envmap_all[,"address"] == x_address)
+		# Clean up the matched environments: in the case both "function" and "proper" environments matched, keep just the "proper" environments
+		ind = envnames:::clean_up_matching_environments(envmap_all, ind)		
     if (length(ind) > 0) {
-      env_name = envmap_all[ind, "pathname"] 
+      env_name = envmap_all[ind[1], "pathname"]
+        ## NOTE: ind[1] means: keep just the first occurrence found. There could more than one occurrence when several variables
+        ## point to the same environment (and therefore they have the same memory address). So, here we just keep the
+        ## first match found. Otherwise, multiple matches could generate a problem with the processing done outside.
       found = TRUE
     }
   }
@@ -219,7 +258,7 @@ check_environment = function(x, envir) {
 #' (e.g. \code{globalenv()$v[1]} refers to element 1 of array v and such thing is not the name of an object).
 #' 
 #' Optionally a check of whether the path points to a valid environment inside a given environment
-#' is performed by calling \code{check_environment}.
+#' is performed by calling \code{}.
 #' 
 #' @param x string to be checked.
 #' @param checkenv flag indicating whether the environment path should be checked for valid environment

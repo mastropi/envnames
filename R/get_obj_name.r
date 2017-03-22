@@ -24,8 +24,11 @@
 #' without added quotes. For example, if \code{v = "x"} then \code{get_obj_name(v, eval=TRUE)} returns \code{"x"} while
 #' \code{deparse(v)} returns \code{"\"x\""}.
 #' }
+#' 
+#' @seealso
+#' \link{get_obj_value}
 get_obj_name = function(obj, n=0, eval=FALSE, silent=TRUE) {
-  # Update n so that we do as if we were working in the environment of the calling function
+  # Increase n by 1 so that we do as if we were working in the environment of the calling function
   n = n + 1
 
   # Get the object of interest (i.e. the object in the calling environment) which will be the
@@ -62,9 +65,11 @@ get_obj_name = function(obj, n=0, eval=FALSE, silent=TRUE) {
   # i.e. to not have the result of get_obj_name() depend on whether we enclose its call in a print() function or not
   # (and any other similar situation)
   # For more info on the differences between parent.frame(n) and sys.frame(-n) see the Note in the documentation of sys.parent()
-  # b) the result of the object evaluation is the same in all parent frames! In fact: if z -> f(x) -> g(y) (where '->' means "calls")
-  # the value of y in g(y) is the same as the value of x in f(x) which is the same as the value of z!
-  # In any case we evaluate obj_parent in the n-th calling environment for logic consistency.
+  # b) the result of the object evaluation is the same in all parent frames when the object's value is not changed by any
+	# function of the chain. In fact: if z -> f(x) -> g(y) (where '->' means "calls") and the parameter passed to the
+	# different functions (z, x, y) does not change, then the the value of y in g(y) is the same as the value of x in f(x)
+	# which is the same as the value of z. However, the values may differ if each function changes the value passed as input
+	# parameter before calling the next function in the chain.
   if (eval) {
     obj_parent_eval = try( eval( obj_parent, parent.frame(n) ), silent=TRUE )
     # Check if the evaluation gives an error

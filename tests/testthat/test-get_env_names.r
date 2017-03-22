@@ -18,7 +18,7 @@ test_that("The table returned only contains system environments when no user env
   # skip("not now")
   expected = c(search(), names(envnames:::get_namespace_addresses()))
   envmap = get_env_names()
-  observed = envmap$pathname
+  observed = envmap$pathname[envmap[,"type"] != "function"] # Eliminate the function environments as I am not interested in checking those here
   expect_equal(observed, expected)
 })
 
@@ -79,7 +79,7 @@ test_that("Create the table of user-environments present in a given user-defined
                         name=c("env1", "env2"),
                         stringsAsFactors=FALSE)
   envmap = get_env_names(envir=env_of_envs)
-  observed = envmap
+  observed = envmap[envmap[,"type"] != "function",] # Eliminate the function environments as I am not interested in checking those here
   expect_equal(observed, expected)
 })
 

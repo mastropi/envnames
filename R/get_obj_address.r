@@ -5,12 +5,31 @@
 #' @param envir environment where the object should be searched for. All parent environments of
 #' \code{envir} are searched as well. Defaults to \code{NULL} which means that it should be searched in the
 #' whole workspace (including packages and user-defined environments).
+#' @param envmap data frame containing a lookup table with name-address pairs of environment names and
+#' addresses to be used when searching for object \code{obj}. Defaults to NULL which means that the
+#' lookup table is constructed on the fly with the environments defined in the \code{envir} environment
+#' --if not NULL--, or in the whole workspace if \code{envir=NULL}.
+#' See the details section for more information on its structure.
 #' @param n number of levels to go up from the calling function environment to resolve the name
 #' of \code{obj}. It defaults to 0 which implies the calling environment.
 #'
 #' @details
 #' Strings return \code{NULL} but strings can be the result of an expression passed as argument to this function.
 #' In that case, the string is interpreted as an object and its memory address is returned if the object exists.
+#' 
+#' If \code{envmap} is passed it should be a data frame providing an address-name pair lookup table
+#' of environments and should contain at least the following columns:
+#' \itemize{
+#' \item{\code{location}} for user-defined environments, the name of the environment where the environment
+#' is located; otherwise \code{NA}.
+#' \item{\code{pathname}} the full \emph{environment path} to reach the environment separated by \code{$}
+#' (e.g. \code{"env1$env$envx"})
+#' \item{\code{address}} the 16-digit memory address of the environment given in \code{pathname} enclosed
+#' in < > (e.g. \code{"<0000000007DCFB38>"})
+#' }
+#' This is useful for speedup purposes, in case several calls to this function will be done
+#' under the same environment space.
+#' Such \code{envmap} data frame can be created by calling \link{get_env_names}.
 #' 
 #' @return The 16-digit memory address of the input object given as a string enclosed in <>
 #' (e.g. \code{"<0000000005E90988>"}), or NULL under any of the following situations:
@@ -49,7 +68,7 @@
 #' alist <- list("x")
 #' get_obj_address(alist[[1]])      # memory address of object 'x'
 #' get_obj_address(alist[1])        # same result
-get_obj_address = function(obj, envir=NULL, n=0) {
+get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0) {
 # NOTE: (2016/07/26) This function is needed to avoid an error when requesting the address() of an object that
 # does not exist. This function returns NULL in such case instead of an error message!
 
@@ -183,9 +202,9 @@ get_obj_address = function(obj, envir=NULL, n=0) {
 	if (is.null(envir)) {
 		# Look for the object in the whole workspace (globalsearch=TRUE) and
 	  # get the name of the environments where the object is found
-		envir_names = obj_find(obj, globalsearch=TRUE, n=n+1)	# n+1 means that 'obj' should be resolved 1 level up from the n levels
-																				                  # passed to get_obj_address(), since we are now going into one level deeper
-																				                  # (by calling obj_find())
+		envir_names = obj_find(obj, envmap=envmap, globalsearch=TRUE, n=n+1)	# n+1 means that 'obj' should be resolved 1 level up from the n levels
+																				                  								# passed to get_obj_address(), since we are now going into one level deeper
+																				                 									# (by calling obj_find())
 
 		if (!is.null(envir_names)) {
 			# Iterate on the environments found

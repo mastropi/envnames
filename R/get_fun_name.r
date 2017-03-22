@@ -1,4 +1,4 @@
-#' Return the name of the function called n levels up
+#' Return the name of the current function or of a calling function in the chain
 #' 
 #' Return the name of the function that has been called \code{n} levels up from a given function's body.
 #' This function is intended to be called only within a function.
@@ -24,9 +24,12 @@
 get_fun_name = function(n=0)
 # When n=0 (default) the function returns the function name of the function calling get_fun_name().
 {
-  # Call received by the n+1 calling function environment.
-  # When n=0 (the default), we get the call of the function calling get_fun_name().
-  cur_call = sys.call(sys.parent(n=1+n))
+  # Increase n by 1 so that we do as if we were working in the environment of the calling function
+  n = n + 1
+
+  # Call received by the function n levels up
+  # When n=1 (the default), we get the call of the function calling get_fun_name().
+  cur_call = sys.call(sys.parent(n))
   fun_name = as.character(cur_call)[1]
 
 	fun_name = unlist(envnames:::extract_last_member(fun_name)["name"])

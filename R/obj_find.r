@@ -10,6 +10,11 @@
 #' @param envir environment where the search for \code{obj} should be carried out.
 #' Defaults to \code{NULL} which means \code{obj} is searched in the calling environment (i.e. in the environment
 #' calling this function), unless \code{globalsearch=TRUE} in which case it is searched in the whole workspace.
+#' @param envmap data frame containing a lookup table with name-address pairs of environment names and
+#' addresses to be used when searching for object \code{obj}. Defaults to NULL which means that the
+#' lookup table is constructed on the fly with the environments defined in the \code{envir} environment
+#' --if not NULL--, or in the whole workspace if \code{envir=NULL}.
+#' See the details section for more information on its structure.
 #' @param globalsearch when \code{envir=NULL} it specifies whether the search for \code{obj} should be done
 #' globally, i.e. in the whole workspace, or just within the calling environment.
 #' @param n non-negative integer indicating the number of levels to go up from the calling function environment
@@ -55,6 +60,20 @@
 #' attribute is searched for. Ex: if \code{alist$var = "x"} then object \code{x} is searched. 
 #' }  
 #' 
+#' If \code{envmap} is passed it should be a data frame providing an address-name pair lookup table
+#' of environments and should contain at least the following columns:
+#' \itemize{
+#' \item{\code{location}} for user-defined environments, the name of the environment where the environment
+#' is located; otherwise \code{NA}.
+#' \item{\code{pathname}} the full \emph{environment path} to reach the environment separated by \code{$}
+#' (e.g. \code{"env1$env$envx"})
+#' \item{\code{address}} the 16-digit memory address of the environment given in \code{pathname} enclosed
+#' in < > (e.g. \code{"<0000000007DCFB38>"})
+#' }
+#' This is useful for speedup purposes, in case several calls to this function will be done
+#' under the same environment space.
+#' Such \code{envmap} data frame can be created by calling \link{get_env_names}.
+#' 
 #' @return An array containing the names of the environments where the object \code{obj} is found.
 #' 
 #' @examples 
@@ -73,7 +92,7 @@
 #' obj_find("x", envir=env1)    # "env1" "envx" (as the search is limited to the env1 environment)
 #' obj_find("y")                # "env1"
 #' obj_find(nonexistent)        # NULL (note that NO error is raised even if the object does not exist)
-obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
+obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 
 	# Function that searches for an object among the environments included in the 'envmap' lookup table.
   # The name of the object to search for is computed by calling get_obj_name() of 'obj' and requesting
@@ -131,16 +150,39 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 			    } else {
 			      env = try( eval(parse(text=env_full_name), envir=envir), silent=TRUE )
 			    }
-			  } else {
+			  } else if (env_type == "function") {
+					# Set the environment to search for 'obj_name' as the function's execution environment
+					# (i.e. this allows to search objects defined in fuction execution environments!)
+					# Initialize env to NULL in case there is a problem
+					env = NULL
+					# Get the function calling chain
+					all_calls = sys.calls()
+					# Iterate on all the calls from the previous to latest to first one so that we go UP in the calling chain
+					# (note that we exclude the last call because it is THIS function look_for(), on which we are not interested)
+					for (c in seq(length(all_calls)-1, 1, -1)) {
+						# Compute the number of levels up in the calling chain starting from the current function (get_env_names)
+						l = length(all_calls) - c
+						fun_name = as.character(all_calls[[c]])[1]
+						# IMPORTANT: Note that we use sys.frame(-l) to retrieve the execution environment of the calling function
+						# and NOT parent.frame(l)... This is because parent.frames may not always include internal functions in
+						# the counting of parent frames (e.g. print() if we call print(get_env_names())), as explained in the Note
+						# section of the documentation for sys.parent.
+						if (fun_name == env_full_name) {
+							# We reached the function whose execution environment we are looking for!
+							# => Get the execution environment
+							env = eval( environment(), envir=sys.frame(-l) )
+						}
+					}
+				} else {
 			    # Case for named environments (mostly packages) (e.g. .GlobalEnv, package:stats, etc.)
 			    env = as.environment(env_full_name)
 			  }
 			  
 			  # Check whether the object exists in the currently analyzed environment
 			  # and if so add the analyzed environment to the list of environments where the object is found
-			  if (!inherits(env, "try-error") &&
-			      !is.null(obj_name) && obj_name != "" &&        ## This is checked to avoid an error in exists() which does not accept a NULL or empty argument
-			      exists(obj_name, envir=env, inherits=FALSE)) { ## inherits=FALSE avoids searching on the enclosing (i.e. parent) environments
+			  if (!inherits(env, "try-error") && !is.null(env) &&		## env could be NULL if env_type = "function" and the function's execution environment could not be retrieved
+			      !is.null(obj_name) && obj_name != "" &&        	## This is checked to avoid an error in exists() which does not accept a NULL or empty argument
+			      exists(obj_name, envir=env, inherits=FALSE)) { 	## inherits=FALSE avoids searching on the enclosing (i.e. parent) environments
 			    env_full_names = c(env_full_names, env_full_name)
 			  }
 			}
@@ -175,7 +217,8 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 	# (fully specified, i.e. with their paths as well, as in env1$env)
   env_full_names = NULL
   found = FALSE
-  
+
+	# Check that the value of parameter 'envir' is an environment
   error = FALSE
   tryCatch(
     if (class(envir) != "environment") {
@@ -257,7 +300,7 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 		    # and the calling environment doesn't have a name, e.g. when obj_find() is called as:
 		    # 	with(env1, obj_find(x))
 		    # => Get the name of the environment by calling environment_name() with envir set to the parent frame
-		    # of the calling environment (this was proved to work on an simulation test!)
+		    # of the calling environment (this was proved to work on a simulation test!)
 		    env_full_names = environment_name(envir, envir=parent.env(envir))
 		  }
 
@@ -283,13 +326,13 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 	  # Just in case: note that, even if globalsearch=TRUE, execution environments of functions are not included in the
 	  # search for the object because execution environments are not reachable from the outside world!
 	  if (is.null(envir_orig) && globalsearch) {
-	    envmap = get_env_names(envir=NULL)
+			if (is.null(envmap)) envmap = get_env_names(envir=NULL)
 	    # Go over all the environments stored in envmap and check if the object is there
 	    # Note that the first parameter must be 'obj_name' and NOT 'obj' because 'obj' will return the
 	    # *value* of the variable passed NOT its *name* (which is what we need here)
 	    env_full_names = look_for(obj_name, envmap, env_full_names, n, envir=NULL, silent=silent)
 	  } else {
-	    envmap = get_env_names(envir=envir)
+	    if (is.null(envmap)) envmap = get_env_names(envir=envir)
 	    # Go over all the environments stored in envmap and check if the object is there
 	    # Note that the first parameter must be 'obj_name' and NOT 'obj' because 'obj' will return the
 	    # *value* of the variable passed NOT its *name* (which is what we need here)
@@ -429,17 +472,30 @@ obj_find = function(obj, envir=NULL, globalsearch=TRUE, n=0, silent=TRUE) {
 		        # since for environment objects the "pathname" will coincide with the environment name!
 		        # and what we need to know is the **environment where the object is found**... 
 		        ind = which(envmap[,"address"] == obj_address)
+
+						# Clean up the matched environments: in the case both "function" and "proper" environments matched, keep just the "proper" environments
+						ind = envnames:::clean_up_matching_environments(envmap, ind)
+
 		        if (length(ind) > 0) {
-		          env_full_names = ifelse(envmap[ind,"path"]!="", as.character(envmap[ind,"path"]), as.character(envmap[ind,"location"]))
+							# Construct the environment where the object (also an environment) is found by using either
+							# the value of 'path' or of 'location': we use simply 'path' when 'path' is not empty, o.w.
+							# we use 'location', but it's important to note that we do NOT use location$path when path
+							# is not empty, because we don't want to show to the user for instance "R_GlobalEnv$env_of_envs"
+							# because by showing simply "env_of_envs" we are implying that env_of_envs is located in the
+							# global environment (o.w. the location would be indicated before it as e.g. envx$env_of_envs
+							# should env_of_envs be defined inside environment envx)
+							env_full_names = ifelse(envmap[ind,"path"] != "",
+																			as.character(envmap[ind,"path"]),
+																			as.character(envmap[ind,"location"]))
 		          ## NOTE: as.character() removes any factor levels that may be present in the envmap columns
 		          ## I define the envmap data frame with the stringsAsFactors=FALSE option but the user may provide
 		          ## an envmap data frame that was not created with this option... 
 		        }
 		      } else if (is.function(obj_eval)) {
-		        # The environment of functions is retrieved by the environmnet() function, which is the environment
+		        # The environment of functions is retrieved by the environment() function, which is the environment
 		        # where the function is defined.
 		        env = environment(obj_eval)
-		        env_full_names = environment_name(env, envir=envir, envmap=envmap, byname=FALSE)
+		        env_full_names = environment_name(env, envir=envir, envmap=envmap, matchname=FALSE)
 		      }
 
 		      if (is.null(env_full_names)) {
