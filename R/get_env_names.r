@@ -191,7 +191,7 @@ get_env_names = function(envir=NULL) {
 		  }
 
 			#--------------------- 3. Add execution environments of functions -------------------------
-			# Check if get_env_names() was called from a function
+			# Check if this function get_env_names() was called from within a function
 			# Get all the function calls in the calling chain
 			# NOTES:
 			# - we CANNOT call get_fun_calling_chain() (which does precisely this job) because that function
