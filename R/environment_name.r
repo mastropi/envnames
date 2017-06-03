@@ -167,7 +167,10 @@ environment_name <- function(env, envir=NULL, envmap=NULL, matchname=FALSE, igno
 			# => search for this memory address in the envmap table
 			# Note that in this case we don't care about the value of parameter 'matchname' because
 			# there is no name associated to 'env' so the match will for sure be by address only!!
-			indfound = which(envmap[,"address"] == env)
+
+		  # First parse the memory address string
+		  env = envnames:::parse_memory_address(env)
+			indfound = which(toupper(envmap[,"address"]) == toupper(env))
 		}
 
 		# Clean up the matched environments: in the case both "function" and "proper" environments matched, keep just the "proper" environments

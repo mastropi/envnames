@@ -283,7 +283,8 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, silent
 		  # and not further back, since we expect to have only one recursive call to obj_find() coming from
 		  # the case where we check whether we can find the *evaluated* value of 'obj' as done below,
 		  # towards the end.
-		  if (length( grep("obj_find", get_fun_calling()) ) > 0) {
+		  fun_calling = get_fun_calling()
+		  if (length( grep("obj_find", fun_calling) ) > 0) {
 		    n_parent = eval.parent(quote(n))
   		    ## Note the need to use quote() because o.w. n is first evaluated in the current environment!
 	  	    ## (the other option would be to use parse(text="n")))

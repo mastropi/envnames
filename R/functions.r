@@ -422,8 +422,10 @@ is_memory_address = function(x) {
 		# Note that the blank space at the beginning of the pattern includes tabs (checked).
 		# Note also that if we want to use PERL regular expression we should use double escape to represent
 		# special characters as in grep("^\\s*<", obj, perl=TRUE)
-		isaddress = grep("^ *<[0-9a-f]{16}>$", x, ignore.case=TRUE)
-		if (length(isaddress) > 0) {
+		isaddress = grep("^ *<[0-9a-f]{16}>$", x, ignore.case=TRUE) || grep("^ *[0-9a-f]{16}$", x, ignore.case=TRUE) ||
+		            grep("^ *<0x[0-9a-f]{16}>$", x, ignore.case=TRUE) || grep("^ *0x[0-9a-f]{16}$", x, ignore.case=TRUE) ||
+          		  grep("^ *<environment: 0x[0-9a-f]{16}>$", x, ignore.case=TRUE)
+		if (!is.na(isaddress) && isaddress) {
 			result = TRUE
 		} else {
 			result = FALSE
@@ -431,6 +433,30 @@ is_memory_address = function(x) {
 	}
 
 	return(result)
+}
+
+#' Parse a string that represents a memory address
+#' 
+#' Parse a string representing a memory address so that the address is returned in the way it is stored
+#' in the 'address' column of the data frame returned by get_env_names(). 
+#' 
+#' @param x string to parse.
+#' @return string of length 18 in the form "<xxxxxxxxxxxxxxxx>" where x represents digits between 0 and 9 and
+#' letters between "a" and "f". Ex: "<0000000017830f40>"
+#' 
+#' @keywords internal
+parse_memory_address = function(x) {
+  if (!is_memory_address(x)) {
+    return(NULL)
+  } else {
+    x = gsub("<environment: ", "<", x)
+    x = gsub("0x", "", x)
+    if (length( grep("^ *<", x) ) == 0) {
+      # Enclose the memory address in '< >'
+      x = paste("<", x, ">", sep="")
+    }
+    return(x)
+  }
 }
 
 #' Check whether an object contains a valid logical value

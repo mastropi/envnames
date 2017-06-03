@@ -21,19 +21,19 @@ env2 <- new.env()
 
 ### Build a chain of function calls ('->' means "calls"): env1$f -> env2$g -> h
 # Second level calling function
-h <- function(level=1) {
-  return(get_fun_calling(level))
+h <- function(level=1, showParameters=TRUE) {
+  return(get_fun_calling(level, showParameters))
 }
 
 # First level calling function
 with(env2,
-     g <- function(level=1) {
+     g <- function(level=1, showParameters=TRUE) {
        if (level == 1) {
          # Get the information from the calling function from this function
-         fun_calling = get_fun_calling()
+         fun_calling = get_fun_calling(level, showParameters=showParameters)
        } else {
          # Call another function and get the information on the calling function from inside that function
-         fun_calling = h(level=level)
+         fun_calling = h(level=level, showParameters=showParameters)
        }
 
        return(fun_calling)
@@ -42,8 +42,10 @@ with(env2,
 
 # Root calling function whose name should be printed when g() is run
 with(env1,
-     f <- function(level) {
-       fun_calling = env2$g(level)
+     f <- function(level, showParameters=TRUE) {
+       fun_calling = env2$g(level, showParameters=showParameters)
+       #chain = get_fun_calling_chain()
+       #print(chain)
        return(fun_calling)
      }
 )
@@ -53,7 +55,7 @@ with(env1,
 test_that("T0) the calling function at level 0 returns the current function we are in", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
-  expected = "R_GlobalEnv$h"
+  expected = "R_GlobalEnv$h(level = level, showParameters = showParameters)"
   observed = with(globalenv(), env1$f(0))
   expect_equal(observed, expected)
 })
@@ -61,7 +63,7 @@ test_that("T0) the calling function at level 0 returns the current function we a
 test_that("T1) the calling function at the first level is correctly computed", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
-  expected = "env1$f"
+  expected = "env1$f(1)"
   observed = with(globalenv(), env1$f(1))
   expect_equal(observed, expected)
 })
@@ -69,11 +71,18 @@ test_that("T1) the calling function at the first level is correctly computed", {
 test_that("T2) the calling function at level 2 returns the current function we are in", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
-  expected = "env1$f"
+  expected = "env1$f(2)"
   observed = with(globalenv(), env1$f(2))
   expect_equal(observed, expected)
 })
 
+test_that("T3) the calling function name is returned and no parameters are shown", {
+  # skip("not now")
+  # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
+  expected = "env1$f"
+  observed = with(globalenv(), env1$f(2, showParameters=FALSE))
+  expect_equal(observed, expected)
+})
 
 # 3.- Cleanup -------------------------------------------------------------
 rm(list=ls())

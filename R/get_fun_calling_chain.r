@@ -6,8 +6,7 @@
 #' @param n non-negative integer specifying the level of interest in the function calling chain,
 #' where 0 means the function calling \code{get_fun_calling_chain}.
 #' Defaults to \code{NULL}, in which case all the function calling chain is returned.
-#' 
-#' @param parameters flag indicating whether the parameters of the function call should be also shown
+#' @param showParameters flag indicating whether the parameters of the function call should be also shown
 #' in the output.
 #' 
 #' @param silent whether to run in silent mode. If FALSE, the calling chain is shown in an intuitive way.
@@ -35,8 +34,10 @@
 #' If \code{n} is not NULL and is non-negative, the environment and the function name (including parameters
 #' if \code{parameters=TRUE}) separated by a \code{$} sign. Ex: \code{env1$f(x = 3, n = 1)}.
 #' if \code{n < 0} or if \code{n} is larger than the function calling chain length, \code{NULL} is returned.
-get_fun_calling_chain = function(n=NULL, parameters=TRUE, silent=TRUE) {
+get_fun_calling_chain = function(n=NULL, showParameters=TRUE, silent=TRUE) {
   # Get the calling chain using sys.calls()
+  # Note that sys.calls() returns a list where the most recent call is last in the list
+  # (here I will reverse this order because I want the most recent call to be shown first)
   all_calls = sys.calls()
   ncalls = length(all_calls)
 
@@ -73,7 +74,7 @@ get_fun_calling_chain = function(n=NULL, parameters=TRUE, silent=TRUE) {
   }
 
   # Iterate on all the calls from "previous to latest" to the first one so that we go UP in the calling chain
-  # Note that we exclude the last call (we can see this because the iteration starts at level l=1 and not at l=0)
+  # Note that we exclude the latest call (we can see this because the iteration starts at level l=1 and not at l=0)
   # because the last call (i.e. level l=0) is THIS function get_fun_calling_chain(), on which we are not interested
   # in including in the function calling chain (i.e. the user doesn't care about it!)
   for (l in 1:nlast) {
@@ -81,14 +82,15 @@ get_fun_calling_chain = function(n=NULL, parameters=TRUE, silent=TRUE) {
     # (note that index c goes in the opposite direction of the level l)
     c = ncalls - l
 
-    # Get the function at call level l
-    fun = sys.function(l)
+    # Get the function at call level c
+    fun = sys.function(c)
 
     # Get the function name and parameters (this includes the environment where the function is defined)
-    if (parameters) {
+    if (showParameters) {
       fun_name = deparse(all_calls[[c]])          # Use this if we want to show function name AND its parameters
     } else {
       fun_name = as.character(all_calls[[c]])[1]  # Use this if we want to show just the function name, NOT its parameters
+                                                  # Note that as.character() separates each part in its input that is enclosed in quotes into a separate row
     }
 
     # Get the environment where the function is defined
@@ -102,8 +104,15 @@ get_fun_calling_chain = function(n=NULL, parameters=TRUE, silent=TRUE) {
       env_name = env_and_fun$root
       fun_name = env_and_fun$name
     }
+    # Convert fun_name into a single string in case it's given as an array of strings...
+    # (this happens for instance when the function is cat() and the string inside cat() is constructed using different
+    # arguments --as in cat("This is test number", num, "\n"), where fun_name is an array of 2 elements
+    # as returned by the call to deparse(all_calls[[c]]) above (of course this is only a problem when showParameters=TRUE))
+    fun_name = paste(fun_name, collapse="")
 
     # Update the data frame containing the functions in the calling chain
+    # Note that the l-th entry contains the c-th function in the calling chain (where c = ncalls - l),
+    # therefore making the first function stored in the fun_calling_chain data frame be the latest function called.
     fun_calling_chain[l,] = c(fun_name, env_name, paste(env_name, fun_name, sep="$"))
 
     # Debug

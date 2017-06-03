@@ -37,8 +37,8 @@ test_that("T1) an object in the global environment is found", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
   expected = "R_GlobalEnv"
-  print(get_fun_calling_chain())
-  print(get_fun_calling())
+  #print(get_fun_calling_chain())
+  #print(get_fun_calling())
 
   observed = obj_find(y)
   expect_equal(observed, expected)
