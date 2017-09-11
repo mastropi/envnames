@@ -1,6 +1,6 @@
 #' Return the chain of calling functions
 #' 
-#' Return a data frame with the stack of function calls, or optionally the information on one
+#' Return a data frame with the stack or chain of function calls, or optionally the information on one
 #' particular function in this chain.
 #' 
 #' @param n non-negative integer specifying the level of interest in the function calling chain,
@@ -8,7 +8,6 @@
 #' Defaults to \code{NULL}, in which case all the function calling chain is returned.
 #' @param showParameters flag indicating whether the parameters of the function call should be also shown
 #' in the output.
-#' 
 #' @param silent whether to run in silent mode. If FALSE, the calling chain is shown in an intuitive way.
 #' Defaults to \code{TRUE}.
 #' 
@@ -16,11 +15,11 @@
 #' If \code{n=NULL} (the default) a data frame with the function calling chain information, structured
 #' in the following columns:
 #' \itemize{
-#' \item{\code{fun}:} the function name (including parameters if \code{parameters=TRUE})
+#' \item{\code{fun}:} the function name (including parameters if \code{showParameters=TRUE})
 #' \item{\code{env}:} the function's enclosing enviroment, i.e. the environment where the function is defined
 #' as returned by \code{environment()}
 #' \item{\code{envfun}:} the environment where the function is defined together with the function name (and its parameters
-#' if \code{parameters=TRUE}) separated by a \code{$} sign. Ex: \code{env1$f}
+#' if \code{showParameters=TRUE}) separated by a \code{$} sign. Ex: \code{env1$f()}
 #' }
 #' The rownames of the data frame are the stack level of the function calls in the chain,
 #' from 0 up to the number of functions in the chain, where 0 indicates the current function
@@ -32,7 +31,7 @@
 #' If the function is NOT called from within a function, \code{NULL} is returned.
 #' 
 #' If \code{n} is not NULL and is non-negative, the environment and the function name (including parameters
-#' if \code{parameters=TRUE}) separated by a \code{$} sign. Ex: \code{env1$f(x = 3, n = 1)}.
+#' if \code{showParameters=TRUE}) separated by a \code{$} sign. Ex: \code{env1$f(x = 3, n = 1)}.
 #' if \code{n < 0} or if \code{n} is larger than the function calling chain length, \code{NULL} is returned.
 get_fun_calling_chain = function(n=NULL, showParameters=TRUE, silent=TRUE) {
   # Get the calling chain using sys.calls()

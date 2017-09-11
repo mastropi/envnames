@@ -63,21 +63,29 @@ test_that("T4) the address of an object is correctly returned in different envir
   expect_equal(get_obj_address(env1), expected)
   expect_equal(get_obj_address(env11, envir=globalenv()$env_of_envs), envnames:::address(globalenv()$env_of_envs$env11))
   expect_equal(get_obj_address(x, envir=globalenv()$env1), envnames:::address(globalenv()$env1$x))
+  # The address of AL the objects found with the same name (in different environments) are returned
+  expected = c(envnames:::address(globalenv()$env1$x), envnames:::address(x))
+  names(expected) = c("env1", "R_GlobalEnv")
+  observed = get_obj_address(x)
+  expect_equal(observed, expected)
 })
 
-test_that("T5a) the address of objects passed as expressions in specified environments is correctly returned
+test_that("T5a) the address of objects passed as expressions in SPECIFIED or UNSPECIFIED environments is correctly returned
             (2017/02/17) WHAT FOLLOWS IS NO LONGER TRUE (I FIXED THIS AND ADDED 3 NEW TESTS TO PROVE THAT on globalenv()$objects[2])
-            (note that if we run this WITHOUT specifying the environment the address changes every time, because
+            (note that if we run this WIenvnames:::address(globalenv()$env1$y)THOUT specifying the environment the address changes every time, because
             a new memory address is allocated to the result of globalenv()$objects[1], i.e. to 'x' which is
             the value of element 1 of 'objects'", {
   # skip ("not now")
   # browser()
+  # The environment where the object is located is SPECIFIED
   expect_equal(get_obj_address(globalenv()$objects[1], envir=globalenv()$env1), envnames:::address(globalenv()$env1$x))
   expect_equal(get_obj_address(globalenv()$objects[1], envir=globalenv()), envnames:::address(globalenv()$x))
-
-  expect_equal(get_obj_address(globalenv()$objects[2])[[1]], envnames:::address(globalenv()$env1$y))
   expect_equal(get_obj_address(globalenv()$objects[2], envir=globalenv()$env1), envnames:::address(globalenv()$env1$y))
-  expect_equal(get_obj_address(objects[2])[[1]], envnames:::address(env1$y))
+
+  # Without specifying the environment where the object is located
+  expected = envnames:::address(globalenv()$env1$y)
+  names(expected) = "env1"
+  expect_equal(get_obj_address(globalenv()$objects[2]), expected)
 })
 
 test_that("T5b) sapply() works on arrays, unnamed lists, and named lists", {
@@ -109,6 +117,37 @@ test_that("T5b) sapply() works on arrays, unnamed lists, and named lists", {
   expect_equal(observed, expected)
 })
 
+test_that("T5c) The address of an object whose name is defined in a list is correctly returned", {
+  # skip ("not now")
+  # browser()
+  
+  # On unnamed lists
+  expected = get_obj_address(x)
+  observed = get_obj_address(alist[[1]])
+  expect_equal(observed, expected)
+
+  # On named lists  
+  expected = get_obj_address(x)
+  observed = get_obj_address(alist_named$var1)
+  expect_equal(observed, expected)
+  expected = get_obj_address(x)
+  observed = get_obj_address(alist_named[[1]])
+  expect_equal(observed, expected)
+})
+
+test_that("T5d) The address of the element of a list referenced as if the list were an array is NULL
+            (because the memory address of such element (e.g. alist[1]) changes every time it is run!)", {
+  # On unnamed lists
+  expected = NULL
+  observed = get_obj_address(alist[1])
+  expect_equal(observed, expected)
+
+  # On named lists
+  expected = NULL
+  observed = get_obj_address(alist_named[1])
+  expect_equal(observed, expected)
+})
+
 test_that("T6a) the address returned for an object referenced via its environment (as in env1$x) is the memory address of the object", {
   # skip ("not now")
   # browser()
@@ -119,7 +158,7 @@ test_that("T6a) the address returned for an object referenced via its environmen
 })
 
 test_that("T6b) the address referenced with the full path from within another environment using the with() statement
-          is correctly returned (THIS IS QUITE TRICKY!!)", {
+          is correctly returned (THIS WAS QUITE TRICKY TO IMPLEMENT!!)", {
   # skip ("not now")
   expected = envnames:::address(globalenv()$env1$x)
   names(expected) = "env1"
@@ -138,18 +177,21 @@ test_that("T7) the address returned for a non-existing object is NULL", {
   expect_equal(get_obj_address(env1$dfsdf, envir=env1), NULL)
 })
 
-test_that("T8) the address returned for an object when the variable passed as environment of evaluation
-          is not an environment, is NULL, and the appropriate error message is shown", {
-  # skip ("not now")
-  # browser()
-  expect_equal(get_obj_address(x, envir=globalenv()$env1$x), NULL)
-  expect_message(get_obj_address(x, envir=globalenv()$env1$x), "*'3' is not a valid environment*")
-})
+# or in environments recursively defined within the
+#' given environment
 
-test_that("T9) the address returned for an object stored in a deeply nested environment is correct", {
+test_that("T9) the address returned for an object stored in a deeply nested environment is correct or, in other words,
+          the search for an object is recursive an all the environments defined within every environment", {
   # skip ("not now")
   # browser()
+  # If we explictly give the environment where the object exists
   expect_equal(get_obj_address(z, envir=globalenv()$env_of_envs$env11), envnames:::address(globalenv()$env_of_envs$env11$z))
+  # If we DON'T give the environment where the object exists (but simply search for it recursively through all environments
+  # defined within each environment of the workspace)
+  # --> THIS IS THE NICE THING ABOUT THIS PACKAGE! :)
+  expected = envnames:::address(globalenv()$env_of_envs$env11$z)
+  names(expected) = "env_of_envs$env11"
+  expect_equal(get_obj_address(z), expected)
 })
 
 test_that("T10) the address of objects passed as memory address is NULL", {
@@ -157,6 +199,33 @@ test_that("T10) the address of objects passed as memory address is NULL", {
   # browser()
   expect_equal(get_obj_address("<000000000C330188>", envir=globalenv()), NULL)
   expect_equal(get_obj_address("<000000000C330188>"), NULL)
+})
+
+
+test_that("T21) specifying include_functions=TRUE returns the address of the object in ALL the environments where it is found", {
+  # skip("not now")
+  # NOTE: Here we are testing that the call to expect_error(expect_equal()) return the "promise already under evaluation" error, which:
+  # - in the case of get_obj_address(y, ...) is raised precisely when calling expect_equal()
+  # - in the case of get_obj_address(x, ...) is raised ONLY when expect_equal() is enclosed by expect_error(). This is weird...
+  # (the difference between x and y is that x is defined in the global environment and y is defined in environment 'env1')
+  # Note also that, even if the "promise" error is not raised, we would NOT be easily able to test that the object addresses are
+  # correct, because it is not easy to access the environment of the functions called by the object search process!
+  # calling chain that makes the object being searched for appear in different function environments (e.g. compare())
+  # References for the "promise" error:
+  # https://stackoverflow.com/questions/4357101/promise-already-under-evaluation-recursive-default-argument-reference-or-earlie
+  # (in the above link they say that the error happens because of parameters of the form x=x and they suggest defining parameter names
+  # by adding a dot... e.g. x.=x. I don't understand this.)
+  # https://stackoverflow.com/questions/17310825/r-promise-already-under-evaluation
+  # (in the above link they show the tip of using sapply(sys.frames(), ls) to retrieve the objects defined in the execution
+  # environment of each function in the functions calling chain)
+  expect_error(expect_equal(get_obj_address(y, include_functions=TRUE), ""), "promise")
+  expect_error(expect_equal(get_obj_address(x, include_functions=TRUE), c("address1", "address2", "address3")), "promise")
+
+  # When calling get_obj_address() from outside expect_equal(), the object is only found in the global environment!
+  expected = envnames:::address(env1$y)
+  names(expected) = "env1"
+  observed = get_obj_address(y, include_functions=TRUE)
+  expect_equal(observed, expected)
 })
 
 #---------------------------------- Extreme cases -----------------------------------
@@ -173,6 +242,14 @@ test_that("T91) the address of an object in an environment called 'e' is correct
           there is a local variable called 'e' in get_obj_address() that I have at some point seen conflicting with
           the environment 'e' the object we are looking for is located... (this was fixed now --2017/02/19)", {
   expect_equivalent(get_obj_address(variable_in_e), envnames:::address(e$variable_in_e))
+})
+
+test_that("T92) the address returned for an object when the variable passed as environment of evaluation
+          is not an environment, is NULL, and the appropriate error message is shown", {
+    # skip ("not now")
+    # browser()
+    expect_equal(get_obj_address(x, envir=globalenv()$env1$x), NULL)
+    expect_message(get_obj_address(x, envir=globalenv()$env1$x), "*'3' is not a valid environment*")
 })
 
 # This was the previous test I had in place to test that the address of an object given as a string is correctly returned

@@ -5,12 +5,12 @@
 \title{Track user-defined environment names}
 \description{The main goal of this package is to overcome the limitation of the built-in \code{\link{environmentName}} function of the base package which cannot retrieve the name of an environment unless it is a package or the global environment. This implies that all user-defined environments don't have a "name assigned" that can be retrieved and refer to the environment.
 
-The envnames package solves this problem by creating a lookup table that maps environment names to their memory addresses. Using this lookup table, it is possible to retrieve the name of any environment where an object resides or, from within a function, to retrieve the calling stack showing the function names and their enclosing environment name, i.e. the environment where the functions have been defined. The latter can be done with just a function call which returns a string that can directly be used inside a \code{cat()} call to display the function name (as opposed to using the R function \code{\link{sys.call}} which does not return a string, but a more complicated object, a "call" from where we should extract the string for used inside \code{cat()}).
+The envnames package solves this problem by creating a lookup table that maps environment names to their memory addresses. Using this lookup table, it is possible to retrieve the name of any environment where an object resides or, from within a function, to retrieve the calling stack showing the function names and their enclosing environment name, i.e. the environment where the functions have been defined. The latter can be done with just a function call which returns a string that can directly be used inside a \code{cat()} call to display the function name (as opposed to using the R function \code{\link{sys.call}} which does not return a string, but a more complicated object, namely a \code{call} object from where the string with the function name is still to be extracted to be used inside \code{cat()}).
 
 Package conventions: all functions in this package follow the underscore-separated and all-lower-case naming convention (e.g. \code{environment_name()}, \code{get_obj_address()}, etc.).
 }
 \details{
-The package currently contains 10 visible functions. Following is a short guideline on how to use the main functions of the package. Please refer to the vignette for further information.
+The package currently contains 10 visible functions. Following is an overview on how to use the main functions of the package. Please refer to the vignette for further information.
 
 1) Use \code{\link{address}} to retrieve the memory address of any object, including environments.
 
@@ -40,6 +40,9 @@ Motivation for developing this package:
 \code{\link{sys.call}} for other alternatives for retrieving the function calling stack.
 }
 \examples{
+library(envnames)
+rm(list=ls())
+
 ### Example 1: Retrieve the names of user-defined environments (created with new.env())
 # Create new environments
 env1 <- new.env()                      # Environment in .GlobalEnv
@@ -54,7 +57,7 @@ environment_name(env3)                       # named array with value "env3" and
 environment_name(env9)                       # NULL (env9 does not exist)
 environment_name(env_of_envs)                # named array with value "env_of_envs" and name "R_GlobalEnv"
 environment_name(env11, envir=env_of_envs)   # "env11"
-environment_name(env11)                      # named array with value "env_of_envs$env11" and name "env_of_envs"
+environment_name(env11)                      # named array with value "env11" and name "R_GlobalEnv$env_of_envs"
 
 
 ### Example 2: Retrieve calling functions and their environments
@@ -76,7 +79,7 @@ with(env2,
 			 # Essenially the environment name without using the envnames package is empty.
        cat("Now inside function", fun_current_name, "\n")
        cat("Calling environment name (using environmentName(parent.frame())):  \"", environmentName(parent.frame()), "\"\n", sep="")
-       cat("Calling environment name (using sys.call(1) through as.character( as.list(sys.call(1))[[1]]) )):", " \"", as.character( as.list(sys.call(1))[[1]]), "\"\n", sep="")
+       cat("Calling environment name (using sys.call(1) inside 'as.character( as.list(sys.call(1))[[1]]) ))':", " \"", as.character( as.list(sys.call(1))[[1]]), "\"\n", sep="")
        cat("Calling environment name (using envnames::get_fun_calling()): \"", fun_calling_name, "\"\n", sep="")
 
        # Start process
@@ -102,7 +105,7 @@ env1$f(7)
 # This differs from the R function exists() because it also searches in user-defined environments and any environments wihin.
 obj_find(f)                   # "env1"
 obj_find("f")                 # Same thing: "env1"
-obj_find("f", silent=FALSE)   # Run verbosely
+obj_find("f", silent=FALSE)   # Same result, but run verbosely
 
 env2$x <- 2
 obj_find(x)                   # "env2"

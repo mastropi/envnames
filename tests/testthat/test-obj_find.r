@@ -56,7 +56,7 @@ test_that("T2) an object in a package is found", {
   expect_equal(observed, expected)
 })
 
-test_that("T3) an object inside a user-defined environment is found", {
+test_that("T3a) an object inside a user-defined environment is found", {
   # skip("not now")
   expected = "env1"
 
@@ -219,7 +219,7 @@ test_that("T10a) when obj_find() is called from within an environment, objects a
   expect_equal(observed, expected)
 })
 
-test_that("T10b) when obj_find() is called from within an environment but the object to search is given
+test_that("T10b) when obj_find() is called from within an environment but the object to search for is given
           with an absolute path to the actual object as in globalenv()$env1$x, the object is found", {
   # skip("not now")
   # test 1
@@ -275,6 +275,49 @@ test_that("T11) objects given with a full environment path involving globalenv()
   expect_equal(observed, expected)
 })
 
+
+test_that("T21) specifying include_functions=TRUE returns ALL the function environments where the object is found", {
+  # skip("not now")
+  # NOTE: This test passes only when calling obj_find() from WITHIN expect_equal() because doing so sets up a function
+  # calling chain that makes the object being searched for appear in different function environments (e.g. compare())
+  # ***********************************
+  # IMPORTANT: If we run this test as part of running this whole script test-obj_find.r, we should run the second part
+  # of the test which is currently commented out. In fact, in that case, there are two new function names to add to the
+  # expected value: "eval" and "withVisible", as shown in those tests.
+  # ***********************************
+  # WHEN RUNNING THIS TEST AS PART OF THE TEST PACKAGE UTILITY
+  # (in this case the eval() function appears in the result but NOT the withVisible() function)
+  expect_equal(obj_find(y, include_functions=TRUE), c("compare.character", "compare", "eval", "R_GlobalEnv"))
+  expect_equal(obj_find(x, include_functions=TRUE), c("env1", "compare.character", "compare"))
+  # Referring an object indirecty
+  expect_equal(obj_find(alist$z, include_functions=TRUE), c("env1", "compare.character", "compare"))
+  
+  # When calling obj_find() from outside expect_equal(), the object is only found in the global environment!
+  observed = obj_find(y, include_functions=TRUE)
+  expect_equal(observed, c("eval", "R_GlobalEnv"))
+
+  # WHEN RUNNING THE TEST BY sourcING THE SCRIPT
+  # (in this case both the eval() and the withVisible() functions appear in the result)
+  #expect_equal(obj_find(y, include_functions=TRUE), c("compare.character", "compare", "eval", "R_GlobalEnv"))
+  #expect_equal(obj_find(x, include_functions=TRUE), c("env1", "compare.character", "compare", "withVisible"))
+  # Referring an object indirecty
+  #expect_equal(obj_find(alist$z, include_functions=TRUE), c("env1", "compare.character", "compare", "withVisible"))
+  
+  # When calling obj_find() from outside expect_equal(), the object is only found in the global environment!
+  #observed = obj_find(y, include_functions=TRUE)
+  #expect_equal(observed, c("eval", "R_GlobalEnv"))
+
+  # WHEN RUNNING THE TEST BY runNING JUST THIS test_that() CALL
+  # (in this case nor the eval() nor the withVisible() functions appear in the result)
+  #expect_equal(obj_find(y, include_functions=TRUE), c("compare.character", "compare", "R_GlobalEnv"))
+  #expect_equal(obj_find(x, include_functions=TRUE), c("env1", "compare.character", "compare"))
+  # Referring an object indirecty
+  #expect_equal(obj_find(alist$z, include_functions=TRUE), c("env1", "compare.character", "compare"))
+  
+  # When calling obj_find() from outside expect_equal(), the object is only found in the global environment!
+  #observed = obj_find(y, include_functions=TRUE)
+  #expect_equal(observed, "R_GlobalEnv")
+})
 
 #--------------------- Searches for non-existing objects ------------------
 test_that("T90) a non-existing object is not found and no error is raised", {

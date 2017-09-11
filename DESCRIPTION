@@ -5,17 +5,18 @@ Version: 0.3.0
 Date: 2017-02-19
 Author: Daniel Mastropietro
 Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
-Description: A set of functions to keep track of user-defined
-    environment names which cannot be retrieved with the built-in function `environmentName`.
-    The main function for this purpose is `environment_name` which returns the name of the given
-    environment.
-    The package also provides additional functionality, the most important of which are:  
-    - A function (`obj_find`) to search for objects that extends the functionality of `exists`
-    as follows: objects are searched recursively within all user-defined environments as well.  
-    - An easy way to get the stack of calling functions (using `get_fun_calling_chain`), or just
-    the calling function with its enclosing environment (using `get_fun_calling`), compared to the
-    built-in function `sys.call`.  
-    - A function (`get_obj_address`) to retrieve the memory address of an object.  
+Description: This package contains a set of functions to keep track of user-defined
+    environment names which cannot be retrieved with the built-in function environmentName.
+    The main function in this package for this purpose has a similar name: environment_name(),
+    which returns the name of the environment given as parameter, be it a system, package
+    or user-defined environment.  
+    The package also provides additional functionality, the most important being:  
+    - A function (obj_find()) to search for objects. This function extends the functionality of exists()
+    as follows: objects are searched recursively within all user-defined environments.  
+    - A way to get the stack of calling function names (get_fun_calling_chain()),
+    in an easier way than the built-in function sys.call(), which requires further
+    non-intuitive parsing of the output.  
+    - A function (get_obj_address()) to retrieve the memory address of an object.
 License: GPL
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr

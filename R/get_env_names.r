@@ -30,7 +30,8 @@
 #' environment if the parent environment was set during creation with the \code{parent=} option of the
 #' \code{new.env()} function or using the \code{parent.env()} function.
 #' \item{\code{address}} memory address of the environment. This is the key piece of information to get the
-#' environment name with \code{environment_name()}.
+#' environment name with \code{environment_name()}. For functions, this is the address of the function's execution
+#' environment.
 #' \item{\code{pathname}} path to the environment an its name. This is the combination of columns
 #' \code{path} and \code{name} whose values are put together separated by \code{$}.
 #' \item{\code{path}} path to the environment (through e.g. different environments or packages).

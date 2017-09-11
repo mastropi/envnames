@@ -1,25 +1,29 @@
-#' Return the name of an object in a funcion calling chain
+#' Return the name of an object referenced by a parameter at any parent generation
 #' 
-#' Optionally the object is first evaluated in the n-th calling environment before retrieving its name.
+#' Return the name of the object at the specified parent generation leading to a function's parameter.
+#' The object is optionally evaluated in the environment of the specified parent generation
+#' before retrieving its name, in the same way the deparse() function does.
 #' 
-#' @param obj object whose name is of interest, or the name of its evaluation is of interest.
-#' @param n number of levels to go back to retrieve the name of the object that leads to object \code{obj}
-#' during the calling chain. See details for more information.
-#' @param eval whether to evaluate the \code{obj} in the \code{n}-th calling environment before
+#' @param obj object whose name is of interest, or whose evaluated name is of interest.
+#' @param n number of parent generations to go back to retrieve the name of the object that leads to \code{obj}
+#' in the function calling chain. See details for more information.
+#' @param eval whether to evaluate \code{obj} in the \code{n}-th parent generation before
 #' getting the object's name in that environment.
-#' @param silent whether to show the names of the objects in the calling chain when \code{eval=FALSE}.
+#' @param silent when \code{FALSE}, the names of the environments and objects in those environments are printed
+#' as those environments are traversed by this function.
 #' 
-#' @details To better understand the meaning of this function when \code{n} > 0, consider the following
-#' example:  
-#' \code{z} -> \code{f(x)} -> \code{g(y)} -> \code{get_obj_name(y, n=2)}
-#' where '->' means "calls".
+#' @return The name of the object in the \code{n}-th parent generation environment.
+#' 
+#' @details To better understand the meaning of this function when \code{n} > 0, consider the first example below:  
+#' Function \code{f(x)} is called with parameter \code{z}, which calls \code{g(y)} with parameter \code{x}.
 #' The result of the call to \code{get_obj_name()} from function \code{g()} is \code{"z"}
-#' because that call is telling "give me the name of object \code{y} 2 levels up from
-#' the current environment, i.e. from the environment of \code{g()}.
+#' because that call is telling "give me the name of object \code{y} two levels up from
+#' the current environment, i.e. from the environment of \code{g()}. The name of \code{y} in the environment
+#' of \code{f(x)} is \code{"x"}, and the name of \code{y} in the global environment is \code{"z"}.  
 #' 
 #' When eval=TRUE, the result of the function is the same as the output of \code{deparse()} except for the following two cases:
 #' \itemize{
-#' \item the result of NULL is NULL instead of "NULL" which is the case with \code{deparse()}
+#' \item the result of \code{NULL} is \code{NULL} instead of \code{"NULL"} which is the case with \code{deparse()}
 #' \item when \code{eval=TRUE}, if the object passed to \code{get_obj_name()} evaluates to a name, it returns that name,
 #' without added quotes. For example, if \code{v = "x"} then \code{get_obj_name(v, eval=TRUE)} returns \code{"x"} while
 #' \code{deparse(v)} returns \code{"\"x\""}.
@@ -27,6 +31,22 @@
 #' 
 #' @seealso
 #' \link{get_obj_value}
+#' 
+#' @examples
+#' # In its default behaviour (eval=FALSE), get_obj_name() returns the name of an object in the n-th parent generation.
+#' g <- function(y) { get_obj_name(y, n=2) }
+#' f <- function(x) { g(x) }
+#' z = 3; 
+#' f(z)                # Prints "z", which is the object leading to object "y" inside function g() if we follow the function calling chain.
+#'
+#' # When eval=TRUE, get_obj_name() behaves the same way as deparse(), except for the cases noted above.
+#' g <- function(y) {
+#'   print(get_obj_name(y, n=2, eval=TRUE));
+#'   print(deparse(y))
+#' }
+#' f <- function(x) { g(x) }
+#' z = 3; 
+#' f(z)                # Prints "3" twice, once as the output of get_obj_name(), once as the output of deparse()
 get_obj_name = function(obj, n=0, eval=FALSE, silent=TRUE) {
   # Increase n by 1 so that we do as if we were working in the environment of the calling function
   n = n + 1
@@ -52,7 +72,12 @@ get_obj_name = function(obj, n=0, eval=FALSE, silent=TRUE) {
     # (as done at the very end below when retrieving the name of obj_parent)
     expr = parse(text=paste("substitute(", deparse(obj_parent), ")"))
     obj_parent = eval.parent(expr, nback)
-    if (!silent) cat("Level ", nback, " back: object evaluates to '", deparse(obj_parent), "'\n", sep="")
+    if (!silent) {
+      # Get the name of the function environment that corresponds to the parent frame nlevels back
+      env_back = parent.frame(n=nback)
+      fun_calling = environment_name(env_back)
+      cat("Level ", nback, " back: environment = ", fun_calling, ", object evaluates to '", deparse(obj_parent), "'\n", sep="")
+    }
     nback = nback + 1
   }
 

@@ -25,13 +25,13 @@ y = "x"
 
 # Functions
 f = function() {}
-# Function to test call to get_obj_name() with n=1
+# Function that tests a call to get_obj_name() with n=1
 g = function(xx, n=1, eval=FALSE, silent=TRUE) {
   # Define an internal 'v' variable (i.e. the same name as variable 'v' defined in the global environment) to check that
   # the correct 'v' is evaluated when eval=TRUE
   v = c("SHOULD NOT BE SEEN", "SHOULD NOT BE SEEN 2")
   return( get_obj_name(xx, n=n, eval=eval, silent=silent) )
-    ## NOTE that n=1 refers to the parent frame of g(), despite the fact that get_obj_name() is inside a print() function,
+    ## NOTE that n=1 refers to the parent frame of g(), even if the call to get_obj_name() were to be inside a print() function,
     ## which has its own environment... but that environment is NOT counted towards the retrieval of parent frames... (fortunately)
     ## --see Note in the documentation of sys.parent()
 }
@@ -237,7 +237,7 @@ test_that("T21) Object names are correcly returned when eval=FALSE at different 
   expect_equal( h(f, n=1, silent=FALSE), names(as.list(h))[1] )
 })
 
-test_that("T22) Object names are correcly returned at levels n>0 when eval=TRUE and it's the same regardless of the value of n.
+test_that("T22) The value returned when eval=TRUE is the same as the return value of deparse() and doesn't change with n.
           In fact, the value of the object that is passed through different functions is always the same inside each function!", {
   expect_equal( g(v[2], n=1, eval=TRUE, silent=FALSE), v[2] )
   expect_equal( h(v[2], n=2, eval=TRUE, silent=FALSE), v[2] )
