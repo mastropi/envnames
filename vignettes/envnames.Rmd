@@ -30,66 +30,108 @@ The following sections give examples of these functionalities.
 
 Please note the following package convention: all function names in this package use the underscore convention (e.g. `environment_name()`, `get_obj_address()`, etc.)
 
-## Define environments and retrieve their name with `environment_name()`
-In this section we illustrate the use of the `environmen_name()` function. To put in context, its signature is the following:  
+## Retrieve the name of user-defined and function execution environments with `environment_name()`
+In this section we illustrate the use of the `environmen_name()` function.  
+
+This function extends the functionality of the `environmentName()` function in the base package by also retrieving the name of user-defined environments.
+Although the name of an environment can be easily retrieved with `deparse(substitute(env1))` where `env1` is a user-defined environment, the most useful
+scenario for the use of `environment_name()` is when some function tells us that an object is part of a user-defined environment, but this environment
+is only given as a *memory address* (as in e.g. `<environment 0x000000000437fb40>`). In this scenario, `environment_name()` can tell us the *name* of the
+environment whose memory address is the one given.  
+
+Note that the address to name conversion also works for **function execution environments**.
+
+The signature of the function is the following:  
 `environment_name(env, envir = NULL, envmap = NULL, matchname = FALSE, ignore = NULL)`.
 
 ### Examples
+
+#### Let's start with a few object definitions
 Let's define a couple of environments and nested environments.
 
-```{r}
+```{r DefineEnvironments}
 env1 <- new.env()
 env_of_envs <- new.env()
 with(env_of_envs, env21 <- new.env())
 ```
 
+#### Basic operation
 Now let's retrieve their names using `environment_name()`. This may sound trivial because we are already typing the environment name! However, look at the output from the second call: it array element is named after the environment where the requested environment (`env21`) is defined. Below we will also see even more useful examples when we search for objects.
 
-```{r}
+```{r GetEnvironmentNames}
 environment_name(env1)
 environment_name(env21)
 ```
 
 In this case the output is a named array, but if we know in which environment an environment is defined, we can specify it in the `envir` parameter and get their name directly:
 
-```{r}
+```{r GetEnvironmentNamesSpecifyingLocation}
 environment_name(env1, envir=globalenv())
 environment_name(env21, envir=env_of_envs)
 ```
 
+#### More advanced examples
 Suppose now that we define another environment that points to one of the already defined environments.
 
-```{r}
+```{r DefineAnotherEnvironmentThatPointsToAnExistingEnvironment}
 e <- env_of_envs$env21
 ```
 
 Now, let's retrieve its name:
 
-```{r}
+```{r GetTheEnvironmentNameOfThisNewEnvironment}
 environment_name(e)
 ```
 
 We see that we get the names of *all* the environments that point to the same memory address. We could disable this behaviour of matching environments by memory address by using the `matchname` parameter as follows:
 
-```{r}
+```{r CallEnvironmentNameWithMatchNameTRUE}
 environment_name(e, matchname=TRUE)
 ```
 
 Finally, if we try to retrieve the environment name of a non-existing environment, we get `NULL`.
 
-```{r}
+```{r CallEnvironmentNameOnNonExistingEnvironment}
 environment_name(non_existing_env)
 ```
 
+#### Retrieving the environment name associated with a memory address
 Now suppose we have a memory address and we would like to know if that memory address corresponds to an environment.
 We can simply call `environment_name()` with the memory address as argument, as follows:
 
-```{r}
+```{r ConvertMemoryAddressToEnvironmentName}
 env1_obj_address = get_obj_address(env1)
 environment_name(env1_obj_address)
 ```
 
-Of course, in practice we would not call the `get_obj_address()` function to get the environment's memory address; we would simply type in the memory address we are after. Note that this memory address must be a 16-digit address which can be optionally enclosed in `< >`, as in: `"<0000000011D7A150>"`, or simply `"0000000011D7A150"`.
+Of course, in practice we would not call the `get_obj_address()` function to get the environment's memory address; we would simply type in the memory address we are after. Note that this memory address can be given either as:  
+
+- a 16-digit address, as in: `"0000000011D7A150"`  
+- a 18-digit address, as in: `"0x0000000011D7A150"`  
+- either the 16-digit or 18-digit address enclosed in `< >`, as in: `"<0000000011D7A150>"` or `"<0x0000000011D7A150>"`  
+- a 18-digit address preceeded by the `environment: ` keyword and enclosed in `< >`, as in: `"<environment: 0x0000000011D7A150>"`  
+
+The latter format is particularly useful when copy & pasting the result of querying an environment object, for example when typing `env1` at the `R` command prompt, assuming that `env1` is a user-defined environment.  
+
+If the memory address does not match any of the above format or does not correspond to an environment `NULL` is returned:
+
+```{r EnvironmentNameOfNonEnvironmentMemoryAddressIsNULL}
+x = 2
+environment_name(get_obj_address(x))
+```
+
+#### Retrieving the execution environment of a function
+If called inside a function `environment_name()` returns the name of the function and the environment where the function is defined.
+
+```{r GetExecutionEnvironmentName}
+with(env1,
+  f <- function() {
+    cat("1) We are inside function", environment_name(), "\n")
+#    cat("2) We are inside function", get_fun_calling(1, showParameters=FALSE), "\n")
+  }
+)
+env1$f()
+```
 
 ## Check the existence of an object with `obj_find()`
 With the `obj_find()` function we can check if an object exists in any existing environment. All environments --including global, packages and user-defined environments-- are crawled to search for the object. This includes any environment that are defined within other environments. The function returns a character array with all the environments where the object has been found.
@@ -102,9 +144,10 @@ The signature of the function is the following:
 `obj_find(obj, envir = NULL, globalsearch = TRUE, n = 0, silent = TRUE)`
 
 ### Examples
+#### Let's start with a few object definitions
 Let's define a couple of objects in the environments already defined above:
 
-```{r}
+```{r DefineObjectsInEnvironments}
 x <- 5
 env1$x <- 3
 with(env_of_envs, env21$y <- 5)
@@ -114,20 +157,21 @@ with(env1, {
 })
 ```
 
+#### Basic operation
 Now let's look for these objects:
-```{r}
+```{r LookForObjects1}
 obj_find(x)
 obj_find(y)
 ```
 
 (recall that environment `e` points to the same environment as `env_of_envs$env21`)
 
-```{r}
+```{r LookForObjects2}
 obj_find(vars_as_string)
 ```
 
 Let's also look for the objects defined in `vars_as_string` and `vars_quoted`.
-```{r}
+```{r LookForObjectsWhoseNamesAreGivenInArray}
 obj_find(env1$vars_as_string[1])  # Here we are looking for the object 'x'
 obj_find(env1$vars_as_string[2])  # Here we are looking for the object 'y'
 obj_find(env1$vars_as_string[3])  # Here we are looking for the object 'z' which does not exist
@@ -135,19 +179,19 @@ obj_find(env1$vars_as_string[3])  # Here we are looking for the object 'z' which
 
 or using `sapply()`:
 
-```{r}
+```{r LookForObjectsUsingSAPPLY}
 with(env1, sapply(vars_as_string, obj_find) )
 sapply(env1$vars_quoted, obj_find)
 ```
 We can also search for objects given as a symbol:
 
-```{r}
+```{r LookForObjectAsASymbol}
 obj_find(as.name("x"))
 ```
 
 Finally, we can also search for objects defined in packages:
 
-```{r}
+```{r LookForObjectsDefinedInPackages}
 obj_find(aov)
 ```
 
@@ -162,17 +206,17 @@ The signature of the function is the following:
 `get_fun_calling_chain(n = NULL, showParameters = TRUE, silent = TRUE)`
 
 ### Example
-
+#### Let's start with a few object definitions
 1) First define a couple of environments:
 
-```{r}
+```{r DefineTwoEnvironments}
 env11 <- new.env()
 env12 <- new.env()
 ```
 
 2) Now define an example function `h` to be called by two different functions `f` defined in two different user-environments. This function `h` does something different depending on which function `f` called it.
 
-```{r}
+```{r DefineFunctionH}
 with(globalenv(), 
 h <- function(x, silent=TRUE) {
   fun_calling_chain = get_fun_calling_chain(silent=silent)
@@ -189,7 +233,7 @@ h <- function(x, silent=TRUE) {
 
 3) Define the two calling functions `f`, respectively in environments `env11` and `env12`:
 
-```{r}
+```{r DefineTwoFunctionsFInSeparateEnvironments}
 with(env11,
   f <- function(x, silent=TRUE) {
     fun_calling_chain = get_fun_calling_chain()
@@ -209,7 +253,7 @@ with(env12,
 
 - Output from `env11$f()`:
 
-```{r, echo=FALSE}
+```{r RunFunctionF1, echo=FALSE}
 silent = FALSE
 x = 0
 cat("\nWhen h(x) is called by env11$f(x=", x, ") the output is: ", env11$f(x, silent=silent), "\n", sep="")
@@ -217,7 +261,7 @@ cat("\nWhen h(x) is called by env11$f(x=", x, ") the output is: ", env11$f(x, si
 
 - Output from `env12$f()`:
 
-```{r, echo=FALSE}
+```{r RunFunctionF2, echo=FALSE}
 silent = FALSE
 x = 0
 cat("\nWhen h(x) is called by env12$f(x=", x, ") the output is: ", env12$f(x, silent=silent), "\n", sep="")
@@ -234,10 +278,9 @@ The signature of the function is the following:
 `get_obj_address(obj, envir = NULL, envmap = NULL, n = 0)`
 
 ### Examples
-
 The following two calls return the same result:
 
-```{r}
+```{r GetObjectAddress1}
 get_obj_address(x)
 with(env1, get_obj_address(x))
 ```
@@ -246,7 +289,7 @@ Note especially the last case, where calling `get_obj_address()` from within the
 
 We can restrict the memory address returned by making the environment where the object is located explicit --by either using the `$` notation or the `envir` parameter of `get_obj_address()`. In this case only the address of the specified object is returned, even if other objects with the same name exist within the specified environment. A few examples follow:
 
-```{r}
+```{r GetObjectAddress2}
 get_obj_address(env1$x)
 get_obj_address(x, envir=env1)
 with(env1, get_obj_address(x, envir=env1))
@@ -259,7 +302,7 @@ Note there is a slight difference between calling `get_obj_address()` using the 
 
 Suppose now the object is an expression referencing three potential existing objects as strings, more specifically an array:
 
-```{r}
+```{r GetNonExistentObjectAddress}
 vars = c("x", "y", "nonexistent")
 get_obj_address(vars[1], envir=env1)
 sapply(vars, get_obj_address)
@@ -269,19 +312,19 @@ sapply(vars, get_obj_address)
 
 We can check that the memory address is correct by running the internal function `envnames:::address()` which calls a C function that retrieves the memory address of a variable:
 
-```{r}
+```{r CheckMemoryAddressIsCorrect}
 envnames:::address(env1$x)
 envnames:::address(e$y)
 ```
 
 WARNING: If we call `envnames:::address()` on a non-existent object inside an environment to which we refer using the `$` notation, we still get a memory address and this is the memory address of `NULL`. In fact the following calls give the same result:
 
-```{r}
+```{r MemoryAddressOfNULL}
 envnames:::address(env1$nonexistent)
 envnames:::address(NULL)
 ```
 However, this is not the case if we use the `get_obj_address()` function as it returns `NULL` when the object is not found:
 
-```{r}
+```{r MemoryAddressOfNonExistentIsNULL}
 get_obj_address(env1$nonexistent)
 ```
