@@ -93,8 +93,7 @@ test_that("T5) functions like get(), as.symbol(), etc. are taken into account be
   expect_equal(observed, expected)
 })
 
-test_that("T6) quotes at the beginning and end of the object are NOT removed.
-          NOTE that the result of this CHANGED in the new version of get_obj_name(). Is this ok?", {
+test_that("T6) quotes at the beginning and end of the object are NOT removed", {
   # skip("this behaviour should change")
   expected = "\\\"this contains begin and end quotes\\\""
   observed = get_obj_name("\"this contains begin and end quotes\"", eval=TRUE)
@@ -106,7 +105,8 @@ test_that("T11) numeric values are returned as characters", {
   expect_equal(get_obj_name(3), "3")
 })
 
-test_that("T12) the name of user-defined environments are correctly returned", {
+test_that("T12a) the name of user-defined environments when EXPLICITLY given through their names are correctly returned.
+          See next test of what should happen when these user-defined environments are NOT given through their names.", {
   # skip("This test should pass in new version")
   expected = "env1"
   observed = get_obj_name(env1)
@@ -115,6 +115,36 @@ test_that("T12) the name of user-defined environments are correctly returned", {
   expected = "env_of_envs$env2"
   observed = get_obj_name(env_of_envs$env2)
   expect_equal(observed, expected)
+})
+
+test_that("T12b) the name of unnamed environments (i.e. user-defined environments NOT given using their known names
+          --as in get_obj_name(env1)-- or function execution environments) is <environment>", {
+  # Function that is used to test get_obj_name() when the object is called 
+  f = function(env, n=1) {
+    # First convert 'env' to the form on which we want to test get_obj_name, namely the "unnamed" form: <environment: 0x000000001b485670>
+    env = eval(env)
+    # Parameter n should > 1 in order to test get_obj_name as we want to test it (i.e. by checking that
+    # the initial loop done there on nback doesn't fail when parameter 'obj' is an "unnamed" environment
+    # as mentioned above, i.e. <environment: 0x000000001b485670>)
+    get_obj_name(env, n=n)
+  }
+
+  # User-defined environment
+  # Note that we use eval(env1) and also pass eval=TRUE in order to simulate that the user-defined environment
+  # is passed without explicitly giving its name
+  expect_equal(get_obj_name(eval(env1), eval=TRUE), "<environment>")
+            
+  # Function execution environment
+  # The execution environment used for testing is the execution environment of this very test_that() function!
+  # Note therefore that this test only works when run within the test_that() function!
+  expect_equal(get_obj_name(environment(), eval=TRUE), "<environment>")
+  
+  # Test the case where we try to retrieve the name of an unnamed environment deep down in the calling chain
+  # (so that the loop performed on nback in get_obj_name is actually tested on function execution environments!
+  # (which are given in the form <environment: 0x000000001b485670>))
+  expect_equal(f(environment(), n=1), "<environment>")
+  expect_equal(f(environment(), n=2), "<environment>")
+  expect_equal(f(environment(), n=3), "<environment>")
 })
 
 test_that("T13) the name of objects inside environments are correctly returned", {

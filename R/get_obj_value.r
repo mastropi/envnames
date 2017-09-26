@@ -2,8 +2,8 @@
 #'
 #' Return the value of the object referenced by a parameter at the \code{n}-th parent generation.
 #' At each parent generation, there is a pair of "object name" <-> "object value". The task of this function
-#' is to retrieve the object name at a given parent generation and then its value based on the path that
-#' leads to the parameter in the current function.
+#' is to retrieve the object name at a given parent generation and then its value based on the path (of variable names) that
+#' leads to the parameter in the function that calls \code{get_obj_value}.
 #' 
 #' @param obj object whose value should be returned. The object can be passed either as a variable name or
 #' as a string representing the object whose value is of interest.
@@ -32,7 +32,7 @@
 #' h <- function(x) {
 #'   # Get the value of parameter 'x' n levels up, i.e. the value of the parameter that led to the current parameter x
 #'   # in the environment that is n levels up in the function calling chain.
-#'   xval = get_obj_value(x, n=1, silent=TRUE)
+#'   xval = get_obj_value(x, n=1, silent=FALSE)
 #'   return(xval)
 #' }
 #' g <- function(y) {
@@ -58,7 +58,7 @@ get_obj_value = function(obj, n=0, silent=TRUE) {
   # (i.e. the name of the object in the environment that is n levels up from the function that called get_obj_value())
 	# - this parameter needs to be evaluated in that environment (parent.frame(n+1))
 	# (which is n+1 levels up from get_obj_value())
-	value = try( eval(as.symbol(get_obj_name(obj, n=n+1, silent=silent)), parent.frame(n+1)), silent=TRUE )
+	value = try( eval(as.symbol(get_obj_name(obj, n=n+1, silent=silent)), parent.frame(n+1)), silent=TRUE )  # The silent=TRUE is for the try() call...
 	if (inherits(value, "try-error")) {
 		return(obj)
 	} else {

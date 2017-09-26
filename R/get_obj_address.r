@@ -311,7 +311,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
   			# the object is 'alist[1]' --as opposed to e.g. alist[[1]] (with two brackets), because alist[1] doesn't
   			# have a fixed memory address)
   			# or if "the object was found in only one environment and this environment is a system or package environment"
-  			# (the latter condition of system or package environment is identified by the fact that envir_names == NA).
+  			# (the latter condition of system or package environment is identified by the fact that envir_names_final == NA).
   			if ( !(is.null(obj_addresses) ||
   			       length(envir_names_final) == 1 && is.na(envir_names_final)) ) {
   			  names(obj_addresses) = envir_names_final

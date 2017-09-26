@@ -34,7 +34,7 @@
 #' env1$g()
 #' env2$h()
 #' env2$env21$hh()
-get_fun_calling <- function(n=1, showParameters=TRUE) {
+get_fun_calling <- function(n=1, showParameters=FALSE) {
 #  if (n < 0) return(NULL)
 	return(get_fun_calling_chain(n+1, showParameters))	# We must sum 1 to the n value passed because we have added a new layer
                                                   # in the calling function chain, namely the layer of this function

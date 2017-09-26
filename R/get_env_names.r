@@ -1,11 +1,11 @@
 #' Create a lookup table with address-name pairs of environments
 #' 
-#' Return a data frame containing the address-name pairs of user-defined, system, package, and namespace
-#' environments in the workspace or within a given environment.
+#' Return a data frame containing the address-name pairs of system, package, namespace, user-defined, and function
+#' execution environments in the whole workspace or within a given environment.
 #' 
-#' @param envir environment where environments are searched for. Defaults to NULL which means that all environments
-#' in the whole workspace should be searched for and all packages in the \code{search()} path should be returned
-#' including their namespace environments.
+#' @param envir environment where environments are searched for to construct the lookup table. Defaults to NULL
+#' which means that all environments in the whole workspace should be searched for and all packages in the
+#' \code{search()} path should be returned including their namespace environments.
 #' 
 #' @details
 #' The search for environments is recursive, meaning that a search is carried out for environments defined
@@ -14,21 +14,28 @@
 #' The search within packages is always on \emph{exported objects} only.
 #' 
 #' If \code{envir} is the global environment ,the lookup table includes all system,
-#' package, and namespace environments in the \code{search()} path, as well as all user-defined environments
-#' found in the global environment (with recursive search).
+#' package, and namespace environments in the \code{search()} path, as well as all user-defined and function execution
+#' environments found in the global environment (with recursive search).
 #' 
 #' If \code{envir=NULL} the lookup table includes all system, package, and namespace environments
-#' in the \code{search()} path, as well as all user-defined environments found in \emph{any} of those
-#' environments (with recursive search).
+#' in the \code{search()} path, as well as all user-defined found in \emph{any} of those environments (with recursive search),
+#' and all function execution environments.
 #' 
 #' @return A data frame containing the following six columns:
 #' \itemize{
 #' \item{\code{type}} type of environment ("user" for user-defined environments "system/package"
 #' for system or package environments), and "namespace" for namespace environments.
-#' \item{\code{location}} location of the environment (only for user-defined environments, in which case the system
-#' environment or package where the environment resides is shown). Note that this may be different from the parent
-#' environment if the parent environment was set during creation with the \code{parent=} option of the
-#' \code{new.env()} function or using the \code{parent.env()} function.
+#' \item{\code{location}} location of the environment, which is only non-\code{NA} for user-defined and function's execution
+#' environments: 
+#'    \itemize{
+#'    \item for a user-defined environment, the location is the system environment or package where the environment resides
+#' (note that this may be different from the parent environment if the parent environment was set during creation with the
+#' \code{parent=} option of the \code{new.env()} function or using the \code{parent.env()} function)
+#'    \item for a function's execution environment, the location is the function's enclosing environment, i.e. the environment
+#'    where the function is defined.
+#'    }
+#' \item{\code{location}} the environment where the environment with name \code{name} and address and \code{address} is located.
+#' \item{\code{locationaddress}} the address of the \code{location} environment.
 #' \item{\code{address}} memory address of the environment. This is the key piece of information to get the
 #' environment name with \code{environment_name()}. For functions, this is the address of the function's execution
 #' environment.
@@ -109,8 +116,35 @@ get_env_names = function(envir=NULL) {
 		#env_user_names = try( Filter(function(x) "environment" %in% class(get(x, envir=envir)), ls(envir)), silent=TRUE )
 		env_user_names = try( {
 					envs = with(envir, Filter(function(x) "environment" %in% class(get(x)), ls()))
-#					envir_name = get_obj_name(envir, n=1)		# get_obj_name() is equivalent to deparse(substitute(envir)) in this case 
+#					envir_name = get_obj_name(envir, n=1)		# get_obj_name() is equivalent to deparse(substitute(envir)) in this case
+					# Try getting the environment name of 'envir' assuming the environment name is given explicitly (as in envir=env1)
 					envir_name = deparse(substitute(envir))
+					if (envir_name == "envir") {
+					  # This means that the environment name was NOT given explicitly (e.g. it was given as the result of a function call as in
+					  # globalenv() or parent.frame() or sys.frame(sys.nframe()), etc.), since in that case deparse(substitute(envir)) resolves to "envir"
+					  # => Construct the GLOBAL envmap table and retrieve the environment name from that table!
+					  # Note that:
+					  # - this does NOT create an infinite loop because when calling get_env_names() with envir=NULL, the function
+					  # will NOT enter again this ELSE block
+					  # - when calling environment_name() below with a specific envmap lookup table the get_env_names() function will NOT be called again!
+					  # - the infinite loop is avoided ONLY because we FIRST create the envmap lookup table and only THEN do we call environment_name()
+					  # using the envmap just constructed... if we call environment_name(evalq(envir)) WITHOUT calling get_env_names() first we would
+					  # end in an infinite loop!
+					  # - it is VERY important to call environment_name() on evalq(envir)) as opposed to calling it on 'envir'... i.e. we should NOT
+					  # take envir as the variable 'envir' which may exist in the global environment, because in that case we would get the name
+					  # of such variable, namely "envir", but may NOT be what we want (i.e. whenever 'envir' is NOT actually the environment named "envir"!)
+					  # Note that this is only a problem when an environment named "envir" actually exists in the (global) workspace.
+					  # - if the environment stored in 'envir' is ACTUALLY CALLED "envir", this name will be still retrieved since evalq(envir) is still 'envir'.
+					  envmap_global = get_env_names(envir=NULL)
+					  envir_name = environment_name(evalq(envir), envmap=envmap_global)
+
+					  # Limit the environment name to just ONE name... it may happen that there are several environments returned
+					  # when envir points to another environment.
+					  # In practice, this only happens when the 'envir' environment is actually called "envir" and the environment
+					  # points to another existing environment (e.g. envir was defined as envir = env11)
+					  # In this situation we just keep the first environment found, and this is a convention
+					  envir_name = envir_name[1]
+					}
 					# Standardize the names of the environment so that the global and the base environments are always shown
 					# the same way, regardless of how the 'envir' parameter is passed.
 					envir_name = envnames:::standardize_env_name(envir_name)
@@ -124,6 +158,7 @@ get_env_names = function(envir=NULL) {
 		# Initialize the output table to a data frame
 		env_table = data.frame(	type=character(0),
 														location=character(0),
+														locationaddress=character(0),
 														address=character(0),
 														pathname=character(0),
 														path=character(0),
@@ -202,29 +237,102 @@ get_env_names = function(envir=NULL) {
 
 			# Initialize the arrays that will possibly (if there are any functions) store the information about function environments
 			env_locations_function = c()
+			env_locationaddresses_function = c()
 			env_addresses_function = c()
 			env_fullnames_function = c()
 
-			if (length(all_calls) > 1) {
+			ncalls = length(all_calls)
+			if (ncalls > 2) {
 				# This means that get_env_names() was called from within a function
+			  # Note that get_env_names() is part of the function calling chain, so that's why we compare > 2 and not > 1,
+			  # because we are not interested in the get_env_names() function.
 				# => crawl the calling chain and retrieve the execution environment of each of the functions in the chain
 				# and add it to the environment map table.
 
-				# Iterate on all the calls from the previous to latest to first one so that we go UP in the calling chain
-				# (note that we exclude the last call because it is THIS function get_env_names(), on which we are not interested)
-				for (c in seq(length(all_calls)-1, 1, -1)) {
-					# Compute the number of levels up in the calling chain starting from the current function (get_env_names)
-					l = length(all_calls) - c
+				# Iterate on all the calls from the first one to the previous to latest
+				# NOTES:
+			  # - we exclude the last call because it is THIS function get_env_names(), on which we are not interested)
+			  # - we start with the first call because we need to store the information about the execution environments in a small envmap table,
+			  # so that we can retrieve the NAME of the environment should a function be defined INSIDE ANOTHER function.
+			  # - IMPORTANT: it suffices to store the lookup table for the execution environments of the functions in the calling chain
+			  # because it is NOT possible to call a function defined in a function that is NOT part of the calling chain, because that
+			  # function will NOT be found! In addition, functions are visible if they have ALREADY been defined in the calling chain
+			  # but not if they are defined in the calling chain down the line (good for us! as it makes this process easier!)
+			  # So, if f1() -> g1() -> h1() where g1() is defined inside f1() and h1() is defined inside g1(), f1() and g1() are
+			  # visible from h1() but h1() is NOT visible from f1() nor g1().
+			  
+			  # Table that will contain the name of the functions in the calling chain and the memory address of their execution environment
+			  envmap_calling_chain = data.frame(matrix(nrow=ncalls-1, ncol=2))
+			  names(envmap_calling_chain) = c("fun_name", "fun_exec_address")
+			  for (c in seq(1, ncalls-1, 1)) {
+				  level = ncalls - c
+				  # Get the function name and its execution environment address
 					fun_name = as.character(all_calls[[c]])[1]
-					# Update the arrays with the required information to store in the environment map table
-					# IMPORTANT: Note that we use sys.frame(-l) to retrieve the execution environment of the calling function
-					# and NOT parent.frame(l)... This is because parent.frames may not always include internal functions in
+					fun_exec_env = sys.frame(-level)
+					fun_exec_address = envnames:::address(fun_exec_env)
+					# Add the memory address to the small envmap lookup table that contains the map for the functions in the calling chain
+					envmap_calling_chain[c, ] = c(fun_name, fun_exec_address)
+
+					#-- Update the arrays with the required information to store in the environment map table
+					# IMPORTANT: Note that we use sys.frame(-level) to retrieve the execution environment of the calling function
+					# and NOT parent.frame(level)... This is because parent.frames may not always include internal functions in
 					# the counting of parent frames (e.g. print() if we call print(get_env_names())), as explained in the Note
 					# section of the documentation for sys.parent.
-					env_locations_function = c(env_locations_function, environmentName(parent.env(sys.frame(-l))))	# This is where the function whose execution environment's address is of interest resides (i.e. the enclosing environment, where the function was defined)
-					env_addresses_function = c(env_addresses_function, envnames:::address(sys.frame(-l)))
+
+					# Check if fun_name contains the $ operator (e.g. env_of_envs$env1$f)
+					if ( length(grep("\\$", fun_name)) > 0 ) {
+					  # The function is defined in a user-defined environment (i.e. its enclosing environment is a user-defined environment)
+					  # (note that sys.calls() includes these environments as part of the function name!)
+					  # => Define the location environment (location_env) as the parent environment of the first environment in the path
+					  # because that's where the function sits.
+					  # (e.g. the parent environment of "env_of_envs" when the path is "env_of_envs$env1") so that we can apply the environmentName()
+					  # function below that updates the env_locations_function array to such location environment (location_env)
+					  members = envnames:::extract_last_member(fun_name)
+					  path_to_function = members$root
+					  envs_to_function = unlist(strsplit(path_to_function, "\\$"))
+					  parent_env = parent.env(fun_exec_env)   # Start, as parent environment with the parent environment of the function's execution environment (i.e. the environment where the function is defined)
+					  # TODO: (2017/09/26) Add a new column in the output lookup table containing the address of the path (e.g. of env_of_envs$env1)
+					  # This would be then used by the look_for_environment() function defined in obj_find.r where we
+					  # make reference to this column...! Currently there is no UNIT test that shows the use of this column... (still to be implemented)
+					  #pathaddress = get_obj_address(parent_env)
+					  for (i in seq_along(envs_to_function)) {
+					    # Go to the parent environment of parent_env and update parent_env
+					    parent_env = parent.env(parent_env)
+					  }
+					  # Set the location environment to the final parent_env environment obtained in the above loop
+					  location_env = parent_env
+					} else {
+					  # The function is NOT defined in a user-defined environment
+					  # => Define the location environment (location_env) as the environment where the function is defined.
+					  # Note that this is NOT the parent.env() because the parent.env() is the environment from which the function was called
+					  # but we are not interested in this, we are interested in the environment where the function is defined.
+					  # That is we should NOT define location_env as parent.env(sys.frame(-level))
+
+					  # First convert the function name to actually a function
+					  # Note that we evaluate the expression obtained from the function name in its parent environment because
+					  # there the function will exist for sure.
+					  call_as_function = try( eval(parse(text=fun_name), envir=parent.env(fun_exec_env)), silent=TRUE ) 
+					  if (!inherits(call_as_function, "try-error")) {
+					    location_env = environment(call_as_function)
+					  }
+					}
+					location_env_address = envnames:::address(location_env)
+					location_env_name = environmentName(location_env)
+					if (location_env_name == "") {
+					  # The environment where the function is defined is function execution environment
+					  # => Retrieve the function's name from the small envmap lookup table created in this loop
+					  ind = which( envmap_calling_chain[, "fun_exec_address"] == location_env_address )
+					  if (length(ind) > 0) {
+					    # length(ind) should be exactly 1, i.e. only one function should match the memory address of location_env
+					    location_env_name = envmap_calling_chain[ind, "fun_name"]
+					  }
+					}
+
+					env_locations_function = c(env_locations_function, location_env_name)
+					env_locationaddresses_function = c(env_locationaddresses_function, location_env_address)
+					env_addresses_function = c(env_addresses_function, fun_exec_address)
 					env_fullnames_function = c(env_fullnames_function, fun_name)
-					#cat("level:", l, "fun:", fun_name, "memory:", envnames:::address(sys.frame(-l)), "\n")
+					#cat("level:", level, ", fun:", fun_name, ", memory:", fun_exec_address, ", location:", location_env_name, "\n")
 				}
 			}
 
@@ -237,6 +345,7 @@ get_env_names = function(envir=NULL) {
 			# or as.environment() for system or package environments.
 			env_types = c(rep("user", length(env_fullnames_user)), rep("function", length(env_fullnames_function)), rep("system/package", length(env_addresses_packages)), rep("namespace", length(env_addresses_namespaces)))
 			env_locations = c( names(env_fullnames_user), env_locations_function, rep(NA, length(env_addresses_packages)), rep(NA, length(env_addresses_namespaces)) )
+			env_locationaddresses = c( rep(NA, length(env_fullnames_user)), env_locationaddresses_function, rep(NA, length(env_addresses_packages)), rep(NA, length(env_addresses_namespaces)) )
 			env_addresses = c(env_addresses, env_addresses_function, env_addresses_packages, env_addresses_namespaces)
 			env_fullnames = c(env_fullnames_user, env_fullnames_function, names(env_addresses_packages), names(env_addresses_namespaces))
 			# Separate the root and the name from env_full_names
@@ -247,6 +356,7 @@ get_env_names = function(envir=NULL) {
 			# Save the information in the env_table data frame
 			env_table = data.frame(	type=env_types,
 															location=env_locations,
+															locationaddress=env_locationaddresses,
 															address=env_addresses,
 															pathname=env_fullnames,
 															path=env_paths,

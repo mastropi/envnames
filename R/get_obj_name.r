@@ -1,18 +1,22 @@
 #' Return the name of an object referenced by a parameter at any parent generation
 #' 
 #' Return the name of the object at the specified parent generation leading to a function's parameter.
+#' This is done by iteratively retrieving the name of the object that leads to the function's parameter
+#' at each parent generation.
 #' The object is optionally evaluated in the environment of the specified parent generation
-#' before retrieving its name, in the same way the deparse() function does.
+#' before retrieving its name. In this case, the result is very similar to the deparse() function.
+#' The differences are explained in the Details section.
 #' 
 #' @param obj object whose name is of interest, or whose evaluated name is of interest.
 #' @param n number of parent generations to go back to retrieve the name of the object that leads to \code{obj}
 #' in the function calling chain. See details for more information.
 #' @param eval whether to evaluate \code{obj} in the \code{n}-th parent generation before
-#' getting the object's name in that environment.
+#' getting the object's name in that environment. See details for more information.
 #' @param silent when \code{FALSE}, the names of the environments and objects in those environments are printed
 #' as those environments are traversed by this function.
 #' 
 #' @return The name of the object in the \code{n}-th parent generation environment.
+#' If the object in that parent generation is an unnamed environment, \code{"<environment>"} is returned.
 #' 
 #' @details To better understand the meaning of this function when \code{n} > 0, consider the first example below:  
 #' Function \code{f(x)} is called with parameter \code{z}, which calls \code{g(y)} with parameter \code{x}.
@@ -20,6 +24,13 @@
 #' because that call is telling "give me the name of object \code{y} two levels up from
 #' the current environment, i.e. from the environment of \code{g()}. The name of \code{y} in the environment
 #' of \code{f(x)} is \code{"x"}, and the name of \code{y} in the global environment is \code{"z"}.  
+#' 
+#' Note that one may think that the result of this function is the same as using deparse(substitute()) where the
+#' object being \code{substitute}d is evaluated at the \code{n}-th parent generation. However, this is not quite so
+#' because \code{substitute(obj, parent.frame(n))} retrieves the object assigned to \code{obj} at the \code{n}-th
+#' parent generation, where \code{obj} _is the name of the variable substituted at that \code{n}-th parent generation_.
+#' On the contrary, \code{get_obj_name(obj, n=2)} _first_ looks for the name leading to \code{obj} and then
+#' retrieves its name.
 #' 
 #' When eval=TRUE, the result of the function is the same as the output of \code{deparse()} except for the following two cases:
 #' \itemize{
@@ -34,10 +45,12 @@
 #' 
 #' @examples
 #' # In its default behaviour (eval=FALSE), get_obj_name() returns the name of an object in the n-th parent generation.
-#' g <- function(y) { get_obj_name(y, n=2) }
+#' # This example shows the difference between get_obj_name() and deparse(substitute())
+#' g <- function(y) { return(list(obj_name=get_obj_name(y, n=2), substitute=deparse(substitute(y, parent.frame(n=2))) )) }
 #' f <- function(x) { g(x) }
 #' z = 3; 
-#' f(z)                # Prints "z", which is the object leading to object "y" inside function g() if we follow the function calling chain.
+#' f(z)                # Rerutns a list where the first element is "z" and the second element is "y"
+#'                     # Note that 'z' is the object leading to object 'y' inside function g() if we follow the function calling chain.
 #'
 #' # When eval=TRUE, get_obj_name() behaves the same way as deparse(), except for the cases noted above.
 #' g <- function(y) {
@@ -68,17 +81,37 @@ get_obj_name = function(obj, n=0, eval=FALSE, silent=TRUE) {
   while (nback < n) {
     #cat("nback =", nback, "\n")
     #print(deparse(obj_parent))
-    # TODO: Should we use environmentName() instead of deparse() when obj_parent is a named environment?
+    # done-2017/09/26 (the correct implementation here is actually to directly call eval.parent() on obj_parent
+    # --as opposed to calling environmentName() as the environment name will be called below at the very end):
+    # Should we use environmentName() instead of deparse() when obj_parent is a named environment?
     # (as done at the very end below when retrieving the name of obj_parent)
-    expr = parse(text=paste("substitute(", deparse(obj_parent), ")"))
-    obj_parent = eval.parent(expr, nback)
+    if (is.environment(obj_parent)) {
+      obj_parent = eval.parent(obj_parent, nback)
+    } else {
+      expr = parse(text=paste("substitute(", deparse(obj_parent), ")"))
+      obj_parent = eval.parent(expr, nback)
+    }
     if (!silent) {
-      # Get the name of the function environment that corresponds to the parent frame nlevels back
-      env_back = parent.frame(n=nback)
+      # Get the environment where the name of obj_parent is retrieved using deparse(substitute()) (called recursively of course, as done in this loop)
+      # Note that this environment is nback+1 levels up (and NOT nback levels up) because the environment nback levels up is where the call to
+      # substitute(obj_parent) is done, which actually retrieves the value (which normally is a variable name) of obj_parent one level up from where
+      # substitute() is called. Showing that environment makes the message more understandable. If you don't believe me try using parent.frame(n=nback)
+      # here and looking at the messages shown when n > 0...
+      # Still the level number we show in the message is 'nback' and NOT 'nback+1' because the relative level should refer to the function that calls
+      # get_obj_name(), which is what the user "sees".
+      env_back = parent.frame(n=nback+1)
       fun_calling = environment_name(env_back)
-      cat("Level ", nback, " back: environment = ", fun_calling, ", object evaluates to '", deparse(obj_parent), "'\n", sep="")
+      cat("Level ", nback, " back: environment = ", fun_calling, ", object name is '", deparse(obj_parent), "'\n", sep="")
     }
     nback = nback + 1
+  }
+
+  if (!silent && n == 1) {
+    # This is the case when the user passed parameter n=0 and therefore we should show a message stating the name of the object in the environment
+    # calling get_obj_name()
+    env_back = parent.frame(n=1)
+    fun_calling = environment_name(env_back)
+    cat("Level 0 back: environment = ", fun_calling, ", object name is '", deparse(obj_parent), "'\n", sep="")
   }
 
   # When eval=TRUE, first evaluate the object in the chain n levels up

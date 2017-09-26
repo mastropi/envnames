@@ -54,9 +54,11 @@ test_that("Create the table of all environments (user and packages) in the whole
 test_that("Create the table of user-environments present just in the global environment
            (no packages in the search() path should be listed)
            The search is recursive on all environments found in the given user-environment.", {
-  skip("it fails when run through the package CHECK functionality but it doesn't fail when run through its TEST functionality... WHY?? (printing the output doesn't show it in CHECK)")
+  skip("To be run MANUALLY by executing these lines below because the test fails when run through the package
+       CHECK or TEST functionalities... WHY?? (printing the output doesn't show it in CHECK)")
   expected = data.frame(type=rep("user",4),
                         location=rep("R_GlobalEnv", 4),
+                        locationaddress=rep(NA, 4),
                         address=c(envnames:::address(globalenv()$env_of_envs), envnames:::address(globalenv()$env_of_envs$env1), envnames:::address(globalenv()$env_of_envs$env1$env2), envnames:::address(globalenv()$env1)),
                         pathname=c("env_of_envs", "env_of_envs$env1", "env_of_envs$env1$env2", "env1"),
                         path=c("", "env_of_envs", "env_of_envs$env1", ""),
@@ -73,6 +75,7 @@ test_that("Create the table of user-environments present in a given user-defined
   #skip("it fails when run through the package CHECK functionality but it doesn't fail when run through its TEST functionality... WHY??")
   expected = data.frame(type=rep("user",2),
                         location=rep("env_of_envs", 2),
+                        locationaddress=rep(NA_character_, 2),
                         address=c(envnames:::address(globalenv()$env_of_envs$env1), envnames:::address(globalenv()$env_of_envs$env1$env2)),
                         pathname=c("env1", "env1$env2"),
                         path=c("", "env1"),

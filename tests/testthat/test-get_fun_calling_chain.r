@@ -64,7 +64,7 @@ test_that("T0) the function returns NULL when called from outside a function", {
 test_that("T1) the function calling chain with several functions in the chain is correctly created", {
   # skip("not now")
   # browser()
-  expected = data.frame(fun=c("h()", "g()", "f()"), env=c("R_GlobalEnv", "env2", "env1"), envfun=c("R_GlobalEnv$h()", "env2$g()", "env1$f()"), stringsAsFactors=FALSE)
+  expected = data.frame(fun=c("h", "g", "f"), env=c("R_GlobalEnv", "env2", "env1"), envfun=c("R_GlobalEnv$h", "env2$g", "env1$f"), stringsAsFactors=FALSE)
   rownames(expected) = 1:nrow(expected) - 1
   observed = with(globalenv(), env1$f())   # NOTE: We could also use globalenv()$env1$f() (although initially it did not work)
   expect_equal(observed[1:3,], expected)

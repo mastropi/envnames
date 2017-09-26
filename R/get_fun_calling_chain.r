@@ -33,7 +33,7 @@
 #' If \code{n} is not NULL and is non-negative, the environment and the function name (including parameters
 #' if \code{showParameters=TRUE}) separated by a \code{$} sign. Ex: \code{env1$f(x = 3, n = 1)}.
 #' if \code{n < 0} or if \code{n} is larger than the function calling chain length, \code{NULL} is returned.
-get_fun_calling_chain = function(n=NULL, showParameters=TRUE, silent=TRUE) {
+get_fun_calling_chain = function(n=NULL, showParameters=FALSE, silent=TRUE) {
   # Get the calling chain using sys.calls()
   # Note that sys.calls() returns a list where the most recent call is last in the list
   # (here I will reverse this order because I want the most recent call to be shown first)
