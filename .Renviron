@@ -4,4 +4,4 @@
 # Ref: help(.libPaths) and help(Startup) from a running R.
 
 # Add the following paths to the search path for libraries (i.e. installed packages). Separate directories with semicolon.
-R_LIBS_USER="E:\Daniel\AppData\R\R-3.3.1\library"
+R_LIBS_USER="E:\Daniel\AppData\R\R-3.4.1\library"

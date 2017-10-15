@@ -25,6 +25,10 @@
 #' @param ignore one or more environment names to ignore if found during the search. These environments
 #' are removed from the output. It should be given as a character array if more than one environments
 #' should be ignored. See the details section for more information..
+#' @param look_in_functions flag indicating whether to look for user-defined environments inside function
+#' execution environments. This should be used with care because in a complicated function chain, some function
+#' execution environments may contain environments that point to other environments (e.g. the 'envclos' environment
+#' in the eval() function when running tests using the test_that package).
 #' 
 #' @details
 #' If \code{env} is an environment it is searched for in the \code{envir} environment using its memory address.
@@ -97,7 +101,7 @@
 #' 
 #' # Get a function's execution environment name
 #' with(env1, f <- function() { cat("We are inside function", environment_name()) })   # "We are inside function env1$f"
-environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchname=FALSE, ignore=NULL) {
+environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchname=FALSE, ignore=NULL, look_in_functions=FALSE) {
 # todo:
 # 1) [DONE-2016/08/13] (2016/03/30) Add the functionality of receiving a memory address in the env parameter and retrieving
 #    the environment name associated to the address (of course if the associated variable exists and is
@@ -120,7 +124,7 @@ environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchn
 
   # Setup the address-name pairs of the environments defined in envir if the envmap variable is not passed
 	if (is.null(envmap)) {
-  	envmap = get_env_names(envir=envir)
+  	envmap = get_env_names(envir=envir, look_in_functions=look_in_functions)
 	}
 
   if (!is.null(envmap)) { # This means that parameter 'envir' is a valid environment
@@ -216,13 +220,20 @@ environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchn
       # This is the same logic implemented in function get_obj_address() when envir=NULL (although implemented
 			# differently there because of the different information available in that case)
 			#
-			# In all other cases, the location is prefixed to the environment name, so that the user receives just
-			# a character output (i.e. NOT a named character array on which Grothendieck complained)
-      if (is.null(envir) && length(env_names) > 1) {
-        names(env_names) = env_locations
-      } else if (!is.na(env_locations) &&                         # env_locations = NA for system and package enviroments
-                 env_locations != "R_GlobalEnv") {                # We choose NOT to add R_GlobalEnv to the environment name because this is the DEFAULT location of environments!
-        env_names = paste(env_locations, env_names, sep="$")
+			# If envir=NULL and just one environment has been found, the location is prefixed to the environment name,
+			# (as long as the location is NOT the global environment --which is assumed to be the default location of environments)
+			# so that the user receives just a character output (i.e. NOT a named character array on which
+			# Gabor Grothendieck complained)
+      #
+			# If envir is not NULL, the location information is not returned as part of the result because the
+			# user already gave the location in the envir= parameter!
+      if (is.null(envir)) {
+        if (length(env_names) > 1) {
+          names(env_names) = env_locations
+        } else if (!is.na(env_locations) &&                         # env_locations = NA for system and package enviroments
+                    env_locations != "R_GlobalEnv") {               # We choose NOT to add R_GlobalEnv to the environment name because this is the DEFAULT location of environments!
+          env_names = paste(env_locations, env_names, sep="$")
+        }
       }
 		}
   }

@@ -4,7 +4,8 @@
 #' 
 #' Function that crawls a set of environments to search for environments defined within each of them
 #' 
-#' @param env_names array with the environment names where the search for environments is wished (careful: should not contain the environment *objects* but their *names*!).
+#' @param env_names array with the environment names where the search for environments is wished
+#' (careful: should not contain the environment *objects* but their *names*!).
 #' @param path array with environment names leading to the current set of environments listed in \code{env_names}.
 #' @param env_path_list array or list of environment names found so far including their path
 #' (e.g. an element of \code{env_path_list} could be \code{"env1$env2$env"}).
@@ -67,6 +68,23 @@ crawl_envs = function(env_names, path, env_path_list, envir=.GlobalEnv) {
 	return(env_path_list)
 }
 
+#' Crawl environments in search of user-defined environments
+#' 
+#' @param envs environment to search in. Note that these should be an environment, and NOT an environment name.
+#' 
+#' @return An array containing strings that represent the path to each environment found inside the \code{env}
+#' environment, and its sub-environments.
+#' 
+#' @keywords internal
+crawl_envs_in_env = function(env) {
+	env_names = try( with(env, Filter(function(x) "environment" %in% class(get(x)), ls())), silent=TRUE )
+	#env_names = try( Filter(function(x) "environment" %in% class(get(x, envir=env, inherits=FALSE)), ls(env)), silent=TRUE )
+	# Crawl the environments defined inside each environment listed in envs
+	env_path_list = envnames:::crawl_envs(env_names, c(), c(), envir=env)
+
+	return(env_path_list)
+}
+
 #' Find environments in a given environment
 #' 
 #' Function that looks for the environments defined within a given environment
@@ -124,10 +142,57 @@ get_envs = function(env_name, path, env_path_list, envir=.GlobalEnv) {
       # Return the updated list of environments found via crawl_envs() including their path (e.g. "env1$env2$thisenv")
       return(env_path_list)
     } else {
-      # No environments were found => return the TRUE to indicate that we reached a leaf in the environments tree
+      # No environments were found => return TRUE to indicate that we reached a leaf in the environments tree
       return(TRUE)
     }
   }
+}
+
+#' Get the object addresses given their object names
+#' 
+#' @param obj_names array containing the name of the objects to retrieve.
+#' They can be given as full path names (e.g. "env1$x") and they can also be
+#' system or package environments given as e.g. ".GlobalEnv" or "R_GlobalEnv" or
+#' "baseenv()" or "package:base" or "package:stats", etc. 
+#' @param envir environment where the objects to convert exist (considering the
+#' object names are given with their full path to the object). This information is not
+#' used when the object is a system or package environment.
+#' 
+#' @return An array containing the memory address of the objects given in \code{obj_names}
+#' or NULL if there is a problem evaluating the corresponding object in the given environment
+#' with \code{eval()}.  
+get_obj_addresses_from_obj_names = function(obj_names, envir=.GlobalEnv) {
+	# Get the objects referenced by the obj_names names
+	# NOTE that we use eval() instead of get()
+	# (in which case we would have used envs = lapply(env_full_names, get, envir=envir))
+	# because eval() can evaluate environments given as e.g. env_of_envs$env11
+	# but get() cannot... get() does NOT accept the '$' sign, but accepts only calls of the form
+	# get("env11", envir=env_of_envs).
+	objects = lapply(obj_names, function(x) {
+				x_eval = try( eval(parse(text=x), envir=envir), silent=TRUE )
+				if (inherits(x_eval, "try-error")) {
+					# Check if x can be evaluated as an environment (e.g. when x = ".Globalenv()" or "package:base")
+					x_eval = try( as.environment(destandardize_env_name(x)), silent=TRUE )
+					if (inherits(x_eval, "try-error"))
+						return(NULL) 
+				}
+				return(x_eval)
+			})
+	obj_addresses = eval( unlist( lapply(objects, get_obj_address, envir) ), envir=envir)
+	return(obj_addresses)
+}
+
+#' Get the objects defined in a given package's namespace
+#' 
+#' @param package_name string containing the package name (e.g. "envnames") of interest.
+#'
+#' @return An array containing the objects defined in a package namespace, as obtained
+#' by \code{ls(asNamespace(package_name))}, or NULL if the package does not exist. 
+get_objects_in_package = function(package_name) {
+	objects = try( ls(asNamespace(package_name)), silent=TRUE )
+	if (inherits(objects, "try-error"))
+		return(NULL)
+	return(objects)
 }
 
 #' Extract the last member in a string representing an object
@@ -173,7 +238,7 @@ extract_last_member = function(full_name) {
 #' @return an array containing the indices in \code{indfound} after cleanup.
 #' 
 #' @details
-#' A cleaned list of matched environments from \code{envmap} should either:
+#' A clean list of matched environments from \code{envmap} should either:
 #' \itemize{
 #' \item contain ONLY ONE function execution environment,
 #' \item contain one ore more user-defined or named environments.

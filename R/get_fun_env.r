@@ -4,7 +4,8 @@
 #' 
 #' @param funname name of the function of interest. It should be given with its full path, i.e. including
 #' the environment where it is defined (e.g. env1$f), and with no arguments.
-#' @param funaddress memory address of the function's execution environment of interest.
+#' @param funaddress string containing the memory address of the function's execution environment of interest
+#' in the form "<(16-digit-code)>" (e.g. "<000000000974E880>")
 #' 
 #' @return The execution environment of the function whose name is given as \code{funname} and memory address is given
 #' as \code{funaddress}.
@@ -14,6 +15,10 @@ get_fun_env <- function(funname, funaddress) {
   # by simulating a linked list via environments!! (nice approach to linked lists)
   # https://stackoverflow.com/questions/29870960/access-object-by-address-pointer --> here they define a find.by.address() function
   # but it cannot be used to get the execution environment of a function! (as I want to do here)
+
+	# Check if the given function address is a memory address
+	if (!envnames:::is_memory_address(funaddress))
+		return(NULL)
 
   # Initialize env to NULL in case there is a problem
   # Note that, in order to retrieve the function's execution environment, we need to go through
