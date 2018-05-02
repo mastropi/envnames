@@ -142,7 +142,7 @@ environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchn
 			# We now call get_obj_address() to first look for 'env' in the given 'envir' environment --if not NULL--
 			# or in the whole workspace when envir=NULL, and then retrieve its memory address (if 'env' is found).
 			# NOTE that we don't simply call envnames:::address() to get the memory address of 'env' because:
-			# - 'env' can be given as a string (i.e. with the environment name as a string)
+			# - 'env' can be given as a string (i.e. a string containing the environment name)
 			# - even if 'env' is given as an environment object, it could exist in different environments
 			# and we would like to retrieve ALL of them. This is also the reason why I am calling the variable
 			# where the returned value is stored as a plural name ("addresses" instead of "address").

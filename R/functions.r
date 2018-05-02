@@ -474,7 +474,13 @@ get_namespace_addresses = function() {
 #' correct type FALSE is returned, no error is raised. 
 #' 
 #' @param x object to check.
-#' @return boolean indicating whether the given object represents a valid memory address. 
+#' @return boolean indicating whether the given object represents a valid memory address.
+#' 
+#' @details
+#' Valid memory addresses are:
+#' "<(16-digit-code)>" (e.g. "<000000000974E880>")
+#' "<0x(16-digit-code)>" (e.g. "<0x000000000974E880>")
+#' "<environment: 0x(16-digit-code)>" (e.g. "<environment: 0x000000000974E880>")
 #' 
 #' @keywords internal
 is_memory_address = function(x) {
