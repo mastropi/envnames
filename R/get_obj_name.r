@@ -28,8 +28,8 @@
 #' Note that one may think that the result of this function is the same as using deparse(substitute()) where the
 #' object being \code{substitute}d is evaluated at the \code{n}-th parent generation. However, this is not quite so
 #' because \code{substitute(obj, parent.frame(n))} retrieves the object assigned to \code{obj} at the \code{n}-th
-#' parent generation, where \code{obj} _is the name of the variable substituted at that \code{n}-th parent generation_.
-#' On the contrary, \code{get_obj_name(obj, n=2)} _first_ looks for the name leading to \code{obj} and then
+#' parent generation, where \code{obj} \emph{is the name of the variable substituted at that \code{n}-th parent generation}.
+#' On the contrary, \code{get_obj_name(obj, n=2)} \emph{first} looks for the name leading to \code{obj} and then
 #' retrieves its name.
 #' 
 #' When eval=TRUE, the result of the function is the same as the output of \code{deparse()} except for the following two cases:
@@ -44,22 +44,27 @@
 #' \link{get_obj_value}
 #' 
 #' @examples
-#' # In its default behaviour (eval=FALSE), get_obj_name() returns the name of an object in the n-th parent generation.
+#' # In its default behaviour (eval=FALSE), get_obj_name() returns
+#' # the name of an object in the n-th parent generation.
 #' # This example shows the difference between get_obj_name() and deparse(substitute())
-#' g <- function(y) { return(list(obj_name=get_obj_name(y, n=2), substitute=deparse(substitute(y, parent.frame(n=2))) )) }
+#' g <- function(y) { return(list(obj_name=get_obj_name(y, n=2), 
+#'                                substitute=deparse(substitute(y, parent.frame(n=2))) )) }
 #' f <- function(x) { g(x) }
 #' z = 3; 
-#' f(z)                # Rerutns a list where the first element is "z" and the second element is "y"
-#'                     # Note that 'z' is the object leading to object 'y' inside function g() if we follow the function calling chain.
+#' f(z)           # Returns a list where the first element is "z" and the second element is "y"
+#'                # Note that 'z' is the object leading to object 'y' inside function g()
+#'                # if we follow the function calling chain.
 #'
-#' # When eval=TRUE, get_obj_name() behaves the same way as deparse(), except for the cases noted above.
+#' # When eval=TRUE, get_obj_name() behaves the same way as deparse(),
+#' # except for the cases noted above.
 #' g <- function(y) {
 #'   print(get_obj_name(y, n=2, eval=TRUE));
 #'   print(deparse(y))
 #' }
 #' f <- function(x) { g(x) }
 #' z = 3; 
-#' f(z)                # Prints "3" twice, once as the output of get_obj_name(), once as the output of deparse()
+#' f(z)           # Prints "3" twice, once as the output of get_obj_name(),
+#'                # once as the output of deparse()
 get_obj_name = function(obj, n=0, eval=FALSE, silent=TRUE) {
   # Increase n by 1 so that we do as if we were working in the environment of the calling function
   n = n + 1

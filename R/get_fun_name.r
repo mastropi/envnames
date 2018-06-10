@@ -9,11 +9,12 @@
 #' 
 #' @return A string containing the name of the function that has been called \code{n} levels up
 #' from the function calling \code{get_env_name}. Any environment name that was used to call such
-#' function is removed (e.g. if the calling function is 'env1$f' or 'env1$env2$f' only "f" will be returned). 
+#' function is removed (e.g. if the calling function is \code{env1$f} or \code{env1$env2$f} only
+#' "f" will be returned).
 #' 
 #' @examples
 #' # Show the name of the active function
-#' f <- function() { cat("Where are in function:", get_fun_name(), "\n") }
+#' f <- function() { cat("We are in function:", get_fun_name(), "\n") }
 #' f()
 #' 
 #' # Show the name of the calling function

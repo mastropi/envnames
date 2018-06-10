@@ -190,7 +190,7 @@ test_that("T21) the name of an environment defined inside a function is correctl
     with(envfun, e <- new.env())
 #    print(environment_name(sys.frame(sys.nframe())))
 #    browser()
-    return( environment_name(envfun, look_in_functions=TRUE, envir=NULL) )  # envir=sys.frame(sys.nframe())
+    return( environment_name(envfun, include_functions=TRUE, envir=NULL) )  # envir=sys.frame(sys.nframe())
     ## done-2017/10/15: (2017/09/26) Make this work with envir=NULL. Currently the output of environment_name() in that case is NULL.
   }
   observed = f()

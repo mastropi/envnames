@@ -1,13 +1,13 @@
 #' Return the name of a calling function and its environment
 #'
 #' This is a wrapper for \code{get_fun_calling_chain(n)} and returns the name of the calling function
-#' including the environment where it is defined n levels up. The two pieces of infomration are separated by the
-#' \code{$} sign.
+#' including the environment where it is defined \code{n} levels up. The two pieces of information are
+#' separated by the \code{$} sign.
 #' 
 #' @param n non-negative integer indicating the number of levels to go up from the calling function
 #' to retrieve the function in the calling chain.
-#' Defaults to 1, which means "return the last function in the calling chain".
-#' @param showParameters flag indicating whether the parameters of the function call should be also shown
+#' It defaults to 1, which means "return the last function in the calling chain".
+#' @param showParameters flag indicating whether the parameters of the function call should also be shown
 #' in the output.
 #' 
 #' @examples

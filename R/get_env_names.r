@@ -1,17 +1,17 @@
 #' Create a lookup table with address-name pairs of environments
 #' 
-#' Return a data frame containing the address-name pairs of system, package, namespace, user-defined, and function
-#' execution environments in the whole workspace or within a given environment.
+#' Return a data frame containing the address-name pairs of system, package, namespace, user-defined,
+#' and function execution environments in the whole workspace or within a given environment.
 #' 
-#' @param envir environment where environments are searched for to construct the lookup table. Defaults to NULL
-#' which means that all environments in the whole workspace should be searched for and all packages in the
-#' \code{search()} path should be returned including their namespace environments.
-#' @param look_in_functions flag indicating whether to include in the map user-defined environments defined
-#' inside function execution environments.
+#' @param envir environment where environments are searched for to construct the lookup table.
+#' It defaults to \code{NULL} which means that all environments in the whole workspace should be searched for
+#' and all packages in the \code{search()} path should be returned including their namespace environments.
+#' @param include_functions flag indicating whether to include in the returned data frame 
+#' user-defined environments defined inside function execution environments.
 #' 
 #' @details
 #' The search for environments is recursive, meaning that a search is carried out for environments defined
-#' within other user-defined environments and, when \code{look_in_functions=TRUE} within function execution
+#' within other user-defined environments and, when \code{include_functions=TRUE} within function execution
 #' environments.
 #' 
 #' The search within packages is always on \emph{exported objects} only.
@@ -27,30 +27,32 @@
 #' @return A data frame containing the following six columns:
 #' \itemize{
 #' \item{\code{type}} type of environment ("user" for user-defined environments "system/package"
-#' for system or package environments), and "namespace" for namespace environments.
-#' \item{\code{location}} location of the environment, which is only non-\code{NA} for user-defined and function's execution
-#' environments: 
+#' for system or package environments, and "namespace" for namespace environments).
+#' \item{\code{location}} location of the environment, which is only non-\code{NA} for user-defined
+#' and function execution environments: 
 #'    \itemize{
-#'    \item for a user-defined environment, the location is the system environment or package where the environment resides
-#' (note that this may be different from the parent environment if the parent environment was set during creation with the
-#' \code{parent=} option of the \code{new.env()} function or using the \code{parent.env()} function)
-#'    \item for a function's execution environment, the location is the function's enclosing environment, i.e. the environment
+#'    \item for a user-defined environment, the location is the system environment or package where
+#'    the environment resides (note that this may be different from the parent environment if the
+#'    parent environment was set during creation with the \code{parent=} option of the \code{new.env()}
+#'    function or using the \code{parent.env()} function)
+#'    \item for a function execution environment, the location is the function's enclosing environment, i.e. the environment
 #'    where the function is defined.
 #'    }
-#' \item{\code{location}} the environment where the environment with name \code{name} and address and \code{address} is located.
-#' \item{\code{locationaddress}} the address of the \code{location} environment.
-#' \item{\code{address}} memory address of the environment. This is the key piece of information to get the
-#' environment name with \code{environment_name()}. For functions, this is the address of the function's execution
+#' \item{\code{locationaddress}} for function execution environments, the memory address of the \code{location}
 #' environment.
-#' \item{\code{pathname}} path to the environment an its name. This is the combination of columns
+#' \item{\code{address}} memory address of the environment. This is the key piece of information used
+#' by the package to retrieve the environment name with the \code{environment_name()} function.
+#' For functions, this is the address of the function's execution environment.
+#' \item{\code{pathname}} path to the environment and its name. This is the combination of columns
 #' \code{path} and \code{name} whose values are put together separated by \code{$}.
-#' \item{\code{path}} path to the environment (through e.g. different environments or packages).
+#' \item{\code{path}} path to the environment (i.e. all environments that need to be traversed in order
+#' to reach the environment).
 #' \item{\code{name}} name of the environment.
 #' }
-#' The \code{type} column is used to distinguish between user-defined environments, package or system environments,
-#' and namespace environments, which are also listed in the output data frame when \code{envir=NULL}.
+#' The \code{type} column is used to distinguish between user-defined environments, function execution
+#' environments, package or system environments, and namespace environments.
 #' 
-#' The data frame is empty if no environments are found in the given environment.
+#' The data frame is empty if no environments are found in the given \code{envir} environment.
 #' 
 #' \code{NULL} is returned when an error occurs.
 #' 
@@ -60,15 +62,20 @@
 #' with(env1, env11 <- new.env())
 #' with(env1$env11, envx <- new.env())
 #' 
-#' # Address-name pairs of all environments defined in the workspace, including environments in the search path
-#' get_env_names()  # returns a data frame with at least the following user environments: "env1", "env1$env11", "env1$env11$envx"  
+#' # Address-name pairs of all environments defined in the workspace,
+#' # including environments in the search path
+#' get_env_names()  # returns a data frame with at least the following user environments:
+#'                  # "env1", "env1$env11", "env1$env11$envx"  
 #' 
 #' # Address-name pairs of the environments defined in a given user-defined environment
-#' get_env_names(env1)  # returns a data frame with the following user environments: "env11", "env11$envx" 
+#' get_env_names(env1)  # returns a data frame with the following user environments:
+#'                      # "env11", "env11$envx"
 #' 
 #' # Address-name pairs of the environments defined in a given package
-#' get_env_names(as.environment("package:stats")) # should return an empty data frame (since the stats package does not have any environments defined) 
-get_env_names = function(envir=NULL, look_in_functions=FALSE) {
+#' get_env_names(as.environment("package:stats")) # should return an empty data frame
+#'                                                # (since the stats package does not
+#'                                                # have any environments defined)
+get_env_names = function(envir=NULL, include_functions=FALSE) {
   # Initialize the output lookup table to NULL in case the envir environment does not exist
 	# or in case no environments are defined in the given environment
   env_table = NULL
@@ -331,7 +338,7 @@ get_env_names = function(envir=NULL, look_in_functions=FALSE) {
 					# the environment passed as parameter 'env' will also match the environment whose name we want to retrieve)
 					# done-2017/10/15: (2017/10/15) We should make sure that the function environmnt_name() is the function INSIDE
 					# the envnames package and NOT a function defined by the user... (in which case we should process it!)
-					if (look_in_functions && !identical( environment(eval(as.name(fun_name), envir=parent.env(fun_exec_env))), asNamespace("envnames") )) {
+					if (include_functions && !identical( environment(eval(as.name(fun_name), envir=parent.env(fun_exec_env))), asNamespace("envnames") )) {
 					  env_user_names_in_fun = crawl_envs_in_env(fun_exec_env)
 					  if (length(env_user_names_in_fun) > 0) {
 					    # Use the location of the function as names attribute of the array

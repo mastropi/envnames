@@ -5,19 +5,19 @@
 #' User-defined environments are also searched.
 #' Note that both the "recursive search" and the "user-defined environments search" makes this function
 #' quite different from functions \link{find} and \link{exists} of the base package.
-#' 
 #' Optionally, the search can be limited to a specified environment, as opposed to carrying it out in the whole workspace.
 #' Still, all user-defined environments defined inside the specified environment are searched.
 #' 
 #' @param obj object to be searched given as the object itself or as a character string. If given as an object,
-#' expressions are accepted (see details on how expressions are considered).
+#' expressions are accepted (see details on how expressions are handled).
 #' @param envir environment where the search for \code{obj} should be carried out.
-#' Defaults to \code{NULL} which means \code{obj} is searched in the calling environment (i.e. in the environment
-#' calling this function), unless \code{globalsearch=TRUE} in which case it is searched in the whole workspace.
+#' It defaults to \code{NULL} which means \code{obj} is searched in the calling environment
+#' (i.e. in the environment calling this function), unless \code{globalsearch=TRUE} in which case
+#' it is searched in the whole workspace.
 #' @param envmap data frame containing a lookup table with name-address pairs of environment names and
-#' addresses to be used when searching for object \code{obj}. Defaults to NULL which means that the
+#' addresses to be used when searching for environment \code{env}. It defaults to \code{NULL} which means that the
 #' lookup table is constructed on the fly with the environments defined in the \code{envir} environment
-#' --if not NULL--, or in the whole workspace if \code{envir=NULL}.
+#' --if not \code{NULL}--, or in the whole workspace if \code{envir=NULL}.
 #' See the details section for more information on its structure.
 #' @param globalsearch when \code{envir=NULL} it specifies whether the search for \code{obj} should be done
 #' globally, i.e. in the whole workspace, or just within the calling environment.
@@ -30,7 +30,7 @@
 #' is searched for. Set this flag to \code{TRUE} with caution because there may be several functions where the
 #' same object is defined, for instance functions that are called as part of the object searching process!
 #' @param silent run in silent mode? If not, the search history is shown,
-#' listing all the environments that are searched for object \code{obj}. Defaults to TRUE.
+#' listing all the environments that are searched for object \code{obj}. It defaults to TRUE.
 #' 
 #' @details
 #' An object is found in an environment if it is reachable from within that environment. An object is considered
@@ -42,33 +42,29 @@
 #' }
 #' 
 #' Note that \code{obj_find} differs from base functions \code{find} and \code{exists} in that \code{obj_find}
-#' searches for the object inside user-defined environments within any given environment in a recursive way.
+#' searches for the object inside user-defined environments within any given environment in a \emph{recursive} way.
 #' 
 #' In particular, compared to:
 #' \itemize{
 #' \item{\code{find}:} \code{obj_find} searches for objects inside user-defined environments while \code{find} is not
 #' able to do so (see examples).
 #' \item{\code{exists}:} \code{obj_find} \emph{never} searches for objects in the parent environment of \code{envir}
-#' when \code{envir} is not \code{NULL}, as does \code{exists} when its \code{inherits} parameter is set to \code{TRUE},
-#' the default. If it is wished to search for objects in parent environments, simply set \code{envir} to \code{NULL}
-#' and \code{globalsearch} to \code{TRUE}, in which case the object will be searched in the whole workspace
+#' when \code{envir} is not \code{NULL}, as is the case with the \code{exists} function when its \code{inherits}
+#' parameter is set to \code{TRUE} (the default).
+#' If it is wished to search for objects in parent environments, simply set \code{envir=NULL}
+#' and \code{globalsearch=TRUE}, in which case the object will be searched in the whole workspace
 #' and the environments where it is found will be returned.
 #' }
 #' 
 #' When the object is found, an array containing the names of all the environments where the object is found is
-#' returned. These names may include the names of user-defined environments.
+#' returned.
 #' 
 #' When \code{envir} is not \code{NULL} attached packages are not included in the search for \code{obj},
 #' unless of course \code{envir} is itself a package environment.
 #' 
-#' When given as an object, \code{obj} can be an expression in which case the following rules apply:
-#' \itemize{
-#' \item if the expression defines the full path to the object (as in \code{env1$env2$x} where \code{env1} and
-#' \code{env2} are existing environments, object \code{x} is found if it is reachable from the calling environment
-#' and all its parent environments.
-#' \item if the expression is an attribute of a list, data frame, or array, the object contained in this
-#' attribute is searched for. Ex: if \code{alist$var = "x"} then object \code{x} is searched. 
-#' }  
+#' When given as an object, \code{obj} can be an expression. If the expression is an attribute of a list
+#' or an array element, the object contained therein is searched for.
+#' Ex: if \code{alist$var = "x"} then object \code{x} is searched.
 #' 
 #' If \code{envmap} is passed it should be a data frame providing an address-name pair lookup table
 #' of environments and should contain at least the following columns:
@@ -80,9 +76,11 @@
 #' \item{\code{address}} the 16-digit memory address of the environment given in \code{pathname} enclosed
 #' in < > (e.g. \code{"<0000000007DCFB38>"})
 #' }
-#' This is useful for speedup purposes, in case several calls to this function will be done
-#' under the same environment space.
+#' Passing an \code{envmap} lookup table is useful for speedup purposes, in case several calls to this
+#' function will be performed in the context of an unchanged set of defined environments.
 #' Such \code{envmap} data frame can be created by calling \link{get_env_names}.
+#' Use this parameter with care, as the matrix passed may not correspond to the actual mapping of existing
+#' environments to their addresses and in that case results may be different from those expected.
 #' 
 #' @return The return value depends on the value of parameter \code{return_address}: when \code{FALSE}
 #' (the default) it returns an array containing the names of the environments where the object \code{obj}

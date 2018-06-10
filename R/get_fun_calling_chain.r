@@ -5,19 +5,19 @@
 #' 
 #' @param n non-negative integer specifying the level of interest in the function calling chain,
 #' where 0 means the function calling \code{get_fun_calling_chain}.
-#' Defaults to \code{NULL}, in which case all the function calling chain is returned.
-#' @param showParameters flag indicating whether the parameters of the function call should be also shown
+#' It defaults to \code{NULL}, in which case the full chain is returned.
+#' @param showParameters flag indicating whether the parameters of the function call should also be shown
 #' in the output.
 #' @param silent whether to run in silent mode. If FALSE, the calling chain is shown in an intuitive way.
-#' Defaults to \code{TRUE}.
+#' It defaults to \code{TRUE}.
 #' 
 #' @return 
-#' If \code{n=NULL} (the default) a data frame with the function calling chain information, structured
-#' in the following columns:
+#' If \code{n=NULL} (the default) a data frame with the function calling chain information, 
+#' with the following columns:
 #' \itemize{
 #' \item{\code{fun}:} the function name (including parameters if \code{showParameters=TRUE})
 #' \item{\code{env}:} the function's enclosing enviroment, i.e. the environment where the function is defined
-#' as returned by \code{environment()}
+#' as returned by \code{environment(<function>)}
 #' \item{\code{envfun}:} the environment where the function is defined together with the function name (and its parameters
 #' if \code{showParameters=TRUE}) separated by a \code{$} sign. Ex: \code{env1$f()}
 #' }
@@ -31,7 +31,8 @@
 #' If the function is NOT called from within a function, \code{NULL} is returned.
 #' 
 #' If \code{n} is not NULL and is non-negative, the environment and the function name (including parameters
-#' if \code{showParameters=TRUE}) separated by a \code{$} sign. Ex: \code{env1$f(x = 3, n = 1)}.
+#' if \code{showParameters=TRUE}) separated by a \code{$} sign are returned (ex: \code{env1$f(x = 3, n = 1)}).
+#' 
 #' if \code{n < 0} or if \code{n} is larger than the function calling chain length, \code{NULL} is returned.
 get_fun_calling_chain = function(n=NULL, showParameters=FALSE, silent=TRUE) {
   # Get the calling chain using sys.calls()

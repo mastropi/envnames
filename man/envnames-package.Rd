@@ -10,11 +10,11 @@ The envnames package solves this problem by creating a lookup table that maps en
 Package conventions: all functions in this package follow the underscore-separated and all-lower-case naming convention (e.g. \code{environment_name()}, \code{get_obj_address()}, etc.).
 }
 \details{
-The package currently contains 10 visible functions. Following is an overview on how to use the main functions of the package. Please refer to the vignette for further information.
+The package currently contains 12 visible functions. Following is an overview on how to use the main functions of the package. Please refer to the vignette for further information.
 
-1) Use \code{\link{address}} to retrieve the memory address of any object, including environments.
+1) Use \code{\link{get_obj_address}} to retrieve the memory address of any object, including environments.
 
-2) Use \code{\link{environment_name}} to retrieve the name of an environment created with \code{\link{new.env}} based on its memory address.
+2) Use \code{\link{environment_name}} to retrieve the name of an environment created with \code{\link{new.env}}. The environment can be given as a string containing its 16-digit memory address.
 
 3) Use \code{\link{obj_find}} to find the environments where a given object is defined.
 
@@ -28,8 +28,10 @@ Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 }
 \references{
 Motivation for developing this package:  
-- A comment by instructor Andrea Spano during his [R for developers course]\url{http://www.quantide.com/courses-overview/r-for-developers} about the impossibility of retrieving the name of user-defined environments.  
-- A [question]\url{https://stat.ethz.ch/pipermail/r-help/2010-July/245646.html} posted by Gabor Grothendieck at the R-Help forum
+
+- A comment by Quantide's instructor Andrea Spano during his "R for developers" course (\url{http://www.quantide.com/courses-overview/r-for-developers}) about the impossibility of retrieving the name of user-defined environments.  
+
+- A question posted by Gabor Grothendieck at the R-Help forum (\url{https://stat.ethz.ch/pipermail/r-help/2010-July/245646.html})
 }
 \keyword{ package }
 \keyword{ environment }
@@ -47,7 +49,9 @@ rm(list=ls())
 # Create new environments
 env1 <- new.env()                      # Environment in .GlobalEnv
 env2 <- new.env()                      # Environment in .GlobalEnv
-env3 <- new.env(parent=baseenv())      # Environment whose enclosure or parent environment is the base environment (as opposed to the global environment)
+env3 <- new.env(parent=baseenv())      # Environment whose enclosure or parent environment
+                                       # is the base environment
+                                       # (as opposed to the global environment)
 env_of_envs <- new.env()               # User-defined environment that contains other environments
 with(env_of_envs, env11 <- new.env()) # Environment defined inside environment env_of_envs
 
@@ -55,9 +59,11 @@ with(env_of_envs, env11 <- new.env()) # Environment defined inside environment e
 environment_name(env1)                       # named array with value "env1" and name "R_GlobalEnv"
 environment_name(env3)                       # named array with value "env3" and name "R_GlobalEnv"
 environment_name(env9)                       # NULL (env9 does not exist)
-environment_name(env_of_envs)                # named array with value "env_of_envs" and name "R_GlobalEnv"
+environment_name(env_of_envs)                # named array with value "env_of_envs" and name
+                                             # "R_GlobalEnv"
 environment_name(env11, envir=env_of_envs)   # "env11"
-environment_name(env11)                      # named array with value "env11" and name "R_GlobalEnv$env_of_envs"
+environment_name(env11)                      # named array with value "env11" and name
+                                             # "R_GlobalEnv$env_of_envs"
 
 
 ### Example 2: Retrieve calling functions and their environments
@@ -76,11 +82,14 @@ with(env2,
 			 fun_calling_name = get_fun_calling()
 
        # Show calling environment using and not using the envnames package
-			 # Essenially the environment name without using the envnames package is empty.
        cat("Now inside function", fun_current_name, "\n")
-       cat("Calling environment name (using environmentName(parent.frame())):  \"", environmentName(parent.frame()), "\"\n", sep="")
-       cat("Calling environment name (using sys.call(1) inside 'as.character( as.list(sys.call(1))[[1]]) ))':", " \"", as.character( as.list(sys.call(1))[[1]]), "\"\n", sep="")
-       cat("Calling environment name (using envnames::get_fun_calling()): \"", fun_calling_name, "\"\n", sep="")
+       cat("Calling environment name (using environmentName(parent.frame())):  \"",
+            environmentName(parent.frame()), "\"\n", sep="")
+       cat("Calling environment name (using sys.call(1) inside
+           'as.character( as.list(sys.call(1))[[1]]) ))':", " \"",
+            as.character( as.list(sys.call(1))[[1]]), "\"\n", sep="")
+       cat("Calling environment name (using envnames::get_fun_calling()): \"",
+           fun_calling_name, "\"\n", sep="")
 
        # Start process
        x = x + 2;
@@ -97,12 +106,14 @@ with(env1,
      }
 )
 
-# Run function f to show the difference between using and not using the envnames package to retrieve the function calling stack.
+# Run function f to show the difference between using and
+# not using the envnames package to retrieve the function calling stack.
 env1$f(7)
 
 
 ### Example 3: find the location of an object
-# This differs from the R function exists() because it also searches in user-defined environments and any environments wihin.
+# This differs from the R function exists() because it also searches
+# in user-defined environments and any environments wihin.
 obj_find(f)                   # "env1"
 obj_find("f")                 # Same thing: "env1"
 obj_find("f", silent=FALSE)   # Same result, but run verbosely

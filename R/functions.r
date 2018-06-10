@@ -161,6 +161,8 @@ get_envs = function(env_name, path, env_path_list, envir=.GlobalEnv) {
 #' @return An array containing the memory address of the objects given in \code{obj_names}
 #' or NULL if there is a problem evaluating the corresponding object in the given environment
 #' with \code{eval()}.  
+#' 
+#' @keywords internal
 get_obj_addresses_from_obj_names = function(obj_names, envir=.GlobalEnv) {
 	# Get the objects referenced by the obj_names names
 	# NOTE that we use eval() instead of get()
@@ -188,6 +190,8 @@ get_obj_addresses_from_obj_names = function(obj_names, envir=.GlobalEnv) {
 #'
 #' @return An array containing the objects defined in a package namespace, as obtained
 #' by \code{ls(asNamespace(package_name))}, or NULL if the package does not exist. 
+#' 
+#' @keywords internal
 get_objects_in_package = function(package_name) {
 	objects = try( ls(asNamespace(package_name)), silent=TRUE )
 	if (inherits(objects, "try-error"))
@@ -245,6 +249,8 @@ extract_last_member = function(full_name) {
 #' }
 #' If none of the above is the case, all function execution environments are removed from the list
 #' of matching environments, i.e. removed from the \code{indfound} array. 
+#' 
+#' @keywords internal
 clean_up_matching_environments = function(envmap, indfound) {
 	# If the memory address of the matched environments correspond to a function execution environment,
 	# there should be only ONE occurrence in indfound...
@@ -535,6 +541,8 @@ parse_memory_address = function(x) {
 #' @param x object to check. A scalar is assumed.
 #' @return boolean indicating whether the scalar object contains a valid logical value (i.e. TRUE or FALSE)
 #' and is not NA nor NULL, and has positive length.
+#' 
+#' @keywords internal
 is_logical = function(x) {
   return(!is.null(x) && !is.na(x) && is.logical(x) && length(x) > 0)
 }
@@ -546,6 +554,8 @@ is_logical = function(x) {
 #' 
 #' @param x object to check.
 #' @return boolean indicating whether the object is NULL or NA.
+#' 
+#' @keywords internal
 is_null_or_na = function(x) {
   op.warn = options("warn")$warn; on.exit( options(warn=op.warn) )
   options(warn=-1)
@@ -563,6 +573,8 @@ is_null_or_na = function(x) {
 #' 
 #' @param x object to check.
 #' @return boolean indicating whether the object is a string.
+#' 
+#' @keywords internal
 is_string = function(x) {
   # TODO: Fix the WARNING mentioned above... is it possible?
   # Note that we evaluate the object name two environments up, this is because we want to get the name of the object

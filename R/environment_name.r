@@ -1,7 +1,8 @@
 #' Retrieve the name of an environment
 #' 
 #' Retrieve the name of an environment as the \code{\link{environmentName}} function of the base package does,
-#' but extending its functionality to retrieving the names of user-defined environments as well.
+#' but extending its functionality to retrieving the names of user-defined environments and function
+#' execution environments.
 #' 
 #' @param env environment whose name is of interest.
 #' It can be given as an object of class environment, as a string with the name of the environment,
@@ -9,31 +10,31 @@
 #' The latter is useful to find out if a given memory address is the reference of an environment object.
 #' Note that the variable passed may or may \emph{not} exist in the calling environment, as the purpose
 #' of this function is also to search for it (and return its name if it is an environment).
-#' It defaults to parent.frame(), i.e. the name of the environment that calls this function is retrieved.
-#' @param envir environment where \code{env} should be searched for. If NULL, \code{env} is searched in
+#' It defaults to parent.frame(), meaning that the name of the environment that calls this function is retrieved.
+#' @param envir environment where \code{env} should be searched for. When \code{NULL}, \code{env} is searched in
 #' the whole workspace, including packages and user-defined environments, recursively.
 #' @param envmap data frame containing a lookup table with name-address pairs of environment names and
-#' addresses to be used when searching for environment \code{env}. Defaults to NULL which means that the
+#' addresses to be used when searching for environment \code{env}. It defaults to \code{NULL} which means that the
 #' lookup table is constructed on the fly with the environments defined in the \code{envir} environment
-#' --if not NULL--, or in the whole workspace if \code{envir=NULL}.
+#' --if not \code{NULL}--, or in the whole workspace if \code{envir=NULL}.
 #' See the details section for more information on its structure.
 #' @param matchname flag indicating whether the match for \code{env} is based on its name or on its
 #' memory address. In the latter case all environments sharing the same memory address of the given
 #' environment are returned. Such scenario happens when, for instance, different
-#' environment objects have been defined equal to another environment (as in \code{env1 <- env}.
-#' Defaults to \code{FALSE}.
+#' environment objects have been defined equal to another environment (as in \code{env1 <- env}).
+#' It defaults to \code{FALSE}.
 #' @param ignore one or more environment names to ignore if found during the search. These environments
 #' are removed from the output. It should be given as a character array if more than one environments
-#' should be ignored. See the details section for more information..
-#' @param look_in_functions flag indicating whether to look for user-defined environments inside function
+#' should be ignored. See the details section for more information.
+#' @param include_functions flag indicating whether to look for user-defined environments inside function
 #' execution environments. This should be used with care because in a complicated function chain, some function
 #' execution environments may contain environments that point to other environments (e.g. the 'envclos' environment
-#' in the eval() function when running tests using the test_that package).
+#' in the \code{eval()} function when running tests using the \code{test_that} package).
 #' 
 #' @details
 #' If \code{env} is an environment it is searched for in the \code{envir} environment using its memory address.
-#' If \code{env} is a 16-digit memory address (enclosed in < >), the memory address itself is searched for among
-#' the defined environments in the \code{envir} environment.
+#' If \code{env} is a string containing a valid 16-digit memory address (enclosed in < >), the memory address
+#' itself is searched for among the defined environments in the \code{envir} environment.
 #' In both cases, if \code{envir=NULL} the search is carried out in the whole workspace. 
 #'  
 #' It may happen that more than one environment exist with the same memory address (for instance
@@ -51,40 +52,45 @@
 #' \item{\code{address}} the 16-digit memory address of the environment given in \code{pathname} enclosed
 #' in < > (e.g. \code{"<0000000007DCFB38>"})
 #' }
-#' This is useful for speedup purposes, in case several calls to this function will be done
-#' under the same environment space.
+#' Passing an \code{envmap} lookup table is useful for speedup purposes, in case several calls to this
+#' function will be performed in the context of an unchanged set of defined environments.
 #' Such \code{envmap} data frame can be created by calling \link{get_env_names}.
+#' Use this parameter with care, as the matrix passed may not correspond to the actual mapping of existing
+#' environments to their addresses and in that case results may be different from those expected.
 #' 
-#' The \code{ignore} parameter is useful for example when iterating on a set of environments
-#' and the loop variable itself is not of interest, therefore it may be useful to remove it from
-#' the output generated by this function. For example:
+#' The following example illustrates the use of the \code{ignore} parameter:
 #' 
 #' \code{for (e in c(globalenv(), baseenv())) { print(environment_name(e, ignore="e")) }}
 #' 
+#' That is, we iterate on a set of environments and we don't want the loop variable (an environment itself)
+#' to show up as part of the output generated by the call to \code{environment_name()}.
+#' 
 #' @return
 #' If \code{matchname=FALSE} (the default), an array containing the names of all the environments
-#' (defined in the \code{envir} environment if \code{envir} is not NULL) having the same memory address
+#' (defined in the \code{envir} environment if \code{envir} is not \code{NULL}) having the same memory address
 #' as the \code{env} environment.
 #' 
-#' If \code{matchname=TRUE}, the environment name given in \code{env} is used in addition to the memory
+#' If \code{matchname=TRUE}, the environment name contained in \code{env} is used in addition to the memory
 #' address to check the matched environments (potentially many if they have the same memory address)
 #' so that only the environments having the same name and address as the \code{env} environment are returned.
 #' Note that several environments may be found if environments with the same name are defined in
 #' different environments.
 #' WARNING: in this case, the name is matched exactly as the expression given in \code{env}. So for instance,
 #' if \code{env=globalenv()$env1} the name \code{"globalenv()$env1"} is checked and this will not return any
-#' environments since no environment can be called like that. For such scenario use \code{env=env1} instead, or
-#' optionally \code{env=env1} and \code{envir=globalenv()} if the \code{env1} environment should be searched
-#' for just in the global environment.
+#' environments since no environment can be called like that. For such scenario call the function with
+#' parameter \code{env=env1} instead, or optionally with \code{env=env1} and \code{envir=globalenv()}
+#' if the \code{env1} environment should be searched for just in the global environment.
 #' 
-#' If \code{env} is not found or it is not an environment, NULL is returned.
+#' If \code{env} is not found or it is not an environment, \code{NULL} is returned.
 #' 
 #' @aliases get_env_name
 #' 
 #' @examples
+#' # Retrieve name of a user-defined environment
 #' env1 <- new.env()
 #' environment_name(env1)                   		# "env1"
 #' 
+#' # Retrieve the name of an environment given as a memory address
 #' env1_address = get_obj_address(env1)
 #' environment_name(env1_address)           		# "env1"
 #' 
@@ -94,14 +100,16 @@
 #' # Retrieve just the env1 environment name
 #' environment_name(env1, matchname=TRUE)   		# "env1"
 #' 
-#' # An environment within another environment
+#' # Retrieve the name of an environment defined within another environment
 #' with(env1, envx <- new.env())
 #' environment_name(env1$envx)              		# "env1$envx" "env1_copy$envx"
-#' environment_name(env1$envx, matchname=TRUE) 	# NULL, because the environment name is "envx", NOT "env1$envx"
+#' environment_name(env1$envx, matchname=TRUE)
+#'   ## NULL, because the environment name is "envx", NOT "env1$envx"
 #' 
 #' # Get a function's execution environment name
-#' with(env1, f <- function() { cat("We are inside function", environment_name()) })   # "We are inside function env1$f"
-environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchname=FALSE, ignore=NULL, look_in_functions=FALSE) {
+#' with(env1, f <- function() { cat("We are inside function", environment_name()) })  
+#'     ## "We are inside function env1$f"
+environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchname=FALSE, ignore=NULL, include_functions=FALSE) {
 # todo:
 # 1) [DONE-2016/08/13] (2016/03/30) Add the functionality of receiving a memory address in the env parameter and retrieving
 #    the environment name associated to the address (of course if the associated variable exists and is
@@ -124,7 +132,7 @@ environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchn
 
   # Setup the address-name pairs of the environments defined in envir if the envmap variable is not passed
 	if (is.null(envmap)) {
-  	envmap = get_env_names(envir=envir, look_in_functions=look_in_functions)
+  	envmap = get_env_names(envir=envir, include_functions=include_functions)
 	}
 
   if (!is.null(envmap)) { # This means that parameter 'envir' is a valid environment

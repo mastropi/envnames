@@ -3,17 +3,11 @@
 #' Return the execution environment of a function by going over the execution environments of all functions
 #' in the calling chain.
 #'
-#' @param fun_name_or_address string containing either the name of the function of interest or the memory address
-#' of the execution environment to retrieve (N.B. this sould NOT be the memory address of the function of interest,
-#' but of its execution environment).
+#' @param fun_name_or_address string containing either the name of the function of interest or the
+#' memory address of the execution environment to retrieve (N.B. this sould not be the memory address
+#' of the \emph{function itself}, but the memory address of its \emph{execution environment}).
 #' When the function name is given, it should be given with its full path, i.e. including
 #' the environment where it is defined (e.g. "env1$f") and with no arguments.
-#' When the memory address is given, it should be in one of the accepted forms, namely:
-#' "<(16-digit-code)>" (e.g. "<000000000974E880>")
-#' "<0x(16-digit-code)>" (e.g. "<0x000000000974E880>")
-#' "<environment: 0x(16-digit-code)>" (e.g. "<environment: 0x000000000974E880>")
-#' It is possible to check if the form is valid by using the internal package function
-#' \code{envnames:::is_memory_address()}. 
 #' 
 #' @details This function is expected to be called from within a function. Otherwise, the function calling chain
 #' is empty and the function returns \code{NULL}.
@@ -42,12 +36,13 @@
 #'   }
 #' )
 #' # Call env1$g()
-#' env1$g(3)           # Returns 2, because the value of x inside env1$g() is 2
-#'                     # ('3' is the value of variable y in env1$g(), not of x)
+#' cat("The value of variable 'x' inside env1$g is", env1$g(3), "\n") 
+#'   ## Prints '2', because the value of x inside env1$g() is 2
+#'   ## ('3' is the value of variable 'y' in env1$g(), not of variable 'x')
 #' 
 #' # When get_fun_env() is called from outside a function, it returns NULL
-#' get_fun_env("g")    # NULL, even if function 'g' exists, but we are not calling get_fun_env() from a function
-#' get_fun_env("f")    # NULL, as the existence of function 'f' is NOT checked
+#' get_fun_env("env1$g")  # NULL, even if function 'g' exists,
+#'                        # but we are not calling get_fun_env() from a function
 #' 
 get_fun_env <- function(fun_name_or_address) {
   # In order to retrieve the function's execution environment, we need to go through

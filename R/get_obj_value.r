@@ -17,21 +17,22 @@
 #' 
 #' Note that this is not the same as doing \code{eval(obj, parent.frame(n))} because this expression evaluates
 #' the object named \code{obj} in the environment that is at the \code{n}-th parent generation.  
-#' The \code{get_obj_value()} function instead, evaluates the object that LED to the current \code{obj}
-#' object, in the environment that is n parent generations back.
+#' The \code{get_obj_value()} function instead, evaluates the object that \emph{led} to the current \code{obj}
+#' object, in the environment that is \code{n} parent generations back.
 #' 
 #' If the \code{obj} is given as a string, it also evaluates to the object value when an object
 #' with that name exists in the given parent generation. However, the object should be passed with no explicit reference
 #' to the environment where it is defined. For instance we should use \code{with(env1, get_obj_value("z"))} and
-#' NOT \code{get_obj_value("env1$z")}, which returns simply \code{"env1$z"}.
+#' \emph{not} \code{get_obj_value("env1$z")}, which returns simply \code{"env1$z"}.
 #' 
 #' @return The value of the object as described in the Details section.
 #' 
 #' @examples
 #' # Define functions that are called to show the behaviour of get_obj_value()
 #' h <- function(x) {
-#'   # Get the value of parameter 'x' n levels up, i.e. the value of the parameter that led to the current parameter x
-#'   # in the environment that is n levels up in the function calling chain.
+#'   # Get the value of parameter 'x' n levels up, i.e. the value of the parameter
+#'   # that led to the current parameter x in the environment that is n levels up
+#'   # in the function calling chain.
 #'   xval = get_obj_value(x, n=1, silent=FALSE)
 #'   return(xval)
 #' }
@@ -40,7 +41,8 @@
 #'   return( h(y) )
 #' }
 #' z = 3
-#' g(z)                     # Returns 3, because the value of x in h() is the value of y in the calling function g() which is 3.
+#' g(z)                     # Returns 3, because the value of x in h() is the value of y
+#'                          # in the calling function g() which is 3.
 #' 
 #' # Example of calling get_obj_value() from outside a function
 #' x = 3

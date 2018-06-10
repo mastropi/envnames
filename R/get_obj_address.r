@@ -4,14 +4,14 @@
 #' in a specified environment or in all the environments defined in the whole workspace.
 #' 
 #' @param obj object whose memory address is requested. It can be given as a variable name or an expression.
-#' Strings representing object names are not interpreted and return NULL.
+#' Strings representing object names are not interpreted and return \code{NULL}.
 #' @param envir environment where the object should be searched for. All parent environments of
-#' \code{envir} are searched as well. Defaults to \code{NULL} which means that it should be searched in the
-#' whole workspace (including packages and user-defined environments).
+#' \code{envir} are searched as well. It defaults to \code{NULL} which means that it should be searched in the
+#' whole workspace (including packages, namespaces, and user-defined environments).
 #' @param envmap data frame containing a lookup table with name-address pairs of environment names and
-#' addresses to be used when searching for object \code{obj}. Defaults to NULL which means that the
+#' addresses to be used when searching for environment \code{env}. It defaults to \code{NULL} which means that the
 #' lookup table is constructed on the fly with the environments defined in the \code{envir} environment
-#' --if not NULL--, or in the whole workspace if \code{envir=NULL}.
+#' --if not \code{NULL}--, or in the whole workspace if \code{envir=sNULL}.
 #' See the details section for more information on its structure.
 #' @param n number of levels to go up from the calling function environment to resolve the name
 #' of \code{obj}. It defaults to 0 which implies the calling environment.
@@ -22,14 +22,14 @@
 #' @details
 #' The object is first searched recursively in all environments defined in the specified environment (if any),
 #' by calling \code{obj_find}.
-#' If no environment is specified, the object is searched recursively in the whole workspace by calling
-#' that same function \code{obj_find}.
+#' If no environment is specified, the object is searched recursively in the whole workspace.
 #' 
 #' The memory address is then retrieved for every object found in those environments having the same name
 #' as the given object \code{obj}.
 #' 
 #' Strings return \code{NULL} but strings can be the result of an expression passed as argument to this function.
-#' In that case, the string is interpreted as an object and its memory address is returned if the object exists.
+#' In that case, the string is interpreted as an object and its memory address is returned as long as
+#' the object exists.
 #' 
 #' If \code{envmap} is passed it should be a data frame providing an address-name pair lookup table
 #' of environments and should contain at least the following columns:
@@ -41,14 +41,14 @@
 #' \item{\code{address}} the 16-digit memory address of the environment given in \code{pathname} enclosed
 #' in < > (e.g. \code{"<0000000007DCFB38>"})
 #' }
-#' This is useful for speedup purposes, in case several calls to this function will be done
-#' under the same environment space.
+#' Passing an \code{envmap} lookup table is useful for speedup purposes, in case several calls to this
+#' function will be performed in the context of an unchanged set of defined environments.
 #' Such \code{envmap} data frame can be created by calling \link{get_env_names}.
 #' Use this parameter with care, as the matrix passed may not correspond to the actual mapping of existing
 #' environments to their addresses and in that case results may be different from those expected.
 #' 
 #' @return The 16-digit memory address of the input object given as a string enclosed in <>
-#' (e.g. \code{"<0000000005E90988>"}), or NULL under any of the following situations:
+#' (e.g. \code{"<0000000005E90988>"}), or \code{NULL} under any of the following situations:
 #' \itemize{
 #' \item the object is \code{NULL}, \code{NA}, or a string, or any other object whose memory address changes every
 #' time the object is referred to (for instance for \code{alist[1]} --as opposed to \code{alist[[1]]}--
@@ -60,8 +60,8 @@
 #' 
 #' Note that for the last case, although constants have a memory address, this address is meaningless as
 #' it changes with every invocation of the function. For instance, running
-#' envnames:::address(3) several times will show a different memory address each time, and that is why
-#' \code{get_obj_address} returns NULL in those cases.
+#' \code{envnames:::address(3)} several times will show a different memory address each time, and that is why
+#' \code{get_obj_address} returns \code{NULL} in those cases.
 #' 
 #' When \code{envir=NULL} (the default) or when an object exists in several environments,
 #' the memory address is returned for all of the environments where the object is found. In that case, the addresses are
@@ -71,21 +71,26 @@
 #' env1 = new.env()
 #' env1$x = 3                       # x defined in environment 'env1'
 #' x = 4                            # x defined in the Global Environment
-#' get_obj_address(env1$x)          # returns the memory address of the object 'x' defined in the 'env1' environment
+#' get_obj_address(env1$x)          # returns the memory address of the object 'x'
+#'                                  # defined in the 'env1' environment
 #' get_obj_address(x, envir=env1)   # same as above
 #' get_obj_address(x)               # Searches for object 'x' everywhere in the workspace and
-#'                                  # returns a named array with the memory address of all its occurrences,
-#'                                  # where the names are the names of the environments where x was found.
+#'                                  # returns a named array with the memory address of all its
+#'                                  # occurrences, where the names are the names of the
+#'                                  # environments where x was found.
 #' 
 #' # Memory addresses of objects whose names are stored in an array and retrieved using sapply()
 #' env1$y <- 2;
 #' objects <- c("x", "y")
-#' sapply(objects, FUN=get_obj_address, envir=env1)	# Note that the address of object "x" is the same as the one returned above by get_obj_address(x, envir=env1)
+#' sapply(objects, FUN=get_obj_address, envir=env1)	# Note that the address of object "x"
+#'                                                  # is the same as the one returned above
+#'                                                  # by get_obj_address(x, envir=env1)
 #' 
 #' # Memory address of elements of a list
 #' alist <- list("x")
 #' get_obj_address(alist[[1]])      # memory address of object 'x'
-#' get_obj_address(alist[1])        # NULL because alist[1] has a memory address that changes every time alist[1] is referred to.
+#' get_obj_address(alist[1])        # NULL because alist[1] has a memory address
+#'                                  # that changes every time alist[1] is referred to.
 get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=FALSE) {
 # NOTE: (2016/07/26) This function is needed to avoid an error when requesting the address() of an object that
 # does not exist. This function returns NULL in such case instead of an error message!
@@ -200,13 +205,13 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 	obj_addresses = NULL
 
 	# First check whether the object is NULL, NA or a string, in which case we return NULL
-	# In fact, we don't want to retrieve the address of a string, because this changes for every call to the function!
+	# In fact, we don't want to retrieve the address of a string, because the memory address changes for every call to the function!
 	# (note: although this worked correctly for get_obj_address("x"), it failed for get_obj_address("env1$x") (it gave an incorrect
 	# memory address) and fixing it to make it work properly was too complicated and not really necessary)
 	# Note that we need to set the warning option to -1 to avoid a warning when calling is.na(obj) on an environment object...
 	# Also note that before checking if obj is NA we check that it is not an environment and not a symbol because is.na()
 	# gives a warning in those cases!
-	# I also set the warn option to -1 because sometimes we get the warning regarding "promised evaluation".
+	# We also set the warn option to -1 because sometimes we get the warning regarding "promised evaluation".
 	option_warn = options("warn")$warn
 	options(warn=-1)
 	is_obj_null_na_string = try( is.null(obj) || (!is.environment(obj) && !is.symbol(obj) && is.na(obj)) || envnames:::is_string(obj), silent=TRUE )
