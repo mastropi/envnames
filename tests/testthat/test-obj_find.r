@@ -293,7 +293,7 @@ test_that("T11) objects given with a full environment path involving globalenv()
 
 
 test_that("T21) specifying include_functions=TRUE returns ALL the function environments where the object is found", {
-  # skip("not now")
+  skip("Problems when running this test on different modalities, e.g. TEST mode or CHECK mode.")
   # NOTE: This test passes only when calling obj_find() from WITHIN expect_equal() because doing so sets up a function
   # calling chain that makes the object being searched for appear in different function environments (e.g. compare())
   # ***********************************

@@ -484,6 +484,11 @@ get_namespace_addresses = function() {
 #' 
 #' @details
 #' Valid memory addresses are:
+#' For 32-bit systems, an 8-bit representation (since 2^32 = 16^8):
+#' "<(8-digit-code)>" (e.g. "<0974E880>")
+#' "<0x(8-digit-code)>" (e.g. "<0x0974E880>")
+#' "<environment: 0x(8-digit-code)>" (e.g. "<environment: 0x0974E880>")
+#' For 64-bit systems, a 16-bit representation (since 2^64 = 16^16):
 #' "<(16-digit-code)>" (e.g. "<000000000974E880>")
 #' "<0x(16-digit-code)>" (e.g. "<0x000000000974E880>")
 #' "<environment: 0x(16-digit-code)>" (e.g. "<environment: 0x000000000974E880>")
@@ -499,9 +504,17 @@ is_memory_address = function(x) {
 		# Note that the blank space at the beginning of the pattern includes tabs (checked).
 		# Note also that if we want to use PERL regular expression we should use double escape to represent
 		# special characters as in grep("^\\s*<", obj, perl=TRUE)
-		isaddress = grep("^ *<[0-9a-f]{16}>$", x, ignore.case=TRUE) || grep("^ *[0-9a-f]{16}$", x, ignore.case=TRUE) ||
-		            grep("^ *<0x[0-9a-f]{16}>$", x, ignore.case=TRUE) || grep("^ *0x[0-9a-f]{16}$", x, ignore.case=TRUE) ||
-          		  grep("^ *<environment: 0x[0-9a-f]{16}>$", x, ignore.case=TRUE)
+	  
+	  # First we check if the architecture under which R was built is 32-bit or 64-bit
+	  # which affect the number of hexadecimal digits used for memory addresses in the architecture.
+	  if (R.version$arch == .pkgenv$ARCH_32BIT) nhexdigits = 8
+	  else if (R.version$arch == .pkgenv$ARCH_64BIT) nhexdigits = 16
+	  else { error_NotValidArchitecture(R.version$arch); return(NULL) }
+		isaddress = grep( paste("^ *<[0-9a-f]{", nhexdigits, "}>$", sep=""), x, ignore.case=TRUE) ||
+		            grep( paste("^ *[0-9a-f]{", nhexdigits, "}$", sep=""), x, ignore.case=TRUE) ||
+		            grep( paste("^ *<0x[0-9a-f]{", nhexdigits, "}>$", sep=""), x, ignore.case=TRUE) ||
+		            grep( paste("^ *0x[0-9a-f]{", nhexdigits, "}$", sep=""), x, ignore.case=TRUE) ||
+          		  grep( paste("^ *<environment: 0x[0-9a-f]{", nhexdigits, "}>$", sep=""), x, ignore.case=TRUE)
 		if (!is.na(isaddress) && isaddress) {
 			result = TRUE
 		} else {
@@ -518,8 +531,12 @@ is_memory_address = function(x) {
 #' in the 'address' column of the data frame returned by get_env_names(). 
 #' 
 #' @param x string to parse.
-#' @return string of length 18 in the form "<xxxxxxxxxxxxxxxx>" where x represents digits between 0 and 9 and
-#' letters between "a" and "f". Ex: "<0000000017830f40>"
+#' @return string containing the memory address represented by the input string after stripping any
+#' extraneous pieces of string, namely : "0x" and "environment: " and after enclosing it in '<>'.
+#' For 32-bit architecture the string would be of the form "<xxxxxxxx>" where x represents
+#' digits between 0 and 9 and letters between "a" and "f". Ex: "<07830f40>"
+#' For 64-bit architecture the string would be of the form "<xxxxxxxxxxxxxxxx>" where x represents
+#' digits between 0 and 9 and letters between "a" and "f". Ex: "<07830f40>"
 #' 
 #' @keywords internal
 parse_memory_address = function(x) {
