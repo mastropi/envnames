@@ -35,7 +35,7 @@ The envnames package solves this problem by creating a lookup table that maps en
 Why do we care about knowing the name of user-defined environments? That piece of information may be handy for example under the following scenarios:
 
 - working in a package where user-defined environments have been defined in a nested structure.  
-This package facilitates the navigation through those environments and their connection between them (eliminating the use of `ls()` as a rudimentary tool to identify the human-understandable environment (e.g. `env1`) referred by an environment given by its memory address (e.g. `<environment: 0x063dbc90>` in 32-bit systems or `<environment: 0x00000000063dbc90>` in 64-bit systems), as already seen above).
+This package facilitates the navigation through those environments and their connection between them (eliminating the use of `ls()` as a rudimentary tool to identify the human-understandable environment (e.g. `env1`) referred by an environment given by its memory address (e.g. normally `<environment: 0x063dbc90>` in 32-bit systems or `<environment: 0x00000000063dbc90>` in 64-bit systems), as already seen above).
 For more information and examples, see the `get_env_names()` function that returns a map of currently defined environments and the way they are connected or nested.  
 - debugging an application.  
 This package makes it easier to retrieve variables in different environments; for instance, retrieve the value of a variable in the parent environment to the environment where the debugger is currently positioned.
@@ -120,7 +120,7 @@ get_env_names(envir=env_of_envs)
 The `environment_name()` function (or its alias `get_env_name`) extends the functionality of the built-in `environmentName()` function by also retrieving the name of user-defined environments and function execution environments.
 Although the name of an environment can be easily retrieved with `deparse(substitute(env1))` where `env1` is a user-defined environment, the most useful
 scenario for the use of `environment_name()` is when some function tells us that an object is part of a user-defined environment, but this environment
-is only given as a *memory address* (as in e.g. `<environment: 0x0437fb40>` in 32-bit systems or `<environment: 0x000000000437fb40>` in 64-bit systems). In this scenario, `environment_name()` can tell us the *name* of the
+is only given as a *memory address* (as in e.g. normally `<environment: 0x0437fb40>` in 32-bit systems or `<environment: 0x000000000437fb40>` in 64-bit systems). In this scenario, `environment_name()` can tell us the *name* of the
 environment having that memory address.  
 
 The address-to-name conversion also works for *function execution environments*.
@@ -187,6 +187,9 @@ Of course, in practice we would not call the `get_obj_address()` function to get
 - a 10-digit (32-bit) / 18-digit (64-bit) address, e.g. `"0x0000000011D7A150"` (64-bit architecture)  
 - either of the above addresses enclosed in `< >`, e.g. `"<0000000011D7A150>"` or `"<0x0000000011D7A150>"` (64-bit archiecture)  
 - a 10-digit (32-bit) / 18-digit (64-bit) address preceeded by the `environment: ` keyword and enclosed in `< >`, e.g.: `"<environment: 0x0000000011D7A150>"` (64-bit architecture)  
+
+(note: Linux Debian distributions may have a 12-digit memory address representation. The best way to know
+what the memory address representation is in a particular system is to call e.g. `address("x")`.)
 
 The latter format is particularly useful when copying & pasting the result of querying an environment object, for example when typing `env1` at the `R` command prompt, assuming that `env1` is a user-defined environment.  
 

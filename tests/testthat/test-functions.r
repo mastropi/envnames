@@ -104,63 +104,78 @@ test_that("T912) check_object_exists(): non-existing objects return 'not found'"
 test_that("T21) is_memory_address(): a string obtained as the memory address of an object is identified as a valid memory address", {
   expected = TRUE
   observed = envnames:::is_memory_address(envnames:::address(x))
+  cat("correct memory address:", envnames:::address(x), "\n")
+  cat("observed result:", observed, "\n")
   expect_equal(observed, expected)
 })
 
 test_that("T22) is_memory_address(): ALL valid ways of specifying a memory address as a string are identified as a valid memory address", {
   expected = TRUE
-  if (R.version$arch == envnames:::.pkgenv$ARCH_32BIT) {
-    observed = envnames:::is_memory_address("<0974E880>")
-    expect_equal(observed, expected)
-    
-    observed = envnames:::is_memory_address("<0x0974E880>")
-    expect_equal(observed, expected)
-    
-    observed = envnames:::is_memory_address("<environment: 0x0974E880>")
-    expect_equal(observed, expected)
-  } else if (R.version$arch == envnames:::.pkgenv$ARCH_64BIT) {
-    observed = envnames:::is_memory_address("<000000000974E880>")
-    expect_equal(observed, expected)
-    
-    observed = envnames:::is_memory_address("<0x000000000974E880>")
-    expect_equal(observed, expected)
-    
-    observed = envnames:::is_memory_address("<environment: 0x000000000974E880>")
-    expect_equal(observed, expected)
-  } else {
-    fail(envnames:::error_NotValidArchitecture(R.version$arch))
-  }
+  
+  # Memory addresses in Windows 32-bit (8 hexadecimal digits)
+  observed = envnames:::is_memory_address("<0974E880>")
+  expect_equal(observed, expected)
+  
+  observed = envnames:::is_memory_address("<0x0974E880>")
+  expect_equal(observed, expected)
+  
+  observed = envnames:::is_memory_address("<environment: 0x0974E880>")
+  expect_equal(observed, expected)
+
+  # Memory addresses in Windows 64-bit (16 hexadecimal digits)
+  observed = envnames:::is_memory_address("<000000000974E880>  ")
+  expect_equal(observed, expected)
+  
+  observed = envnames:::is_memory_address("    <0x000000000974E880>  ")
+  expect_equal(observed, expected)
+  
+  observed = envnames:::is_memory_address("<environment: 0x000000000974E880>  ")
+  expect_equal(observed, expected)
+
+  # Memory addresses in Linux Debian 64-bit (12 hexadecimal digits)
+  observed = envnames:::is_memory_address("<00000974E880>")
+  expect_equal(observed, expected)
+  
+  observed = envnames:::is_memory_address("<0x00000974E880>  ")
+  expect_equal(observed, expected)
+  
+  observed = envnames:::is_memory_address("    <environment: 0x00000974E880>")
+  expect_equal(observed, expected)
 })
 
 test_that("T23) is_memory_address(): invalid memory addresses return FALSE", {
+  skip("the is_memory_address() function was changed to accept any number of digits between 8 and 16,
+       since in Ubuntu Debian memory addresses have 12 digits!")
   expected = FALSE
   if (R.version$arch == envnames:::.pkgenv$ARCH_32BIT) {
     # 64-bit address in 32-bit architecture
     observed = envnames:::is_memory_address("<000000000974E880>")
     expect_equal(observed, expected)
-
-    # Out-of-range digits    
-    observed = envnames:::is_memory_address("<0x0974G880>")
-    expect_equal(observed, expected)
-
-    # Wrong prefix "environment" (the colon at the end is missing)
-    observed = envnames:::is_memory_address("<environment 0x0974E880>")
-    expect_equal(observed, expected)
   } else if (R.version$arch == envnames:::.pkgenv$ARCH_64BIT) {
     # 32-bit address in 64-bit architecture
     observed = envnames:::is_memory_address("<0974E880>")
     expect_equal(observed, expected)
-    
-    # Out-of-range digits    
-    observed = envnames:::is_memory_address("<0x000000000974G880>")
-    expect_equal(observed, expected)
-  
-    # Wrong prefix "environment" (the colon at the end is missing)
-    observed = envnames:::is_memory_address("<environment 0x000000000974E880>")
-    expect_equal(observed, expected)
-  } else {
-    fail(envnames:::error_NotValidArchitecture(R.version$arch))
   }
+})
+
+test_that("T24) is_memory_address(): out-of-range digits or wrong prefixes in an apparently well constructed memory addresses return FALSE", {
+  expected = FALSE
+  
+  # Out-of-range digits    
+  observed = envnames:::is_memory_address("<0x0974G880>")
+  expect_equal(observed, expected)
+  
+  # Wrong prefix "environment" (the colon at the end is missing)
+  observed = envnames:::is_memory_address("<environment 0x0974E880>")
+  expect_equal(observed, expected)
+  
+  # Out-of-range digits    
+  observed = envnames:::is_memory_address("<0x000000000974G880>")
+  expect_equal(observed, expected)
+
+  # Wrong prefix "environment" (the colon at the end is missing)
+  observed = envnames:::is_memory_address("<environment 0x000000000974E880>")
+  expect_equal(observed, expected)
 })
 # is_memory_address() --------------------------------------------------------
 

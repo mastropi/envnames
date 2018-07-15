@@ -483,12 +483,13 @@ get_namespace_addresses = function() {
 #' @return boolean indicating whether the given object represents a valid memory address.
 #' 
 #' @details
-#' Valid memory addresses are:
-#' For 32-bit systems, an 8-bit representation (since 2^32 = 16^8):
-#' "<(8-digit-code)>" (e.g. "<0974E880>")
-#' "<0x(8-digit-code)>" (e.g. "<0x0974E880>")
-#' "<environment: 0x(8-digit-code)>" (e.g. "<environment: 0x0974E880>")
-#' For 64-bit systems, a 16-bit representation (since 2^64 = 16^16):
+#' Valid memory addresses depend on the architecture. For instance for:
+#' - for Windows 32-bit systems, an 8-bit representation (since 2^32 = 16^8)
+#' - for Windows 64-bit systems, a 16-bit representation (since 2^64 = 16^16)
+#' - for Linux Debian 64-bit systems, a 12-bit representation seems to be the case...
+#' (ref: Ubuntu 18.04 LTS on Windows)
+#' 
+#' Example of valid memory addresses for Windows 64-bit systems:
 #' "<(16-digit-code)>" (e.g. "<000000000974E880>")
 #' "<0x(16-digit-code)>" (e.g. "<0x000000000974E880>")
 #' "<environment: 0x(16-digit-code)>" (e.g. "<environment: 0x000000000974E880>")
@@ -500,21 +501,15 @@ is_memory_address = function(x) {
 	ischaracter = try( is.character(x), silent=TRUE )
 	if (!inherits(ischaracter, "try-error") && ischaracter) {
 		# Check if x contains a string that is a memory address
-		# We allow for one or more spaces at the beginning of the string as in "   <0x00000000119dba68>"		
-		# Note that the blank space at the beginning of the pattern includes tabs (checked).
+		# We allow for one or more spaces at the beginning or end of the string as in "   <0x00000000119dba68>  "
+		# Note that the blank space at the beginning or end of the pattern includes tabs (checked).
 		# Note also that if we want to use PERL regular expression we should use double escape to represent
 		# special characters as in grep("^\\s*<", obj, perl=TRUE)
-	  
-	  # First we check if the architecture under which R was built is 32-bit or 64-bit
-	  # which affect the number of hexadecimal digits used for memory addresses in the architecture.
-	  if (R.version$arch == .pkgenv$ARCH_32BIT) nhexdigits = 8
-	  else if (R.version$arch == .pkgenv$ARCH_64BIT) nhexdigits = 16
-	  else { error_NotValidArchitecture(R.version$arch); return(NULL) }
-		isaddress = grep( paste("^ *<[0-9a-f]{", nhexdigits, "}>$", sep=""), x, ignore.case=TRUE) ||
-		            grep( paste("^ *[0-9a-f]{", nhexdigits, "}$", sep=""), x, ignore.case=TRUE) ||
-		            grep( paste("^ *<0x[0-9a-f]{", nhexdigits, "}>$", sep=""), x, ignore.case=TRUE) ||
-		            grep( paste("^ *0x[0-9a-f]{", nhexdigits, "}$", sep=""), x, ignore.case=TRUE) ||
-          		  grep( paste("^ *<environment: 0x[0-9a-f]{", nhexdigits, "}>$", sep=""), x, ignore.case=TRUE)
+		isaddress = grep( paste("^ *<[0-9a-f]{8,16}> *$", sep=""), x, ignore.case=TRUE) ||
+		            grep( paste("^ *[0-9a-f]{8,16} *$", sep=""), x, ignore.case=TRUE) ||
+		            grep( paste("^ *<0x[0-9a-f]{8,16}> *$", sep=""), x, ignore.case=TRUE) ||
+		            grep( paste("^ *0x[0-9a-f]{8,16} *$", sep=""), x, ignore.case=TRUE) ||
+          		  grep( paste("^ *<environment: 0x[0-9a-f]{8,16}> *$", sep=""), x, ignore.case=TRUE)
 		if (!is.na(isaddress) && isaddress) {
 			result = TRUE
 		} else {

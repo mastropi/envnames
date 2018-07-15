@@ -49,9 +49,11 @@
 #' is located; otherwise \code{NA}.
 #' \item{\code{pathname}} the full \emph{environment path} to reach the environment separated by \code{$}
 #' (e.g. \code{"env1$env$envx"})
-#' \item{\code{address}} the 8-digit (32-bit architectures) / 16-digit (64-bit architectures) memory address
+#' \item{\code{address}} an 8-digit (32-bit architectures) thru 16-digit (64-bit architectures) memory address
 #' of the environment given in \code{pathname} enclosed in < > (e.g. \code{"<0000000007DCFB38>"}
 #' (64-bit architectures))
+#' Be ware that Linux Debian distributions may have a 12-digit memory address representation.
+#' So the best way to know is to check a memory address by calling e.g. `address("x")`.
 #' }
 #' Passing an \code{envmap} lookup table is useful for speedup purposes, in case several calls to this
 #' function will be performed in the context of an unchanged set of defined environments.
