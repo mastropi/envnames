@@ -119,7 +119,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
       # environment map table 'envmap' (this is the only way we can get to the name of an unnamed environment!!
       # --i.e. through the address-name lookup table)
       # (in fact running get_obj_name() on an unnamed environment returns "<environment>" which is not useful at all!)
-      obj_address = envnames:::address(obj)
+      obj_address = address(obj)
 
       # Look for this address in the 'envmap' lookup table and return either the "path" or the "location" value
       # (the latter is returned if "path" is empty)
@@ -131,7 +131,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
       # "Clean up" the matched environments:
       # i.e. in case both "function" and "proper" environments are matched, keep just the "proper" environments
       # (see more comments in the function called here)
-      ind = envnames:::clean_up_matching_environments(envmap, ind)
+      ind = clean_up_matching_environments(envmap, ind)
       
       if (length(ind) > 0) {
         # Construct the environment where the object (also an environment) is found by using either
@@ -304,11 +304,11 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
   error = FALSE
   tryCatch(
     if (class(envir) != "environment") {
-			envnames:::error_NotValidEnvironment(envir_name)
+			error_NotValidEnvironment(envir_name)
       error = TRUE
     },
     error=function(e) {
-						envnames:::error_NotValidEnvironment(envir_name); assign("error", TRUE, inherits=TRUE)
+						error_NotValidEnvironment(envir_name); assign("error", TRUE, inherits=TRUE)
             ## Note the use of the inherits=TRUE parameter which means: search for the variable to be assigned in parent environments and assign the value to the first one found.
           },
 		silent=TRUE
@@ -407,7 +407,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 		  # referenced by 'envir', which is only ONE)
 		  # - this should be done BEFORE standardizing the environment name! (as e.g. "R_GlobalEnv" because the parse() function
 		  # gives the error that no object called "R_GlobalEnv" is found)
-		  env_address = try( envnames:::address( eval(parse(text=env_full_name)) ) )
+		  env_address = try( address( eval(parse(text=env_full_name)) ) )
 		  if (inherits(env_address, "try-error")) {
 		    env_address = NULL
 		  }
@@ -415,7 +415,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 		  # Standardize the environment name (this is important because a further search for the object
 		  # may be carried out below --by calling look_for() when globalsearch=TRUE-- and the environment name should be already
 		  # standardized if we don't want the global environment or the base environment to appear twice)
-		  env_full_name = envnames:::standardize_env_name(env_full_name)
+		  env_full_name = standardize_env_name(env_full_name)
 
 		  # Add the information on the environments where the object was found to the arrays holding this information
 		  env_full_names = c(env_full_names, env_full_name)
@@ -467,7 +467,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 		  # exists somewhere and we would be looking for it whereas that has nothing to do with the original request!)
 		  # - however, if obj = alist$v and alist$v resolves to a variable name, say "x", then we would like to
 		  # look for the object called "x". This is done in step 4 below.
-		  obj_with_path = envnames:::check_object_with_path(obj_name, envir, checkenv=TRUE)
+		  obj_with_path = check_object_with_path(obj_name, envir, checkenv=TRUE)
 		  if (obj_with_path$ok && obj_with_path$env_found) {
 		    # Check if the object can be resolved in the 'envir' environment (where the search for the object
 		    # is being carried out) or in any parent environment.
@@ -485,7 +485,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 				# by calling exists() as e.g.:
 				#		exists(obj_name, envir=eval(parse(text=env_name)))
 				# where e.g. obj_name = "x" and env_name = "env_of_envs$env1" (note that the $ is accepted by eval()!)
-		    check_obj_exist = envnames:::check_object_exists(obj, envir)
+		    check_obj_exist = check_object_exists(obj, envir)
 		    if (check_obj_exist$found) {
 		      # Store the information about the environment extracted from the object name
 		      # (i.e. the full environment path as in env_of_envs$env1)
@@ -545,7 +545,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 		    # Note that this does not happen if obj = v[1] in the above example (i.e. only one pair of brackets,
 		    # not two as in [[1]]), because in that case v[1] is a list and the above try(eval()) does not give an error.
 		    is_obj_eval_different_from_obj <- try(obj_eval != obj, silent=TRUE)
-		    if (envnames:::is_logical(is_obj_eval_different_from_obj) &&
+		    if (is_logical(is_obj_eval_different_from_obj) &&
   		        ## Need to first check if the result of the above comparison is a valid logical value
   		        ## (e.g. has length > 0 or is not NA) because if obj_eval or obj are NULL or NA
   		        ## the comparison will yield logical(0) or NA and an error will be raised.
@@ -589,7 +589,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 		        # can be any kind of object and that object may not accept a comparison with a string (for instance
 		        # if the obj_eval is a function like e.g. 'mean')
 		        is_obj_eval_different_from_obj_name = try( obj_eval != obj_name, silent=TRUE )
-		        if (envnames:::is_logical(is_obj_eval_different_from_obj_name) &&
+		        if (is_logical(is_obj_eval_different_from_obj_name) &&
   		            ## Need to first check if the result of the above comparison is a valid logical value
 		              ## (e.g. has length > 0 or is not NA) because if obj_eval or obj are NULL or NA
   		            ## the comparison will yield logical(0) or NA and an error will be raised.
@@ -623,7 +623,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 		        # - the eval(parse()) expression used below simply requests the address of the environment whose name is the one given in text=.
 		        # Note that we DO NOT need to enclose this evaluation in a try() block because the environment names stored in
 		        # env_full_names correspond to valid environments as the object was found there!
-		        #env_addresses = sapply(env_full_names, function(x) { envnames:::address(eval(parse(text=envnames:::destandardize_env_name(x)))) })
+		        #env_addresses = sapply(env_full_names, function(x) { address(eval(parse(text=destandardize_env_name(x)))) })
 		      }
 		    }
 		  }
@@ -632,7 +632,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 		if (!is.null(env_full_names)) {
 			# Standardize the names of the environment so that the global and the base environments are always shown
 			# the same way, regardless of how the 'envir' parameter is passed.
-			env_full_names = sapply(env_full_names, FUN=envnames:::standardize_env_name, USE.NAMES=FALSE)
+			env_full_names = sapply(env_full_names, FUN=standardize_env_name, USE.NAMES=FALSE)
 			found = TRUE
 		}
 	}

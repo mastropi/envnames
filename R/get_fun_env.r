@@ -140,7 +140,7 @@ get_fun_env <- function(fun_name_or_address) {
   if (length(calls <- sys.calls()) <= 1) return(NULL)
 
 	# Check if the given parameter is a memory address
-	if (envnames:::is_memory_address(fun_name_or_address)) {
+	if (is_memory_address(fun_name_or_address)) {
 		# => The function returns only ONE environment, since all environments have distinct memory addresses
 		return(find_function_by_address(calls, fun_name_or_address))
 	} else {

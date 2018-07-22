@@ -1,6 +1,6 @@
 ## Test environments
-* ubuntu 18.04 LTS on Windows 10 R 3.4.4 (64-bit)
-* win-builder (devel)
+* ubuntu 18.04 LTS on Windows 10 R 3.4.4 (64-bit) (see below how I tested on this system)
+* win-builder (http://win-builder.r-project.org/) (devel, release)
 
 ### There were no errors or warnings.
 ### There were 2 NOTES:
@@ -11,15 +11,29 @@ Maintainer: 'Daniel Mastropietro <mastropi@uwalumni.com>'
 
 New submission
 
-#### Note 2
-* checking dependencies in R code ... NOTE
-There are ::: calls to the package's namespace in its code. A package
-  almost never needs to use ::: for its own objects:
-  'address' 'check_object_exists' 'check_object_with_path'
-  'clean_up_matching_environments' 'crawl_envs'
-  'destandardize_env_name' 'error_NotValidEnvironment'
-  'extract_last_member' 'get_namespace_addresses'
-  'get_obj_addresses_from_obj_names' 'is_logical' 'is_memory_address'
-  'is_string' 'parse_memory_address' 'standardize_env_name'
-  'unlist_with_names'
- 
+### How I tested the package in Linux
+Used Ubuntu on Windows and followed these steps:  
+
+1) Installed littler
+sudo apt-get install littler
+
+2) Installed other dependences (libcurl) that are needed to install devtools package
+sudo apt-get update
+sudo apt-get install libcurl4-gnutls-dev librtmp-dev
+
+Ref: https://stackoverflow.com/questions/20236726/unable-to-install-devtools-package-for-r-studio-mounted-on-linux-redhat-server
+
+3) Opened R by typing 'R' and installed needed packages
+install.packages("devtools")
+install.packages("testthat")
+
+Note: packages are installed in user location:
+~/R/x86_64-pc-linux-gnu-library/3.4
+
+4) Installed my envnames package by going to the location of the tar.gz file
+cd /mnt/e/Daniel/Projects/R/packages
+R CMD INSTALL envnames
+
+Note: package installed to the same user location indicated above.
+
+Ref: http://kbroman.org/pkg_primer/pages/build.html

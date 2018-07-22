@@ -33,7 +33,7 @@ get_fun_name = function(n=0)
   cur_call = sys.call(sys.parent(n))
   fun_name = as.character(cur_call)[1]
 
-	fun_name = unlist(envnames:::extract_last_member(fun_name)["name"])
+	fun_name = unlist(extract_last_member(fun_name)["name"])
 
   return(fun_name)
 }

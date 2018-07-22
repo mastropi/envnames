@@ -244,6 +244,8 @@ test_that("sapply() on a list of complex objects... those objects are NOT evalua
 
 # Tests on n > 0 ----------------------------------------------------------
 test_that("T21) Object names are correcly returned when eval=FALSE at different levels n", {
+  silent = TRUE
+
   expect_equal( g(globalenv()$y), "globalenv()$y" )
   expect_equal( g(v[2]), "v[2]" )
   expect_equal( g(env1), "env1" )
@@ -255,31 +257,33 @@ test_that("T21) Object names are correcly returned when eval=FALSE at different 
   expect_equal( g(v[2], n=0), names(as.list(g))[1] )
 
   # Same for h(): if we call h() with n=1 we should get the name of the first argument of h()
-  expect_equal( h(v[2], n=1, silent=FALSE), names(as.list(h))[1] )    # names(as.list(h)) returns the input parameters of function h()
+  expect_equal( h(v[2], n=1, silent=silent), names(as.list(h))[1] )    # names(as.list(h)) returns the input parameters of function h()
   # *** But if we call h() with n=0 we should get the name of the first argument of g() ***
-  expect_equal( h(v[2], n=0, silent=FALSE), names(as.list(g))[1] )
+  expect_equal( h(v[2], n=0, silent=silent), names(as.list(g))[1] )
 
   # Test more complicated objects as vectors or functions
-  expect_equal( h(v, n=0, silent=FALSE), names(as.list(g))[1] )
-  expect_equal( h(v, n=1, silent=FALSE), names(as.list(h))[1] )
-  expect_equal( h(f(), n=0, silent=FALSE), names(as.list(g))[1] )
-  expect_equal( h(f, n=0, silent=FALSE), names(as.list(g))[1] )
-  expect_equal( h(f, n=1, silent=FALSE), names(as.list(h))[1] )
+  expect_equal( h(v, n=0, silent=silent), names(as.list(g))[1] )
+  expect_equal( h(v, n=1, silent=silent), names(as.list(h))[1] )
+  expect_equal( h(f(), n=0, silent=silent), names(as.list(g))[1] )
+  expect_equal( h(f, n=0, silent=silent), names(as.list(g))[1] )
+  expect_equal( h(f, n=1, silent=silent), names(as.list(h))[1] )
 })
 
 test_that("T22) The value returned when eval=TRUE is the same as the return value of deparse() and doesn't change with n.
           In fact, the value of the object that is passed through different functions is always the same inside each function!", {
-  expect_equal( g(v[2], n=1, eval=TRUE, silent=FALSE), v[2] )
-  expect_equal( h(v[2], n=2, eval=TRUE, silent=FALSE), v[2] )
-  expect_equal( h(v[2], n=1, eval=TRUE, silent=FALSE), v[2] )
-  expect_equal( h(v[2], n=0, eval=TRUE, silent=FALSE), v[2] )
+  silent = TRUE
+
+  expect_equal( g(v[2], n=1, eval=TRUE, silent=silent), v[2] )
+  expect_equal( h(v[2], n=2, eval=TRUE, silent=silent), v[2] )
+  expect_equal( h(v[2], n=1, eval=TRUE, silent=silent), v[2] )
+  expect_equal( h(v[2], n=0, eval=TRUE, silent=silent), v[2] )
   
   # When the object passed is a more complicated object (vector, function, etc.)
-  expect_equal( h(v, n=0, eval=TRUE, silent=FALSE), deparse(v) )
-  expect_equal( h(v, n=1, eval=TRUE, silent=FALSE), deparse(v) )
-  expect_equal( h(f(), n=0, eval=TRUE, silent=FALSE), NULL )      # The return value of function f() is NULL
-  expect_equal( h(f, n=0, eval=TRUE, silent=FALSE), deparse(f) )
-  expect_equal( h(f, n=1, eval=TRUE, silent=FALSE), deparse(f) )
+  expect_equal( h(v, n=0, eval=TRUE, silent=silent), deparse(v) )
+  expect_equal( h(v, n=1, eval=TRUE, silent=silent), deparse(v) )
+  expect_equal( h(f(), n=0, eval=TRUE, silent=silent), NULL )      # The return value of function f() is NULL
+  expect_equal( h(f, n=0, eval=TRUE, silent=silent), deparse(f) )
+  expect_equal( h(f, n=1, eval=TRUE, silent=silent), deparse(f) )
 })
 # Tests on n > 0 ----------------------------------------------------------
 

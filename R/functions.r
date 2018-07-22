@@ -80,7 +80,7 @@ crawl_envs_in_env = function(env) {
 	env_names = try( with(env, Filter(function(x) "environment" %in% class(get(x)), ls())), silent=TRUE )
 	#env_names = try( Filter(function(x) "environment" %in% class(get(x, envir=env, inherits=FALSE)), ls(env)), silent=TRUE )
 	# Crawl the environments defined inside each environment listed in envs
-	env_path_list = envnames:::crawl_envs(env_names, c(), c(), envir=env)
+	env_path_list = crawl_envs(env_names, c(), c(), envir=env)
 
 	return(env_path_list)
 }
@@ -299,7 +299,7 @@ check_environment = function(x, envir) {
   # an environment).
 
   # Get the address of the "presumed" environment
-  x_address = try( envnames:::address( eval(parse(text=x), envir=envir) ), silent=TRUE )
+  x_address = try( address( eval(parse(text=x), envir=envir) ), silent=TRUE )
   if (!inherits(x_address, "try-error")) {
     # Search for the address in the envmap lookup table constructed for the whole workspace
     # (note that we should create the table on the whole workspace because the object may be referred to
@@ -308,7 +308,7 @@ check_environment = function(x, envir) {
     envmap_all = get_env_names()
     ind = which(envmap_all[,"address"] == x_address)
 		# Clean up the matched environments: in the case both "function" and "proper" environments matched, keep just the "proper" environments
-		ind = envnames:::clean_up_matching_environments(envmap_all, ind)		
+		ind = clean_up_matching_environments(envmap_all, ind)		
     if (length(ind) > 0) {
       env_name = envmap_all[ind[1], "pathname"]
         ## NOTE: ind[1] means: keep just the first occurrence found. There could more than one occurrence when several variables
@@ -371,7 +371,7 @@ check_object_with_path = function(x, checkenv=FALSE, envir=NULL) {
   x_name_ok = grep("\\$.*[^]|)]$", x)
   if (length(x_name_ok) > 0) {
     # Extract the presumed environment name from the expression (e.g. from "globalenv()$env1$x")
-    x_root_and_name = envnames:::extract_last_member(x)
+    x_root_and_name = extract_last_member(x)
     x_root = x_root_and_name$root
     x_name = x_root_and_name$name
     ok = TRUE
@@ -431,7 +431,7 @@ check_object_exists = function(obj, envir=globalenv()) {
     obj_eval = try( eval(substitute(obj), envir=envir), silent=TRUE )
     if (!inherits(obj_eval, "try-error")) {
       found = TRUE
-      obj_address = try( eval( parse(text=paste("envnames:::address(", deparse(substitute(obj)), ")")), envir=envir ), silent=TRUE )
+      obj_address = try( eval( parse(text=paste("address(", deparse(substitute(obj)), ")")), envir=envir ), silent=TRUE )
     } else {
       # Try evaluating the object without restricting it to 'envir'
       # We would get here if the user e.g. called obj_find() using a with() statement but
@@ -442,7 +442,7 @@ check_object_exists = function(obj, envir=globalenv()) {
   		obj_eval = try( eval(substitute(obj)), silent=TRUE )
   		if (!inherits(obj_eval, "try-error")) {
   		  found = TRUE
-  		  obj_address = try( eval( parse(text=paste("envnames:::address(", deparse(substitute(obj)), ")")) ), silent=TRUE )
+  		  obj_address = try( eval( parse(text=paste("address(", deparse(substitute(obj)), ")")) ), silent=TRUE )
   		} else {
         # No more options to try at this point!
         obj_eval = NULL

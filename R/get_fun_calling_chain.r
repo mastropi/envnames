@@ -100,7 +100,7 @@ get_fun_calling_chain = function(n=NULL, showParameters=FALSE, silent=TRUE) {
       # This is the case for user-defined environments, which are unnamed
       # In this case, the environment name is part of the function name!
       # => Extract the environment part from the function name and set it as the value of env_name
-      env_and_fun = envnames:::extract_last_member(fun_name)
+      env_and_fun = extract_last_member(fun_name)
       env_name = env_and_fun$root
       fun_name = env_and_fun$name
     }
@@ -116,7 +116,7 @@ get_fun_calling_chain = function(n=NULL, showParameters=FALSE, silent=TRUE) {
     fun_calling_chain[l,] = c(fun_name, env_name, paste(env_name, fun_name, sep="$"))
 
     # Debug
-    #cat("level:", l, "fun:", fun_name, "memory:", envnames:::address(sys.frame(-l)), "\n")
+    #cat("level:", l, "fun:", fun_name, "memory:", address(sys.frame(-l)), "\n")
   }
 
   # Returned data frame (either the full chain or just one entry)

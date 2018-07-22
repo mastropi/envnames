@@ -66,7 +66,7 @@
 #' 
 #' Note that for the last case, although constants have a memory address, this address is meaningless as
 #' it changes with every invocation of the function. For instance, running
-#' \code{envnames:::address(3)} several times will show a different memory address each time, and that is why
+#' \code{address(3)} several times will show a different memory address each time, and that is why
 #' \code{get_obj_address} returns \code{NULL} in those cases.
 #' 
 #' When \code{envir=NULL} (the default) or when an object exists in several environments,
@@ -105,7 +105,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 	get_obj_address0 = function(obj, envir, n=0) {
 			# First check if envir is a valid environment
 			if(!is.environment(envir)) {
-				envnames:::error_NotValidEnvironment(envir)
+				error_NotValidEnvironment(envir)
 				return(NULL)
 			}
 			#------------------ 1. Try to retrieve the object address using 'obj' as is -----------------
@@ -114,7 +114,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 			if (!is.null(obj_name) && obj_name != "" && exists(obj_name, envir=envir, inherits=FALSE)) {
 				## NOTE: The conditions !is.null() and != "" are in place because these are not valid arguments for the
 				## exists() function. All the other names including invalid names such as "<a" are valid arguments for exists(). 
-				obj_address = envnames:::address(eval(as.name(obj_name), envir=envir))  # This eval() does NOT need to be enclosed in try() because the object exists() in 'envir'
+				obj_address = address(eval(as.name(obj_name), envir=envir))  # This eval() does NOT need to be enclosed in try() because the object exists() in 'envir'
 				## NOTE: we are using eval(as.name(obj_name)) instead of eval(obj).
 				## It's strange that the latter does not work because eval() first evaluates obj in the calling environment
 				## (e.g. it would give 'env9' if obj=env9) and then evaluates the object to which 'obj' resolved to
@@ -140,10 +140,10 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 			  # NOTE that we need to test that the path is actually an environment because it may be another
 			  # object (e.g. a list) and in that case the address of object is meaningless because it is
 			  # different for each run of the get_obj_address() function! (e.g. if we call get_obj_address(alist$x))
-			  obj_name_check = envnames:::check_object_with_path(obj_name, checkenv=TRUE)
+			  obj_name_check = check_object_with_path(obj_name, checkenv=TRUE)
 			  if (obj_name_check$ok && obj_name_check$env_found) {
           # Check if the object exists in the 'envir_actual' environment or any parent environment
-			    check_obj_exist = envnames:::check_object_exists(obj, envir)
+			    check_obj_exist = check_object_exists(obj, envir)
 			    if (check_obj_exist$found) {
 			      # Get the address of the object found
 			      obj_address = check_obj_exist$address
@@ -177,7 +177,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 			        # When the evaluated object is an evironment we should get the address directly
 			        # (i.e. without getting the evaluated object's name first, because get_obj_name() on an environment object
 			        # returns "environment" which is not useful for the environment address retrieval
-			        obj_address = envnames:::address(obj_eval)
+			        obj_address = address(obj_eval)
 			      } else {
 			        #----------- 2b.- Do the same as step 1 but now for the evaluated object --------------
 			        # This case is for instance when obj = alist$z whose value obj_eval = "x"
@@ -185,7 +185,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 			        # Do the same we tried in step 1 but now for the evaluated object
 			        obj_name = get_obj_name(obj_eval, n=n+1, silent=TRUE)
 			        if (!is.null(obj_name) && obj_name != "" && exists(obj_name, envir=envir, inherits=FALSE)) {
-			          obj_address = envnames:::address(eval(as.name(obj_name), envir=envir))  # This eval() does NOT need to be enclosed in try() because the object exists() in 'envir'
+			          obj_address = address(eval(as.name(obj_name), envir=envir))  # This eval() does NOT need to be enclosed in try() because the object exists() in 'envir'
 			        } else {
 			          obj_address = NULL
 			        }
@@ -197,7 +197,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 			        # Note that in this case obj_name above is "as.name(\"x\")" and that's why we were not able to retrieve
 			        # the object address so far (although obj was found when computing obj_eval!)
 			        if (is.symbol(obj)) {
-			          obj_address = try( eval( parse(text=paste("envnames:::address(", deparse(obj), ")")), envir=envir ), silent=TRUE )
+			          obj_address = try( eval( parse(text=paste("address(", deparse(obj), ")")), envir=envir ), silent=TRUE )
 			        }
 			      }
 			    }
@@ -220,7 +220,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 	# We also set the warn option to -1 because sometimes we get the warning regarding "promised evaluation".
 	option_warn = options("warn")$warn
 	options(warn=-1)
-	is_obj_null_na_string = try( is.null(obj) || (!is.environment(obj) && !is.symbol(obj) && is.na(obj)) || envnames:::is_string(obj), silent=TRUE )
+	is_obj_null_na_string = try( is.null(obj) || (!is.environment(obj) && !is.symbol(obj) && is.na(obj)) || is_string(obj), silent=TRUE )
 	options(warn=option_warn)
 	if (!inherits(is_obj_null_na_string, "try-error") && is_obj_null_na_string) {
 	  return(NULL)
@@ -264,7 +264,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
   				if (is.na(envir_name)) {
   					# This means that 'obj' is a system or package environment
   					# Note that:
-  				  # - we don't simply call envnames:::address(obj) because obj may be given as an expression (e.g. globalenv())
+  				  # - we don't simply call address(obj) because obj may be given as an expression (e.g. globalenv())
   					# - system and package environments are accessible through the search() path and that's why we use
   					# envir=.GlobalEnv in this case.
   				  # - setting envir=.GlobalEnv is not a problem of overriding the 'envir' parameter because
@@ -275,7 +275,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
   					# Check whether the environment whose name is 'envir_name' is a "user-defined environment or a function
   		      # execution environment" OR a named environment (system or package)
   				  # First try to see if we can resolve it as a system or package environment with as.environment()...
-  				  e = try( as.environment(envnames:::destandardize_env_name(envir_name)), silent=TRUE )
+  				  e = try( as.environment(destandardize_env_name(envir_name)), silent=TRUE )
   					if (inherits(e, "try-error")) {
   						# It's a user-defined or function environment
   					  # => Get the environment object associated to 'envir_name' by evaluating envir_name as an expression

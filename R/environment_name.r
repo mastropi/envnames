@@ -149,10 +149,10 @@ environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchn
 		# 'env' and this is *not* what we want when 'env' is directly a memory address; we just want to
 		# search for the given memory address in the envmap lookup table... so no need to call get_obj_address()
 		# in that case.
-		if (!envnames:::is_memory_address(env)) {
+		if (!is_memory_address(env)) {
 			# We now call get_obj_address() to first look for 'env' in the given 'envir' environment --if not NULL--
 			# or in the whole workspace when envir=NULL, and then retrieve its memory address (if 'env' is found).
-			# NOTE that we don't simply call envnames:::address() to get the memory address of 'env' because:
+			# NOTE that we don't simply call address() to get the memory address of 'env' because:
 			# - 'env' can be given as a string (i.e. a string containing the environment name)
 			# - even if 'env' is given as an environment object, it could exist in different environments
 			# and we would like to retrieve ALL of them. This is also the reason why I am calling the variable
@@ -188,12 +188,12 @@ environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchn
 			# there is no name associated to 'env' so the match will for sure be by address only!!
 
 		  # First parse the memory address string
-		  env = envnames:::parse_memory_address(env)
+		  env = parse_memory_address(env)
 			indfound = which(toupper(envmap[,"address"]) == toupper(env))
 		}
 
 		# Clean up the matched environments: in the case both "function" and "proper" environments matched, keep just the "proper" environments
-		indfound = envnames:::clean_up_matching_environments(envmap, indfound)
+		indfound = clean_up_matching_environments(envmap, indfound)
 
 		# If any environments are found construct the output variable
     if (length(indfound) > 0) {
@@ -207,7 +207,7 @@ environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchn
 														)
       env_names = as.character(envmap[indfound,"name"])
 			# Standardize the environment names (in case the global environment or the base environment are present)
-			env_names = sapply(env_names, FUN=envnames:::standardize_env_name, USE.NAMES=FALSE)
+			env_names = sapply(env_names, FUN=standardize_env_name, USE.NAMES=FALSE)
 
       # Check if the user asked to ignore some of the environments found and if so remove them from the output
 			# This is useful when we are calling environment_name() from e.g. a loop on a set of environments
@@ -215,7 +215,7 @@ environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchn
 			# for (e in c(globalenv(), baseenv())) { print(environment_name(e, ignore="e")) }
 			if (!is.null(ignore)) {
 				# Standardize ignore in case it's the global environment or the base environment
-				ignore = sapply(ignore, FUN=envnames:::standardize_env_name)
+				ignore = sapply(ignore, FUN=standardize_env_name)
 				indkeep = which( !(env_names %in% ignore) )
 				env_names = env_names[indkeep]
 			}
