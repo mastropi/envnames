@@ -296,7 +296,10 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
   					  # the "object 'doTryCatch' not found" error triggered from test-get_obj_value.r)
   					  
   					  # First get the environment as if it were an user-defined environment (as opposed to a function execution environment)
-  					  e = try( eval(parse(text=envir_name), envir=parent.frame()), silent=TRUE )
+  					  # Note that we DESTANDARDIZE the environment name 'envir_name' in case the user-defined environment
+  					  # is given as in e.g. "R_GlobalEnv$env1", in which case the eval-parse-ing of it will not find env1
+  					  # but the eval-parse-ing of ".GlobalEnv$env1", i.e. of the result of the destandardization, will))
+  					  e = try( eval(parse(text=destandardize_env_name(envir_name)), envir=parent.frame()), silent=TRUE )
   					  # Check if the environment is actually a function execution environment
   					  if (class(e) == "function" && include_functions) {
   					    # Get the function's execution environment using its name and address

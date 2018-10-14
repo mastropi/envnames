@@ -3,7 +3,7 @@
 * win-builder (http://win-builder.r-project.org/) (devel, release)
 
 ### There were no errors or warnings.
-### There were 2 NOTES:
+### There was 1 NOTE:
 
 #### Note 1
 * checking CRAN incoming feasibility ... NOTE
@@ -35,5 +35,8 @@ cd /mnt/e/Daniel/Projects/R/packages
 R CMD INSTALL envnames
 
 Note: package installed to the same user location indicated above.
+
+5) Tested the package by running from the prompt (TO VERIFY AS I HAD NOT RECORDE THIS STEP SOON AFTER I RAN IT)
+R CMD CHECK envnames
 
 Ref: http://kbroman.org/pkg_primer/pages/build.html

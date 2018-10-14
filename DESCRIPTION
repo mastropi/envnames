@@ -8,8 +8,8 @@ Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 Description: Set of functions to keep track of user-defined environment names
     (which cannot be retrieved with the built-in function environmentName()).
     The package also provides functionality to search for objects in environments,
-    retrieve the function calling stack, retrieve an object's
-    memory address, among others.
+    deal with function calling chains, and retrieve an object's
+    memory address.
 URL: https://github.com/mastropi/envnames
 BugReports: https://github.com/mastropi/envnames/issues
 License: GPL

@@ -24,7 +24,7 @@
 #' in the \code{search()} path, as well as all user-defined found in \emph{any} of those environments (with recursive search),
 #' and all function execution environments.
 #' 
-#' @return A data frame containing the following six columns:
+#' @return A data frame containing the following seven columns:
 #' \itemize{
 #' \item{\code{type}} type of environment ("user" for user-defined environments "system/package"
 #' for system or package environments, and "namespace" for namespace environments).
@@ -212,7 +212,41 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 				env_addresses_namespaces = character(0)
 			}
 
-			#--------------------- 2. Add execution environments of functions -------------------------
+		  #-------------------------- 2. Recursive search of environments ---------------------------
+		  # Recursively search for user-defined environments inside user-defined environments found in step (1)
+		  env_fullnames_user_and_inside_user = character(0)
+		  env_addresses_user_and_inside_user = character(0)
+		  env_locationaddresses_user_and_inside_user = character(0)
+		  if (length(env_user_names) > 0) {
+		    # Search for environments within each user-defined environment found in step (1a)
+		    # These evironments are ADDED to the already existing ones meaning that the output of this process
+		    # includes the originally found user-defined environments.
+		    env_fullnames_user_and_inside_user = unlist_with_names(
+		      tapply(env_user_names,
+		             INDEX=names(env_user_names),  # This is the BY group of the analysis
+		             FUN=crawl_envs, c(), c(), envir))
+		    
+		    # Get the memory addresses of the environments just retrieved
+		    env_addresses_user_and_inside_user = get_obj_addresses_from_obj_names(env_fullnames_user_and_inside_user, envir=envir)
+		    
+		    # Add the memory address of the LOCATIONS of all user-defined environments found inside other user environments
+		    # TODO: (2017/10/15) Need to make this work for both user-defined and system environments...
+		    # - the first statement only works for user-defined environments
+		    # - the second statement only works for system/package environments
+		    #env_locationaddresses_user = get_obj_addresses_from_obj_names(names(env_fullnames_user_and_inside_user), envir=envir)
+		    #env_locationaddresses_user_and_inside_user = sapply( sapply( sapply(names(env_fullnames_user_and_inside_user), destandardize_env_name), as.environment), address )
+		    env_locationaddresses_user_and_inside_user = rep(NA, length(env_fullnames_user_and_inside_user))
+		  }
+		  # Create a small lookup table that contains the name of user-defined environments and their memory address
+		  # so that we can retrieve the environment name in case one of the functions analyzed
+		  # in the next step below is defined precisely there but such environment is not mentioned
+		  # in the function call (as in e.g. env1$f), making the result of sys.calls() not contain
+		  # the piece of the call 'env1', and therefore making it impossible to find the environment name
+		  # (unless we store it here in this small lookup table, together with its memory address)
+		  envmap_env_user = data.frame(env_name=env_fullnames_user_and_inside_user, env_address=env_addresses_user_and_inside_user,
+		                               stringsAsFactors=FALSE)
+
+			#--------------------- 3. Add execution environments of functions -------------------------
 			# Check if this function get_env_names() was called from within a function
 			# Get all the function calls in the calling chain
 			# NOTES:
@@ -276,9 +310,8 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 					  # The function is defined in a user-defined environment (i.e. its enclosing environment is a user-defined environment)
 					  # (note that sys.calls() includes these environments as part of the function name!)
 					  # => Define the location environment (location_env) as the parent environment of the first environment in the path
-					  # because that's where the function sits.
-					  # (e.g. the parent environment of "env_of_envs" when the path is "env_of_envs$env1") so that we can apply the environmentName()
-					  # function below that updates the env_locations_function array to such location environment (location_env)
+					  # because that's where the function sits (this is e.g. the parent environment of "env_of_envs" when the path is
+					  # "env_of_envs$env1$f") so that we can use the environmentName() to get the name of such location environment (location_env)
 					  members = extract_last_member(fun_name)
 					  path_to_function = members$root
 					  envs_to_function = unlist(strsplit(path_to_function, "\\$"))
@@ -316,12 +349,32 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 					location_env_address = address(location_env)
 					location_env_name = environmentName(location_env)
 					if (location_env_name == "") {
-					  # The environment where the function is defined is function execution environment
-					  # => Retrieve the function's name from the small envmap lookup table created in this loop
+					  # The environment where the function is defined is either:
+					  # - a function execution environment
+					  # - a user-defined environment
+					  # => Look for the environment address to retrieve its name
+					  # in the two small envmap lookup tables created above, one for the
+					  # function execution environments, and one for the user-defined environments
+
+					  # Start with the function execution environments
 					  ind = which( envmap_calling_chain[, "fun_exec_address"] == location_env_address )
 					  if (length(ind) > 0) {
 					    # length(ind) should be exactly 1, i.e. only one function should match the memory address of location_env
 					    location_env_name = envmap_calling_chain[ind, "fun_name"]
+					  } else {
+					    # Look for the environment in the small envmap of user-defined environments created above
+					    ind = which( envmap_env_user[, "env_address"] == location_env_address )
+					    if (length(ind) > 0) {
+					      # length(ind) MAY be more than 1, because there could be several user-defined environment
+					      # pointing to the same environment and therefore having the same memory address.
+					      # We pick the first matching environment based on alphabetical order of their name.
+					      # NOTE that we COULD return ALL the matching environments (e.g. in a string separated by
+					      # semicolon, or by a comma), but we choose to keep it simple and allow ONLY 1 location
+					      # for a given user-defined environment. I.e. maybe the user wants to use the location
+					      # information for some particular task and they are expecting there to have only one name.
+					      ord = order(envmap_env_user[ind, "env_name"])
+					      location_env_name = envmap_env_user[ind[ ord[1] ], "env_name"]
+					    }
 					  }
 					}
 
@@ -358,32 +411,6 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 				}
 			}
 
-			#-------------------------- 3. Recursive search of environments ---------------------------
-			# Recursively search for user-defined environments inside user-defined environments found in step (1)
-			env_fullnames_user_inside_user = character(0)
-			env_addresses_user_inside_user = character(0)
-			env_locationaddresses_user_inside_user = character(0)
-			if (length(env_user_names) > 0) {
-			  # Search for environments within each user-defined environment found in step (1a)
-			  # These evironments are ADDED to the already existing ones meaning that the output of this process
-			  # includes the originally found user-defined environments.
-			  env_fullnames_user_inside_user = unlist_with_names(
-			                                        tapply(env_user_names,
-			                                               INDEX=names(env_user_names),  # This is the BY group of the analysis
-                		                                 FUN=crawl_envs, c(), c(), envir))
-
-			  # Get the memory addresses of the environments just retrieved
-			  env_addresses_user_inside_user = get_obj_addresses_from_obj_names(env_fullnames_user_inside_user, envir=envir)
-
-			  # Add the memory address of the LOCATIONS of all user-defined environments found inside other user environments
-			  # TODO: (2017/10/15) Need to make this work for both user-defined and system environments...
-			  # - the first statement only works for user-defined environments
-			  # - the second statement only works for system/package environments
-			  #env_locationaddresses_user = get_obj_addresses_from_obj_names(names(env_fullnames_user_inside_user), envir=envir)
-			  #env_locationaddresses_user_inside_user = sapply( sapply( sapply(names(env_fullnames_user_inside_user), destandardize_env_name), as.environment), address )
-			  env_locationaddresses_user_inside_user = rep(NA, length(env_fullnames_user_inside_user))
-			}
-
 		  #------------------------ 4. Put together all environments found --------------------------
 		  # Put together all the info gathered so far about user-defined environments and system/package
 		  # environments into the output data frame.
@@ -398,9 +425,9 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 			# c) the user-defined environments found recursively inside function execution environments
 			# (a) and (b) are already together in the same array
 			# (c) is stored in a separate array
-			env_fullnames_user = c(env_fullnames_user_inside_user, env_fullnames_user_inside_function)
-			env_addresses_user = c(env_addresses_user_inside_user, env_addresses_user_inside_function)
-			env_locationaddresses_user = c(env_locationaddresses_user_inside_user, env_locationaddresses_user_inside_function)
+			env_fullnames_user = c(env_fullnames_user_and_inside_user, env_fullnames_user_inside_function)
+			env_addresses_user = c(env_addresses_user_and_inside_user, env_addresses_user_inside_function)
+			env_locationaddresses_user = c(env_locationaddresses_user_and_inside_user, env_locationaddresses_user_inside_function)
 
 			n_user_environments = length(env_fullnames_user)
 			n_functions = length(env_fullnames_function)

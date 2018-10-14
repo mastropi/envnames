@@ -1,11 +1,7 @@
 #' Return the name of an object referenced by a parameter at any parent generation
 #' 
-#' Return the name of the object at the specified parent generation leading to a function's parameter.
-#' This is done by iteratively retrieving the name of the object that leads to the function's parameter
-#' at each parent generation.
-#' The object is optionally evaluated in the environment of the specified parent generation
-#' before retrieving its name. In this case, the result is very similar to the deparse() function.
-#' The differences are explained in the Details section.
+#' This function provides a way to know the name of the object that leads to
+#' the value of a particular function's parameter in the function calling chain.
 #' 
 #' @param obj object whose name is of interest, or whose evaluated name is of interest.
 #' @param n number of parent generations to go back to retrieve the name of the object that leads to \code{obj}
@@ -18,26 +14,43 @@
 #' @return The name of the object in the \code{n}-th parent generation environment.
 #' If the object in that parent generation is an unnamed environment, \code{"<environment>"} is returned.
 #' 
-#' @details To better understand the meaning of this function when \code{n} > 0, consider the first example below:  
-#' Function \code{f(x)} is called with parameter \code{z}, which calls \code{g(y)} with parameter \code{x}.
-#' The result of the call to \code{get_obj_name()} from function \code{g()} is \code{"z"}
-#' because that call is telling "give me the name of object \code{y} two levels up from
-#' the current environment, i.e. from the environment of \code{g()}. The name of \code{y} in the environment
-#' of \code{f(x)} is \code{"x"}, and the name of \code{y} in the global environment is \code{"z"}.  
+#' @details 
+#' This function goes back to each parent generation from the calling function's environment
+#' and at each of those parent generations it retrieves the name of the object that is part of
+#' the parameter chain leading to the calling function's parameter.
 #' 
-#' Note that one may think that the result of this function is the same as using deparse(substitute()) where the
-#' object being \code{substitute}d is evaluated at the \code{n}-th parent generation. However, this is not quite so
-#' because \code{substitute(obj, parent.frame(n))} retrieves the object assigned to \code{obj} at the \code{n}-th
-#' parent generation, where \code{obj} \emph{is the name of the variable substituted at that \code{n}-th parent generation}.
-#' On the contrary, \code{get_obj_name(obj, n=2)} \emph{first} looks for the name leading to \code{obj} and then
-#' retrieves its name.
+#' To illustrate: suppose we call a function \code{f <- function(x)} by running the piece of code \code{f(z)},
+#' and that \code{f} calls another function \code{g <- function(y)} by running the piece of code \code{g(x)}.  
 #' 
-#' When eval=TRUE, the result of the function is the same as the output of \code{deparse()} except for the following two cases:
+#' That is, we have the parameter chain:  
+#' \code{z -> x -> y}
+#' 
+#' If, inside function \code{g()}, we call \code{get_obj_name()} as follows, we obtain respectively:  
+#' \code{get_obj_name(y, n=1)} yields \code{"x"}
+#' \code{get_obj_name(y, n=2)} yields \code{"z"}
+#' 
+#' because these calls are telling "give me the name of object \code{y} \code{n} levels up from
+#' the calling environment --i.e. from the environment of \code{g()}.
+#' 
+#' Note that the results of these two calls are different from making the following two
+#' \code{deparse(substitute())} calls:  
+#' \code{deparse(substitute(y, parent.frame(n=1)))}   
+#' \code{deparse(substitute(y, parent.frame(n=2)))}
+#' because these calls simply \code{substitute} or evaluate \code{y} at the \code{n}-th parent generation.
+#' If \code{y} is not defined at those parent generations, the \code{substitute()} calls return
+#' simply \code{"y"}.
+#' 
+#' On the contrary, the previous two calls to \code{get_obj_name()} return the name of the object
+#' in the parameter chain (\code{z -> x -> y}) \emph{leading} to \code{y}, which is a quite different
+#' piece of information.
+#' 
+#' When eval=TRUE however, the result of the \code{get_obj_name()} function is the same as the
+#' output of \code{deparse(substitute())} except for the following two tiny differences:
 #' \itemize{
 #' \item the result of \code{NULL} is \code{NULL} instead of \code{"NULL"} which is the case with \code{deparse()}
-#' \item when \code{eval=TRUE}, if the object passed to \code{get_obj_name()} evaluates to a name, it returns that name,
-#' without added quotes. For example, if \code{v = "x"} then \code{get_obj_name(v, eval=TRUE)} returns \code{"x"} while
-#' \code{deparse(v)} returns \code{"\"x\""}.
+#' \item if the object passed to \code{get_obj_name()} evaluates to a name, it returns that name,
+#' without added quotes. For example, if \code{v = "x"} then \code{get_obj_name(v, eval=TRUE)} returns \code{"x"}
+#' while \code{deparse(v)} returns \code{"\"x\""}.
 #' }
 #' 
 #' @seealso
@@ -53,18 +66,16 @@
 #' z = 3; 
 #' f(z)           # Returns a list where the first element is "z" and the second element is "y"
 #'                # Note that 'z' is the object leading to object 'y' inside function g()
-#'                # if we follow the function calling chain.
+#'                # if we follow the parameter names leading to 'y' in the function calling chain.
 #'
 #' # When eval=TRUE, get_obj_name() behaves the same way as deparse(),
 #' # except for the cases noted above.
-#' g <- function(y) {
-#'   print(get_obj_name(y, n=2, eval=TRUE));
-#'   print(deparse(y))
-#' }
+#' g <- function(y) { return(list(obj_name=get_obj_name(y, n=2, eval=TRUE),
+#'                                deparse=deparse(y))) }
 #' f <- function(x) { g(x) }
 #' z = 3; 
-#' f(z)           # Prints "3" twice, once as the output of get_obj_name(),
-#'                # once as the output of deparse()
+#' f(z)           # Returns a list where both elements are equal to "3"
+#'                # because the output of get_obj_name() and deparse() are the same
 get_obj_name = function(obj, n=0, eval=FALSE, silent=TRUE) {
   # Increase n by 1 so that we do as if we were working in the environment of the calling function
   n = n + 1
