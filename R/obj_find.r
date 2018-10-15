@@ -249,9 +249,13 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 	          } else {
 	            env = NULL
 	          }
-	        } else {
+	        } else if (env_type %in% c("system/package", "namespace")) {
 	          # Case for named environments (mostly packages) (e.g. .GlobalEnv, package:stats, etc.)
 	          env = as.environment(env_full_name)
+	        } else if (env_type == "empty") {
+	          # This is the case when the environment is the empty environment
+	          # (which cannot contain any objects, so there is no reason to look for the object there!)
+	          env = NULL
 	        }
 
 	        # Check whether the object exists in the currently analyzed environment
@@ -467,7 +471,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 		  # exists somewhere and we would be looking for it whereas that has nothing to do with the original request!)
 		  # - however, if obj = alist$v and alist$v resolves to a variable name, say "x", then we would like to
 		  # look for the object called "x". This is done in step 4 below.
-		  obj_with_path = check_object_with_path(obj_name, envir, checkenv=TRUE)
+		  obj_with_path = check_object_with_path(obj_name, envir=envir, checkenv=TRUE)
 		  if (obj_with_path$ok && obj_with_path$env_found) {
 		    # Check if the object can be resolved in the 'envir' environment (where the search for the object
 		    # is being carried out) or in any parent environment.

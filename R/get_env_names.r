@@ -3,6 +3,9 @@
 #' Return a data frame containing the address-name pairs of system, package, namespace, user-defined,
 #' and function execution environments in the whole workspace or within a given environment.
 #' 
+#' The table includes the empty environment as well when the address-name pairs map is constructed
+#' on the whole workspace.
+#' 
 #' @param envir environment where environments are searched for to construct the lookup table.
 #' It defaults to \code{NULL} which means that all environments in the whole workspace should be searched for
 #' and all packages in the \code{search()} path should be returned including their namespace environments.
@@ -16,18 +19,18 @@
 #' 
 #' The search within packages is always on \emph{exported objects} only.
 #' 
-#' If \code{envir} is the global environment ,the lookup table includes all system,
-#' package, and namespace environments in the \code{search()} path, as well as all user-defined and function execution
-#' environments found in the global environment (with recursive search).
-#' 
 #' If \code{envir=NULL} the lookup table includes all system, package, and namespace environments
-#' in the \code{search()} path, as well as all user-defined found in \emph{any} of those environments (with recursive search),
-#' and all function execution environments.
+#' in the \code{search()} path, as well as all user-defined found in \emph{any} of those environments
+#' (with recursive search), and all function execution environments.
+#'
+#' If \code{envir} is not \code{NULL} the lookup table includes just the user-defined and
+#' function execution environments found inside the given environment (with recursive search).
 #' 
 #' @return A data frame containing the following seven columns:
 #' \itemize{
-#' \item{\code{type}} type of environment ("user" for user-defined environments "system/package"
-#' for system or package environments, and "namespace" for namespace environments).
+#' \item{\code{type}} type of environment ("user" for user-defined environments,
+#' "function" for function execution environments, "system/package" for system or package environments,
+#' "namespace" for namespace environments, and "empty" for empty environments such as emptyenv()).
 #' \item{\code{location}} location of the environment, which is only non-\code{NA} for user-defined
 #' and function execution environments: 
 #'    \itemize{
@@ -50,7 +53,7 @@
 #' \item{\code{name}} name of the environment.
 #' }
 #' The \code{type} column is used to distinguish between user-defined environments, function execution
-#' environments, package or system environments, and namespace environments.
+#' environments, package or system environments, namespace environments, and empty environments.
 #' 
 #' The data frame is empty if no environments are found in the given \code{envir} environment.
 #' 
@@ -119,13 +122,17 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 	} else {
 	  envir_orig = envir
 		# Look for environments present ONLY in the specified non-NULL envir environment (this can be a user-defined environment with new.env() or a package)
-		# NOTE: Either of the two statements below work (one of them is commented out)
-		# Note that in the first option we need to use the option envir=envir in the get() function,
-		# and this is because the variables returned by ls(envir) reside in the envir environment.
-		#env_user_names = try( Filter(function(x) "environment" %in% class(get(x, envir=envir)), ls(envir)), silent=TRUE )
 		env_user_names = try( {
 		      # Names of the environments found inside environment 'envir'
-					envs = with(envir, Filter(function(x) "environment" %in% class(get(x)), ls()))
+    		  # NOTE: Out of the two statements below, we should prefer the one which does NOT use
+		      # the with() statement, because that one does NOT work when the envir environment
+		      # has the empty environment as its parent environment (i.e. when defined as new.env(parent=emptyenv())
+		      # because it complains that the Filter() function does not exist (because all functions
+		      # are inherited from parent environments such as the base environment where Filter() is defined)
+		      # Actually, when the parent environment of an environment is the empty environment "nothing works",
+		      # when running stuff inside a with() statement... e.g. not even the '<-' operator is found!
+					#envs = with(envir, Filter(function(x) "environment" %in% class(get(x)), ls()))
+		      envs = Filter(function(x) "environment" %in% class(get(x, envir=envir)), ls(envir))
 
 					if (length(envs) > 0) {
 					  #-- Get the name of the environment where the environments listed in 'envs' live
@@ -191,11 +198,16 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 			if (is.null(envir_orig)) {
 				### Search for environments should be carried out in all the workspace 
 				### => The environments defined in the whole workspace must be retrieved 
-				### 1b) Get the address-name pairs of all system/package/namespace environments (e.g. .GlobalEnv, package:stats, package:base, etc.)
-				allenvs = search()
+				### 1b) Get the address-name pairs of all system/package/namespace environments
+			  ### (e.g. .GlobalEnv, package:stats, package:base, etc.) PLUS the empty environment
+			  ### which does not appear in the search() result but exists and has a memory address.
+				all_searchable_envs = search()
 
 				#-- System and packages
-				env_addresses_packages = vapply(search(), function(x) { get_obj_address(as.environment(x), envir=.GlobalEnv) }, FUN.VALUE=character(1))
+				env_addresses_system_and_packages = vapply(all_searchable_envs,
+				                                           function(x) { 
+				                                              get_obj_address(as.environment(x), envir=.GlobalEnv) },
+				                                           FUN.VALUE=character(1))
   				## NOTE: FUN.VALUE in the vapply() function is a required parameter.
   				## It specifies the type and length of the value returned by the function called by vapply().
   				## In this case (FUN.VALUE=character(1)) we are saying that the function should return
@@ -208,7 +220,7 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 				env_addresses_namespaces = get_namespace_addresses()
 			} else {
 				# Set the addresses of packages to an array of 0 length (because this array is used below)
-				env_addresses_packages = character(0)
+				env_addresses_system_and_packages = character(0)
 				env_addresses_namespaces = character(0)
 			}
 
@@ -429,15 +441,48 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 			env_addresses_user = c(env_addresses_user_and_inside_user, env_addresses_user_inside_function)
 			env_locationaddresses_user = c(env_locationaddresses_user_and_inside_user, env_locationaddresses_user_inside_function)
 
+			# Now, if the map is constructed on the global workspace,
+			# define the set of empty environments (which are not allowed to contain any objects)
+			# (normally this is just the empty environment in R but just in case we make this list extendable)
+			# (note that the empty environment is NOT part of the search list returned by search(), so it's not
+			# considered a system or package environment)
+			if (is.null(envir_orig)) {
+			  env_addresses_empty = address(emptyenv())
+			  names(env_addresses_empty) = "R_EmptyEnv"
+			} else {
+			  env_addresses_empty = character(0)
+			}
+
 			n_user_environments = length(env_fullnames_user)
 			n_functions = length(env_fullnames_function)
-			n_packages = length(env_addresses_packages)
+			n_system_and_packages = length(env_addresses_system_and_packages)
 			n_namespaces = length(env_addresses_namespaces)
-			env_types = c(rep("user", n_user_environments), rep("function", n_functions), rep("system/package", n_packages), rep("namespace", n_namespaces))
-			env_locations = c(names(env_fullnames_user), env_locations_function, rep(NA, n_packages), rep(NA, n_namespaces))
-			env_locationaddresses = c(env_locationaddresses_user, env_locationaddresses_function, rep(NA, n_packages), rep(NA, n_namespaces))
-			env_addresses = c(env_addresses_user, env_addresses_function, env_addresses_packages, env_addresses_namespaces)
-			env_fullnames = c(env_fullnames_user, env_fullnames_function, names(env_addresses_packages), names(env_addresses_namespaces))
+			n_empty = length(env_addresses_empty)
+			env_types = c(rep("user", n_user_environments),
+			              rep("function", n_functions),
+			              rep("system/package", n_system_and_packages),
+			              rep("namespace", n_namespaces),
+			              rep("empty", n_empty))
+			env_locations = c(names(env_fullnames_user),
+			                  env_locations_function,
+			                  rep(NA, n_system_and_packages),
+			                  rep(NA, n_namespaces),
+			                  rep(NA, n_empty))
+			env_locationaddresses = c(env_locationaddresses_user,
+			                          env_locationaddresses_function,
+			                          rep(NA, n_system_and_packages),
+			                          rep(NA, n_namespaces),
+			                          rep(NA, n_empty))
+			env_addresses = c(env_addresses_user,
+			                  env_addresses_function,
+			                  env_addresses_system_and_packages,
+			                  env_addresses_namespaces,
+			                  env_addresses_empty)
+			env_fullnames = c(env_fullnames_user,
+			                  env_fullnames_function,
+			                  names(env_addresses_system_and_packages),
+			                  names(env_addresses_namespaces),
+			                  names(env_addresses_empty))
 			# Separate the root and the name from env_full_names
 			env_roots_and_names = sapply(env_fullnames, FUN=extract_last_member)
 			env_paths = unlist( env_roots_and_names["root",] )

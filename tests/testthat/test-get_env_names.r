@@ -14,9 +14,10 @@ with(globalenv(), {
 # NULL test before setting up the environment
 rm(list=ls())
 
-test_that("The table returned only contains system environments when no user environments are defined", {
+test_that("T0) The table returned only contains system/package environments AND the empty environment
+          when no user environments are defined", {
   # skip("not now")
-  expected = c(search(), names(envnames:::get_namespace_addresses()))
+  expected = c(search(), names(envnames:::get_namespace_addresses()), "R_EmptyEnv")
   envmap = get_env_names()
   observed = envmap$pathname[envmap[,"type"] != "function"] # Eliminate the function environments as I am not interested in checking those here
   expect_equal(observed, expected)
@@ -34,7 +35,7 @@ with(env_of_envs$env1, env2 <- new.env())
 namespace_addresses = envnames:::get_namespace_addresses()
 
 # 2.- Tests ---------------------------------------------------------------
-test_that("Create the table of all environments (user and packages) in the whole workspace including packages.
+test_that("T1) Create the table of all environments (user and packages) in the whole workspace including packages.
            The search is recursive on all environments found.
            This is the default behaviour and should be obtained when envir=NULL.", {
   skip("it fails when run through the package CHECK functionality but it doesn't fail when run through its TEST functionality... WHY?? (printing the output doesn't show it in CHECK)")
@@ -51,7 +52,7 @@ test_that("Create the table of all environments (user and packages) in the whole
   expect_equal(observed, expected)
 })
 
-test_that("Create the table of user-environments present just in the global environment
+test_that("T2) Create the table of user-environments present just in the global environment
            (no packages in the search() path should be listed)
            The search is recursive on all environments found in the given user-environment.", {
   skip("To be run MANUALLY by executing these lines below because the test fails when run through the package
@@ -69,7 +70,7 @@ test_that("Create the table of user-environments present just in the global envi
   expect_equal(observed, expected)
 })
 
-test_that("Create the table of user-environments present in a given user-defined environment
+test_that("T3) Create the table of user-environments present in a given user-defined environment
            (no packages in the search() path should be listed)
            The search is recursive on all environments found in the given user-environment.", {
   #skip("it fails when run through the package CHECK functionality but it doesn't fail when run through its TEST functionality... WHY??")
@@ -86,7 +87,7 @@ test_that("Create the table of user-environments present in a given user-defined
   expect_equal(observed, expected)
 })
 
-test_that("Create the table of user-environments present in a given package (no packages should be listed).
+test_that("T4) Create the table of user-environments present in a given package (no packages should be listed).
            The global environment is a valid package.
            The search is recursive on all environments found in the given package.", {
   skip("this test should only be run when the package has exported environments --see global_definitions.r")

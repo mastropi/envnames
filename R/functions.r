@@ -274,7 +274,8 @@ clean_up_matching_environments = function(envmap, indfound) {
 #' (system or package) or a user-defined environment.
 #' 
 #' @param x string to evaluate that may represent an environment
-#' @param envir environment where \code{x} should be evaluated.
+#' @param envir environment where \code{x} should be evaluated first. If it is not found there
+#' it still searched for in the whole workspace.
 #'
 #' @return A list with two elements:
 #' \itemize{
@@ -292,29 +293,36 @@ check_environment = function(x, envir) {
   env_name = NULL
 
   # The check whether the string x is an environment name is done via an envmap lookup table computed
-  # on the whole workspace, but x is evaluated on the environment n+1 levels up, where n is the number
-  # of levels to go up from the calling environment.
+  # on the whole workspace.
   # Note that we need to do all this and cannot simply check whether is.environment(x) is TRUE
   # because x is a string!! (not an environment per se, only what the string refers to may be
   # an environment).
 
-  # Get the address of the "presumed" environment
-  x_address = try( address( eval(parse(text=x), envir=envir) ), silent=TRUE )
-  if (!inherits(x_address, "try-error")) {
-    # Search for the address in the envmap lookup table constructed for the whole workspace
-    # (note that we should create the table on the whole workspace because the object may be referred to
-    # as e.g. globalenv()$y or baseenv()$y or as.environment("package:envnames")$e, etc., and creating
-    # the lookup table for the calling environment (+n levels) would NOT include any packages in the lookup table)
-    envmap_all = get_env_names()
-    ind = which(envmap_all[,"address"] == x_address)
-		# Clean up the matched environments: in the case both "function" and "proper" environments matched, keep just the "proper" environments
-		ind = clean_up_matching_environments(envmap_all, ind)		
-    if (length(ind) > 0) {
-      env_name = envmap_all[ind[1], "pathname"]
-        ## NOTE: ind[1] means: keep just the first occurrence found. There could more than one occurrence when several variables
-        ## point to the same environment (and therefore they have the same memory address). So, here we just keep the
-        ## first match found. Otherwise, multiple matches could generate a problem with the processing done outside.
-      found = TRUE
+  # Get the address of the "presumed" environment in environment 'envir'
+  x_address = try( address( eval(parse(text=x)), envir=envir ), silent=TRUE )
+  if (inherits(x_address, "try-error")) {
+    # Search for the environment in the whole workspace
+    # (to make sure that the environment does not exist...
+    # i.e. maybe it does not exist in the envir environment
+    # but it exists somewhere in the whole workspace)
+    x_address = try( address( eval(parse(text=x)) ), silent=TRUE )
+
+    if (!inherits(x_address, "try-error")) {
+      # Search for the address in the envmap lookup table constructed for the whole workspace
+      # (note that we should create the table on the whole workspace because the object may be referred to
+      # as e.g. globalenv()$y or baseenv()$y or as.environment("package:envnames")$e, etc., and creating
+      # the lookup table for the calling environment (+n levels) would NOT include any packages in the lookup table)
+      envmap_all = get_env_names()
+      ind = which(envmap_all[,"address"] == x_address)
+  		# Clean up the matched environments: in the case both "function" and "proper" environments matched, keep just the "proper" environments
+  		ind = clean_up_matching_environments(envmap_all, ind)		
+      if (length(ind) > 0) {
+        env_name = envmap_all[ind[1], "pathname"]
+          ## NOTE: ind[1] means: keep just the first occurrence found. There could more than one occurrence when several variables
+          ## point to the same environment (and therefore they have the same memory address). So, here we just keep the
+          ## first match found. Otherwise, multiple matches could generate a problem with the processing done outside.
+        found = TRUE
+      }
     }
   }
 
@@ -600,20 +608,25 @@ is_string = function(x) {
 #' 
 #' This function standardizes the name of an environment so that environment names are consistent
 #' with the output of base function \link{environmentName}.
-#' It only has an effect when the environment is the global environment or the base environment,
-#' which have different ways of referring to them, namely:
-#' \code{globalenv()}, \code{.GlobalEnv}, \code{baseenv()}, \code{as.environment("package:base")}
+#' It only has an effect when the environment is the global environment, the empty environment,
+#' or the base environment, which have different ways of being referring to, namely:
+#' \code{globalenv()}, \code{.GlobalEnv}, \code{emptyenv()},
+#' \code{baseenv()}, \code{as.environment("package:base")}
 #' 
 #' @param env_name environment name to standardize.
 #'
-#' @return The name of the environment, where the global environment is represented as "R_GlobalEnv" and the
-#' base environment is shown as "base".
+#' @return The name of the environment, where the global environment is represented as "R_GlobalEnv",
+#' the empty environment as "R_EmptyEnv", and the base environment as "base".
 #' 
 #' @keywords internal
 standardize_env_name = function(env_name) {
-	# Use "R_GlobalEnv" for the global environment and "base" for the base environment
+	# Use:
+  # "R_GlobalEnv" for the global environment
+  # "R_EmptyEnv" for the empty environment
+  # "base" for the base environment
 	# to be consistent with the output of environmentName()
 	env_name = gsub("\\.GlobalEnv|globalenv\\(\\)|globalenv", "R_GlobalEnv", env_name)
+	env_name = gsub("\\.EmptyEnv|emptyenv\\(\\)|emptyenv", "R_EmptyEnv", env_name)
 	env_name = gsub("package:base|baseenv\\(\\)|baseenv", "base", env_name)
 	return(env_name)
 }
@@ -621,19 +634,19 @@ standardize_env_name = function(env_name) {
 #' De-standardize the name of an environment
 #' 
 #' This function inverts the process performed by \link{standardize_env_name} that is, it converts
-#' the standardized names "R_GlobalEnv" and "base" back to names that are recognized by R as actual
-#' environments when using function \link{as.environment}, namely to \code{".GlobalEnv"} and \code{"package:base"}.
+#' the standardized names "R_GlobalEnv", "R_EmptyEnv", and "base" back to names that are recognized by R as actual
+#' environments when using function \link{as.environment}, namely to \code{".GlobalEnv"}, \code{".EmptyEnv"},
+#' and \code{"package:base"}.
 #' 
 #' @param env_name environment name to de-standardize.
 #'
-#' @return The name of the environment, where the global environment is represented as ".GlobalEnv" and the
-#' base environment is represented as "package:base".
+#' @return The name of the environment, where the global environment is represented as ".GlobalEnv", the empty
+#' environment as ".EmptyEnv", and the base environment as "package:base".
 #' 
 #' @keywords internal
 destandardize_env_name = function(env_name) {
-	# Use "R_GlobalEnv" for the global environment and "base" for the base environment
-	# to be consistent with the output of environmentName()
 	env_name = gsub("R_GlobalEnv", ".GlobalEnv", env_name)
+	env_name = gsub("R_EmptyEnv", ".EmptyEnv", env_name)
 	env_name = gsub("base", "package:base", env_name)
 	return(env_name)
 }
