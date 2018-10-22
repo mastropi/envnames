@@ -10,13 +10,5 @@ export(get_fun_env)
 export(get_fun_name)
 export(get_obj_address)
 export(get_obj_name)
-#export(get_obj_value)
-## DM-2018/10/13: Decided to NOT export get_obj_value() any more
-## because it is not really useful for the user; besides explaining
-## its use (e.g. in the vignette) is a little long and may be confusing to the user.
-## The user should directly reference the object in the calling function whose value
-## is of interest or use get_obj_name() with eval=TRUE, or, if more elaborate information
-## is wished, use the evalq() to query the value of the queried object in the specified
-## parent environment. More details are found in the project tasks Excel file at
-## today's entry).
+export(get_obj_value)
 export(obj_find)

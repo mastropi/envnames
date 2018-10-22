@@ -110,8 +110,6 @@ test_that("T0) the environment name of a named environment (e.g system or packag
 
 test_that("T1) the environment name is correctly returned when the environment variable is given as a symbol (in all environments)", {
   # skip("not now")
-  # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
-#  expected = c("env_of_envs$env2", "env2")
   expected = c("env2", "env2", "env2")
   names(expected) = sort(c("env_of_envs", "envir", "R_GlobalEnv"))
   observed = environment_name(env2)
@@ -121,7 +119,6 @@ test_that("T1) the environment name is correctly returned when the environment v
 })
 
 test_that("T2) the environment name is correctly returned when environment variable enclosed in quote()", {
-  # skip("this test should NOT pass: in fact environmentName(quote(globalenv())) returns the empty string")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
   expected = c("env2", "env2", "env2")
   names(expected) = sort(c("env_of_envs", "envir", "R_GlobalEnv"))
@@ -131,6 +128,12 @@ test_that("T2) the environment name is correctly returned when environment varia
   expected = c("env11", "env11")
   names(expected) = c("env_of_envs", "envir")
   expect_equal(environment_name(quote(env11)), expected)
+
+  # But the above using quote() should NOT work for named environments retrieved by a function (e.g. globalenv(), baseenv())
+  expect_equal(environment_name(quote(globalenv())), NULL)
+  expect_equal(environment_name(quote(.GlobalEnv)), "R_GlobalEnv")
+  expect_equal(environment_name(quote(baseenv())), NULL)
+  expect_equal(environment_name(quote(emptyenv())), NULL)
 })
 
 test_that("T3) the environment name is NULL when the environment does not exist", {
@@ -168,8 +171,10 @@ test_that("T10) standardized environment names (globalenv and baseenv)", {
 })
 
 test_that("T11) all environments matching the same memory address are returned when matchname=FALSE", {
-#  skip("*** FAILS WHEN RUN UNDER CHECK BUT DOESN'T FAIL WHEN RUN HERE OR WHEN TESTING THE PACKAGE! WHY??? when doing Check I don't see what is printed here... so I don't know what went wrong ***
-#  OK: Reason is that the order of the environments returned by the environment_name() function is different when running the tests and when running the Check!! I solved this by using sort() below")
+#  skip("*** FAILS WHEN RUN UNDER CHECK BUT DOESN'T FAIL WHEN RUN HERE OR WHEN TESTING THE PACKAGE! WHY???
+#  when doing Check I don't see what is printed here... so I don't know what went wrong ***
+#  OK: Reason is that the order of the environments returned by the environment_name() function
+#  is different when running the tests and when running the Check!! I solved this by using sort() below")
   expected = c("env11", "env11")
   names(expected) = c("env_of_envs", "envir")
   observed = environment_name(env11, matchname=FALSE)
@@ -177,7 +182,6 @@ test_that("T11) all environments matching the same memory address are returned w
 })
 
 test_that("T12) only the environments having the same name are returned when matchname=TRUE, even if different environments share the SAME memory address", {
-#  skip("*** FAILS WHEN RUN UNDER CHECK BUT DOESN'T FAIL WHEN RUN HERE OR WHEN TESTING THE PACKAGE! WHY??? when doing Check I don't see what is printed here... so I don't know what went wrong ***")
   expected = c("env11", "env11")
   names(expected) = c("env_of_envs", "envir")
   observed = environment_name(env11, matchname=TRUE)
@@ -188,7 +192,6 @@ test_that("T12) only the environments having the same name are returned when mat
 })
 
 test_that("T13) ALL the environments having the same name are returned when matchname=TRUE, even if they have DIFFERENT memory addresses", {
-  #  skip("*** FAILS WHEN RUN UNDER CHECK BUT DOESN'T FAIL WHEN RUN HERE OR WHEN TESTING THE PACKAGE! WHY??? when doing Check I don't see what is printed here... so I don't know what went wrong ***")
   expected = c("env1", "env1", "env1")
   names(expected) = sort(c("env_of_envs", "envir", "R_GlobalEnv"))
   observed = environment_name(env1, matchname=TRUE)
@@ -281,12 +284,12 @@ test_that("T91) when an environment is called 'envir' (like the envir= parameter
   names(expected) = c("R_GlobalEnv", "R_GlobalEnv")
   expect_equal(environment_name(envir), expected)
 
-  # Use the following when running the test by SOURCEing this file
+  # WARNING: Use the following when running the test by SOURCEing this file
   #expected = c("env_of_envs", "envir", "R_GlobalEnv")
   #names(expected) = c("R_GlobalEnv", "R_GlobalEnv", NA)
   #expect_equal(environment_name(envir), expected)
 
-  # Use the following when running the test by just running this test_that() block
+  # WARNING: Use the following when running the test by just running this test_that() block
   #expected = c("env_of_envs", "envir")
   #names(expected) = c("R_GlobalEnv", "R_GlobalEnv")
   #expect_equal(environment_name(envir), expected)

@@ -1,8 +1,8 @@
 Package: envnames
 Type: Package
 Title: Track User-Defined Environment Names
-Version: 0.3.1
-Date: 2018-08-20
+Version: 0.4.0
+Date: 2018-10-15
 Author: Daniel Mastropietro
 Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 Description: Set of functions to keep track of user-defined environment names
@@ -15,4 +15,4 @@ BugReports: https://github.com/mastropi/envnames/issues
 License: GPL
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

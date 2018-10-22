@@ -85,16 +85,21 @@ test_that("T3b) user-defined environments are found", {
 test_that("T3c) looking for system, package, and namespace environments should return NA because they don't have a location!
           They are simply part of the workspace...", {
   # skip("not now")
+
+  # NOTE: the list of R built-in environments is available in help(environment)
+
   # System environments
   expect_true(is.na(obj_find(globalenv())))
+  expect_true(is.na(obj_find(.GlobalEnv)))
   expect_true(is.na(obj_find(baseenv())))
   expect_true(is.na(obj_find(emptyenv())))
-
+  
   # Package environments
   expect_true(is.na(obj_find(as.environment("package:stats"))))
 
   # Namespace environments
   expect_true(is.na(obj_find(getNamespace("base"))))
+  expect_true(is.na(obj_find(.BaseNamespaceEnv)))      # Another way of referring to the Base namespace environment (ref: help(environment))
   expect_true(is.na(obj_find(getNamespace("envnames"))))
 })
 

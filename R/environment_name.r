@@ -180,7 +180,7 @@ environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchn
 				env_name = get_obj_name(env, n=1, silent=TRUE)
 
 				indfound = which(envmap[,"address"] %in% env_addresses & envmap[,"name"] == env_name)
-			}			
+			}
 		} else {
 			# 'env' is given as a memory address
 			# => search for this memory address in the envmap table

@@ -23,7 +23,7 @@
 #' # Define the function that is called to show the behaviour of get_fun_env()
 #' h <- function(x) {
 #'   # Get the value of parameter 'x' in the execution environment of function 'env1$g'
-#'   # If function 'env1$g' is not found, 'x' is evaluated in the current environment of function
+#'   # If function 'env1$g' is not found, 'x' is evaluated in the current environment or function
 #'   xval = evalq(x, get_fun_env("env1$g")[[1]])
 #'   return(xval)
 #' }

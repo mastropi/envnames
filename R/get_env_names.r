@@ -41,8 +41,7 @@
 #'    \item for a function execution environment, the location is the function's enclosing environment, i.e. the environment
 #'    where the function is defined.
 #'    }
-#' \item{\code{locationaddress}} for function execution environments, the memory address of the \code{location}
-#' environment.
+#' \item{\code{locationaddress}} the memory address of the \code{location} environment.
 #' \item{\code{address}} memory address of the environment. This is the key piece of information used
 #' by the package to retrieve the environment name with the \code{environment_name()} function.
 #' For functions, this is the address of the function's execution environment.
@@ -97,7 +96,7 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 		# The following returns an ARRAY with the environment names in all packages in the search() path
 		# The names attribute of the array is the package where the environment is found.
 		env_user_names = try( {
-				# List of user-defined environments defined in each package 
+				# List of user-defined environments defined in each package
 				envs_list = sapply(  	search(),
 															FUN=function(package) {
 																# IMPORTANT: a package called "CheckExEnv" should be excluded from this analysis
@@ -134,38 +133,33 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 					#envs = with(envir, Filter(function(x) "environment" %in% class(get(x)), ls()))
 		      envs = Filter(function(x) "environment" %in% class(get(x, envir=envir)), ls(envir))
 
-					if (length(envs) > 0) {
+		      if (length(envs) > 0) {
 					  #-- Get the name of the environment where the environments listed in 'envs' live
 					  #-- (so that we use those names as the 'names' attribute of the 'envs' array.
-					  # First try to get the name of the 'envir' environment assuming the environment name is given explicitly (as in envir=env1)
-					  envir_name = deparse(substitute(envir))
-					  if (envir_name == "envir") {
-					    # This means that the environment name was NOT given explicitly (e.g. it was given as the result of a function call as in
-					    # globalenv() or parent.frame() or sys.frame(sys.nframe()), etc.), since in that case deparse(substitute(envir)) resolves to "envir"
-					    # => Construct the GLOBAL envmap table and retrieve the environment name from that table!
-					    # Note that:
-					    # - this does NOT create an infinite loop because when calling get_env_names() with envir=NULL, the function
-					    # will NOT enter again this ELSE block
-					    # - when calling environment_name() below with a specific envmap lookup table the get_env_names() function will NOT be called again!
-					    # - the infinite loop is avoided ONLY because we FIRST create the envmap lookup table and only THEN do we call environment_name()
-					    # using the envmap just constructed... if we call environment_name(evalq(envir)) WITHOUT calling get_env_names() first we would
-					    # end in an infinite loop!
-					    # - it is VERY important to call environment_name() on evalq(envir)) as opposed to calling it on 'envir'... i.e. we should NOT
-					    # take envir as the variable 'envir' which may exist in the global environment, because in that case we would get the name
-					    # of such variable, namely "envir", but may NOT be what we want (i.e. whenever 'envir' is NOT actually the environment named "envir"!)
-					    # Note that this is only a problem when an environment named "envir" actually exists in the (global) workspace.
-					    # - if the environment stored in 'envir' is ACTUALLY CALLED "envir", this name will be still retrieved since evalq(envir) is still 'envir'.
-					    envmap_global = get_env_names(envir=NULL)
-					    envir_name = environment_name(evalq(envir), envmap=envmap_global)
-					    
-					    # Limit the environment name to just ONE name... it may happen that there are several environments returned
-					    # when envir points to another environment.
-					    # In practice, this only happens when the 'envir' environment is actually called "envir" and the environment
-					    # points to another existing environment (e.g. envir was defined as envir = env11)
-					    # In this situation we just keep the first environment found, and this is a convention
-					    envir_name = envir_name[1]
-					  }
-					  # Standardize the names of the environment so that the global and the base environments are always shown
+				    # => Construct the GLOBAL envmap table and retrieve the environment name from that table
+				    # Note that:
+				    # - this does NOT create an infinite loop because when calling get_env_names() with envir=NULL, the function
+				    # will NOT enter again this ELSE block
+				    # - when calling environment_name() below with a specific envmap lookup table the get_env_names() function will NOT be called again!
+				    # - the infinite loop is avoided ONLY because we FIRST create the envmap lookup table and only THEN do we call environment_name()
+				    # using the envmap just constructed... if we call environment_name(evalq(envir)) WITHOUT calling get_env_names() first we would
+				    # end in an infinite loop!
+				    # - it is VERY important to call environment_name() on evalq(envir)) as opposed to calling it on 'envir'... i.e. we should NOT
+				    # take envir as the variable 'envir' which may exist in the global environment, because in that case we would get the name
+				    # of such variable, namely "envir", but may NOT be what we want (i.e. whenever 'envir' is NOT actually the environment named "envir"!)
+				    # Note that this is only a problem when an environment named "envir" actually exists in the (global) workspace.
+				    # - if the environment stored in 'envir' is ACTUALLY CALLED "envir", this name will be still retrieved since evalq(envir) is still 'envir'.
+				    envmap_global = get_env_names(envir=NULL)
+				    envir_name = environment_name(evalq(envir), envmap=envmap_global)
+
+				    # Limit the environment name to just ONE name... it may happen that there are several environments returned
+				    # when envir points to another environment.
+				    # In practice, this only happens when the 'envir' environment is actually called "envir" and the environment
+				    # points to another existing environment (e.g. envir was defined as envir = env11)
+				    # In this situation we keep the environment that appears first in alphabetical order
+				    envir_name = sort(envir_name)[1]
+
+				    # Standardize the names of the environment so that the global and the base environments are always shown
 					  # the same way, regardless of how the 'envir' parameter is passed.
 					  envir_name = standardize_env_name(envir_name)
 					  names(envs) = rep(envir_name, length(envs))					  
@@ -237,17 +231,17 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 		      tapply(env_user_names,
 		             INDEX=names(env_user_names),  # This is the BY group of the analysis
 		             FUN=crawl_envs, c(), c(), envir))
-		    
+
 		    # Get the memory addresses of the environments just retrieved
 		    env_addresses_user_and_inside_user = get_obj_addresses_from_obj_names(env_fullnames_user_and_inside_user, envir=envir)
 		    
 		    # Add the memory address of the LOCATIONS of all user-defined environments found inside other user environments
-		    # TODO: (2017/10/15) Need to make this work for both user-defined and system environments...
+		    # done-2018/10/21 (the first statement seems to work in all cases): (2017/10/15) Need to make this work for both user-defined and system environments...
 		    # - the first statement only works for user-defined environments
 		    # - the second statement only works for system/package environments
-		    #env_locationaddresses_user = get_obj_addresses_from_obj_names(names(env_fullnames_user_and_inside_user), envir=envir)
+		    env_locationaddresses_user_and_inside_user = get_obj_addresses_from_obj_names(names(env_fullnames_user_and_inside_user), envir=envir)
 		    #env_locationaddresses_user_and_inside_user = sapply( sapply( sapply(names(env_fullnames_user_and_inside_user), destandardize_env_name), as.environment), address )
-		    env_locationaddresses_user_and_inside_user = rep(NA, length(env_fullnames_user_and_inside_user))
+		    #env_locationaddresses_user_and_inside_user = rep(NA, length(env_fullnames_user_and_inside_user))
 		  }
 		  # Create a small lookup table that contains the name of user-defined environments and their memory address
 		  # so that we can retrieve the environment name in case one of the functions analyzed

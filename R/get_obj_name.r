@@ -103,23 +103,28 @@
 #'                # because the output of get_obj_name() with eval=TRUE
 #'                # and deparse() are the same.
 #'
-#' Example 3:
+#' # Example 3:
 #' # This example shows how we can use get_obj_name() to get the parameter names
 #' # of non '...' parameters, which are then used in messages to the user.
-#' # Note that the same thing could be accomplished using as.list(environment())
-#' # and traversing each element of the returned list --as shown here as well.
+#' # The advantage of using get_obj_name() as opposed to the hard-coded parameter name
+#' # is that an error is raised if the parameter does not exist.
+#' # An example is also shown that uses as.list(environment()), which clearly is more
+#' # general... get_obj_name() should be used when referring to a couple of specific
+#' # parameters.
 #' f <- function(x, y, ...) {
-#'   cat("Arguments received by the function (using get_obj_name()):\n")
+#'   cat("Arguments received by the function (using get_obj_name()) (explicit listing):\n")
 #'   cat(get_obj_name(x), ":", x, "\n")
 #'   cat(get_obj_name(y), ":", y, "\n")
-#'   cat("Arguments received by the function (using as.list(environment())):\n")
+#'   cat("Arguments received by the function (using as.list(environment())) (automatic listing):\n")
 #'   paramsList = as.list(environment())
-#'   for (i in 1:length(paramsList)) {
-#'     cat(names(paramsList)[[i]], ":", paramsList[[i]], "\n")
+#'   paramsNames = names(paramsList)
+#'   sapply(paramsNames, get_obj_name)
+#'   for (p in paramsNames) {
+#'     cat(p, ":", paramsList[[p]], "\n")
 #'   }
 #' }
-#' z <- 5
-#' extra_param <- "a '...' parameter" 
+#' z = 5
+#' extra_param = "a '...' parameter" 
 #'   ## Note: this exra parameter is NOT shown neither by get_obj_name()
 #'   ## nor by as.list(environment())
 #' f("test", z, extra_param)

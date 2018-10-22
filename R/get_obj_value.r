@@ -1,14 +1,11 @@
 #' Return the value of the object at a given parent generation leading to the specified object
 #'
-#' This function is mostly useful in debugging contexts to see the name of the variables
-#' that lead to a particular object through the calling stack (which however can also be
-#' obtained by running \code{get_obj_name()}).
-#' In fact, the value of an object is *the same troughout all the objects* in the different
-#' generations leading to the queried object, meaning that such value can be obtained
-#' by simply referencing the object at the calling environment.
-#'
-#' See the Details and Examples sections below for a comparison with the result of using
-#' \code{eval()} and \code{evalq()}.
+#' This function is mostly useful in debugging contexts to query the value of a variable in
+#' specific environments of the calling stack.
+#' 
+#' The result of this function is similar to using \code{eval()} or \code{evalq()} but not
+#' quite the same. Refer to the Details and Examples sections for explantion and illustration
+#' of the differences.
 #' 
 #' @param obj object whose value should be returned. The object can be passed either as a variable name or
 #' as a string representing the object whose value is of interest.
@@ -18,8 +15,7 @@
 #' as those environments are traversed by this function.
 #' 
 #' @details
-#' The purpose of this function is to get the value of objects as they are passed through different functions
-#' (although, as explained in the Description section the value is the same in all environments).
+#' The purpose of this function is to get the value of object \code{obj} in a given parent environment.
 #' 
 #' Note that conceptually this is NOT the same as calling \code{evalq(obj, parent.frame(n))},
 #' because of the following:
@@ -39,15 +35,17 @@
 #' and then its value based on the "path" (of variable names) that leads to the variable
 #' in the function that calls \code{get_obj_value()}.
 #' 
-#' In practice though --as explained above-- the result of \code{get_obj_value()} is the same as the value
+#' In practice though the result of \code{get_obj_value()} is the same as the value
 #' of the queried object at the calling function, since the value of the variables leading
 #' to that object are all the same through the calling stack.
-#' 
-#' Therefore, using \code{get_obj_value()} doesn't add useful information to the use
-#' of \code{eval()} or simply to referencing the object at the calling function, UNLESS
-#' we set parameter \code{silent=FALSE}, in which case the function shows the name of the different
+#' But using \code{get_obj_value()} can provide additional information if we set parameter
+#' \code{silent=FALSE}: in such case the function shows the name of the different
 #' variables that lead to the queried object in the calling function. An example is given
-#' in the Examples section
+#' in the Examples section.
+#' 
+#' The function can also be used to query the value of any object in a particular environment,
+#' i.e. not necessarily the value of an object \emph{leading} to an object existing in
+#' the calling environment. This can be done somewhat with less writing than using \code{evalq()}.
 #' 
 #' If the \code{obj} is given as a string, it also evaluates to the object value when an object
 #' with that name exists in the given parent generation. However, the object should be passed
@@ -55,9 +53,10 @@
 #' For instance we should use \code{with(env1, get_obj_value("z"))} and
 #' \emph{not} \code{get_obj_value("env1$z")}, which returns simply \code{"env1$z"}.
 #' 
-#' @return The value of the object as described in the Details section.
+#' @return The value of the object in the \code{n}-th parent generation from the calling
+#' environment, as described in the Details section.
 #' 
-#' @seealso \code{get_obj_name()} which returns the *name* of the object in the calling stack
+#' @seealso \code{get_obj_name()} which returns the \emph{name} of the object in the calling stack
 #' leading to the queried object in the calling environment.
 #' 
 #' @examples

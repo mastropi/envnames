@@ -1,1 +1,7 @@
-e:/daniel/appdata/R/.Renviron
+# Created: Sep-2013
+# Modified: 18-Apr-2014
+# Environment definition for running R-3.5.1
+# Ref: help(.libPaths) and help(Startup) from a running R.
+
+# Add the following paths to the search path for libraries (i.e. installed packages). Separate directories with semicolon.
+R_LIBS_USER="E:\Daniel\AppData\R\R-3.5.1\library"

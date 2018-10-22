@@ -30,13 +30,13 @@ install.packages("testthat")
 Note: packages are installed in user location:
 ~/R/x86_64-pc-linux-gnu-library/3.4
 
-4) Installed my envnames package by going to the location of the tar.gz file
+4) Installed my envnames package by going to the location of the tar.gz file (which in principle should be renamed to "envnames.tar.gz" from e.g. "envnames-0.3.1.tar.gz"(?))
 cd /mnt/e/Daniel/Projects/R/packages
 R CMD INSTALL envnames
 
 Note: package installed to the same user location indicated above.
 
-5) Tested the package by running from the prompt (TO VERIFY AS I HAD NOT RECORDE THIS STEP SOON AFTER I RAN IT)
+5) Tested the package by running from the prompt (TO VERIFY AS I HAD NOT RECORDED THIS STEP SOON AFTER I RAN IT)
 R CMD CHECK envnames
 
 Ref: http://kbroman.org/pkg_primer/pages/build.html

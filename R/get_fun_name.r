@@ -1,4 +1,4 @@
-#' Return the name of the current function or of a calling function in the chain
+#' Return the name of the current function or a calling function in the chain
 #' 
 #' Return the name of the function that has been called \code{n} levels up from a given function's body.
 #' This function is intended to be called only within a function.
@@ -8,9 +8,9 @@
 #' \code{get_fun_name}.
 #' 
 #' @return A string containing the name of the function that has been called \code{n} levels up
-#' from the function calling \code{get_env_name}. Any environment name that was used to call such
-#' function is removed (e.g. if the calling function is \code{env1$f} or \code{env1$env2$f} only
-#' "f" will be returned).
+#' from the function calling \code{get_env_name}. The function name is returned without context,
+#' that is the enclosing environment of the function is not part of the returned value.
+#' (e.g. if the function is \code{env1$f} or \code{env1$env2$f} only \code{"f"} will be returned).
 #' 
 #' @examples
 #' # Show the name of the active function
