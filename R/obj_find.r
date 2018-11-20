@@ -543,15 +543,14 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 		    # Note that the object is evaluated in the environment n levels up from the current environment
 		    # (this is the meaning of 'n', i.e. how many levels up should 'obj' be evaluated)
 		    # or in any parent environment until it is found.
-		    # Note also that we set the warn option to -1 (i.e. remove warnings) in order to
+		    # Note also that we set the warn option to "no warning" in order to
 		    # avoid the warning message "restarting interrupted promise evaluation"
 		    # when the obj object does not exist. This happens when the program already
 		    # tried to evaluate the object unsuccessfully.
 		    # We re-establish the original warn value further down after different try() calls
 		    # have been carried out.
 		    # See more at: http://stackoverflow.com/questions/20596902/r-avoiding-restarting-interrupted-promise-evaluation-warning
-		    option_warn = options("warn")$warn
-		    options(warn=-1)
+		    set_option_warn_to_nowarning()
 		    obj_eval <- try(eval(obj, envir=parent.frame(n+1)), silent=TRUE)
 
 		    #--- Check first if obj_eval yields an error or resolves to a value but obj is still a valid object to search for 
@@ -598,7 +597,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 		      # But if this is the case, we still want to search for symbol 'x'.
 		      obj_eval <- try(obj, silent=TRUE)
 		    }
-		    options(warn=option_warn)
+		    reset_option_warn()
 
 		    #--- Now process obj_eval
 		    if (!inherits(obj_eval, "try-error")) {

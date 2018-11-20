@@ -156,10 +156,6 @@ get_obj_name = function(obj, n=0, eval=FALSE, silent=TRUE) {
   while (nback < n) {
     #cat("nback =", nback, "\n")
     #print(deparse(obj_parent))
-    # done-2017/09/26 (the correct implementation here is actually to directly call eval.parent() on obj_parent
-    # --as opposed to calling environmentName() as the environment name will be called below at the very end):
-    # Should we use environmentName() instead of deparse() when obj_parent is a named environment?
-    # (as done at the very end below when retrieving the name of obj_parent)
     if (is.environment(obj_parent)) {
       obj_parent = eval.parent(obj_parent, nback)
     } else {

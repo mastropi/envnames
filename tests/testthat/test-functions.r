@@ -22,6 +22,7 @@ z <- 5
 env1 <- new.env()
 env1$x <- 3;
 env1$y <- 2;
+with(env1, env <- new.env())
 
 # check_object_exists() ------------------------------------------------------
 test_that("T11) check_object_exists(): objects defined in an environment are found and their memory address is the one returned by the address() function", {
@@ -178,5 +179,40 @@ test_that("T24) is_memory_address(): out-of-range digits or wrong prefixes in an
   expect_equal(observed, expected)
 })
 # is_memory_address() --------------------------------------------------------
+
+# standardize_env_name() -----------------------------------------------------
+test_that("T31) standardize_env_name(): standardization of system environments works", {
+  expect_equal(envnames:::standardize_env_name("globalenv()"), "R_GlobalEnv")
+  expect_equal(envnames:::standardize_env_name(".GlobalEnv"), "R_GlobalEnv")
+  expect_equal(envnames:::standardize_env_name("emptyenv()"), "R_EmptyEnv")
+  expect_equal(envnames:::standardize_env_name("baseenv()"), "base")
+  expect_equal(envnames:::standardize_env_name(".BaseNamespaceEnv"), "base")
+})
+
+test_that("T32) standardize_env_name(): standardization of package and namespace environments works", {
+  expect_equal(envnames:::standardize_env_name("as.environment(\"package:base\")"), "base")
+  expect_equal(envnames:::standardize_env_name("getNamespace(\"base\")"), "base")
+  expect_equal(envnames:::standardize_env_name("as.environment(\"package:envnames\")"), "package:envnames")
+  expect_equal(envnames:::standardize_env_name("getNamespace(\"envnames\")"), "envnames")
+})
+
+test_that("T33) standardize_env_name(): standardization of user environments gives the name of the environment", {
+  expect_equal(envnames:::standardize_env_name("env1"), "env1")
+})
+
+test_that("T34) standardize_env_name(): standardization of the name of an existing variable
+           that is NOT an environment gives the name unchanged", {
+  expect_equal(envnames:::standardize_env_name("x"), "x")
+})
+
+test_that("T35) standardize_env_name(): standardization of the name of an expression that resolves to a user environment
+           gives the expression unchanged", {
+  expect_equal(envnames:::standardize_env_name("parent.env(env1$env)"), "parent.env(env1$env)")
+})
+
+test_that("T36) standardize_env_name(): standardization of non-existing variables gives the input name unchanged", {
+  expect_equal(envnames:::standardize_env_name("asdfafd"), "asdfafd")
+})
+# standardize_env_name() -----------------------------------------------------
 
 })

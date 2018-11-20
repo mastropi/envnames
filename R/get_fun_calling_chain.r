@@ -100,7 +100,7 @@ get_fun_calling_chain = function(n=NULL, showParameters=FALSE, silent=TRUE) {
       # This is the case for user-defined environments, which are unnamed
       # In this case, the environment name is part of the function name!
       # => Extract the environment part from the function name and set it as the value of env_name
-      env_and_fun = extract_last_member(fun_name)
+      env_and_fun = extract_root_and_last_member(fun_name)
       env_name = env_and_fun$root
       fun_name = env_and_fun$name
     }

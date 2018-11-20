@@ -69,7 +69,7 @@ test_that("T3a) an object inside a user-defined environment is found", {
 test_that("T3b) user-defined environments are found", {
   # skip("not now")
   # test 1
-  expected = "R_GlobalEnv"
+  expected = c("R_GlobalEnv", "testenv")
   observed = obj_find(env1)
   expect_equal(observed, expected)
   observed = obj_find("env1")

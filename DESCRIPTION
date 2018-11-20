@@ -1,7 +1,7 @@
 Package: envnames
 Type: Package
 Title: Track User-Defined Environment Names
-Version: 0.4.0
+Version: 0.4.0.9000
 Date: 2018-10-15
 Author: Daniel Mastropietro
 Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>

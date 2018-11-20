@@ -155,15 +155,14 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 			    
 			    #------------ 3. Try to retrieve the object's address after evaluating the object --------
 			    # This is the case when e.g. obj is an expression as in 'objects[1]'
-			    # Note that we set the warn option to -1 (i.e. remove warnings) in order to
+			    # Note that we set the warn option to "no warning" in order to
 			    # avoid the warning message "restarting interrupted promise evaluation"
 			    # when the obj object does not exist. This happens when the program already
 			    # tried to evaluate the object unsuccessfully.
 			    # See for more info: http://stackoverflow.com/questions/20596902/r-avoiding-restarting-interrupted-promise-evaluation-warning
-			    option_warn = options("warn")$warn
-			    options(warn=-1)
+			    set_option_warn_to_nowarning()
 			    obj_eval <- try(eval(obj, envir=envir), silent=TRUE)
-			    options(warn=option_warn)
+			    reset_option_warn()
 			    if (inherits(obj_eval, "try-error")) {
 			      # Note that we do NOT show any messages when the object is not found, because the object name cannot
 			      # always be obtained by deparse(substitute(obj)). In order to get the actual name we need to go back
@@ -214,14 +213,13 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 	# In fact, we don't want to retrieve the address of a string, because the memory address changes for every call to the function!
 	# (note: although this worked correctly for get_obj_address("x"), it failed for get_obj_address("env1$x") (it gave an incorrect
 	# memory address) and fixing it to make it work properly was too complicated and not really necessary)
-	# Note that we need to set the warning option to -1 to avoid a warning when calling is.na(obj) on an environment object...
-	# Also note that before checking if obj is NA we check that it is not an environment and not a symbol because is.na()
-	# gives a warning in those cases!
-	# We also set the warn option to -1 because sometimes we get the warning regarding "promised evaluation".
-	option_warn = options("warn")$warn
-	options(warn=-1)
+	# Note that we need to set the warning option to "no warning" in order to avoid a warning when calling
+	# is.na(obj) on an environment object, and because sometimes we get the warning about "promised evaluation".
+	# Also note that before checking if obj is NA we check that it is not an environment and
+	# not a symbol because is.na() gives a warning in those cases!
+	set_option_warn_to_nowarning()
 	is_obj_null_na_string = try( is.null(obj) || (!is.environment(obj) && !is.symbol(obj) && is.na(obj)) || is_string(obj), silent=TRUE )
-	options(warn=option_warn)
+	reset_option_warn()
 	if (!inherits(is_obj_null_na_string, "try-error") && is_obj_null_na_string) {
 	  return(NULL)
 	}

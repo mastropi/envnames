@@ -99,13 +99,22 @@ get_env_names(envir=env_of_envs)
 
 
 # 3.- TEST! ---------------------------------------------------------------
-test_that("T0) the environment name of a named environment (e.g system or package environment) is correctly returned", {
+test_that("T0a) the environment name of a named environment (e.g system or package environment) is correctly returned", {
   # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
   expected = "base"
   #browser()
   observed = environment_name(baseenv())
   expect_equal(environment_name(baseenv()), expected)
+})
+
+test_that("T0b) the environment name of a user environment existing ONLY in another user environment
+          and NOT in the global environment is correctly returned", {
+  # skip("not now")
+  env_name_not_existing_in_global_environment = "env11"
+  env_not_existing_in_global_environment = as.name(env_name_not_existing_in_global_environment)
+  expect_equal(environment_name(env_not_existing_in_global_environment, envir=globalenv()$env_of_envs),
+               env_name_not_existing_in_global_environment)
 })
 
 test_that("T1) the environment name is correctly returned when the environment variable is given as a symbol (in all environments)", {
@@ -192,8 +201,8 @@ test_that("T12) only the environments having the same name are returned when mat
 })
 
 test_that("T13) ALL the environments having the same name are returned when matchname=TRUE, even if they have DIFFERENT memory addresses", {
-  expected = c("env1", "env1", "env1")
-  names(expected) = sort(c("env_of_envs", "envir", "R_GlobalEnv"))
+  expected = c("env1", "env1", "env1", "env1")
+  names(expected) = sort(c("env_of_envs", "envir", "package:envnames$testenv", "R_GlobalEnv"))
   observed = environment_name(env1, matchname=TRUE)
   expect_equal(observed, expected)
 })
@@ -277,22 +286,21 @@ test_that("T90) invalid 'env' variable returns NULL", {
 
 test_that("T91) when an environment is called 'envir' (like the envir= parameter in environment_name()!) the name is correctly returned as 'envir',
                 especially when 'envir' points to another environment in the workspace! (e.g. when envir = env_of_envs", {
+  # Test 1
   expect_equal(environment_name(envir, matchname=TRUE), "envir")
 
-  # Use the following when running this test through the Test Package utility
-  expected = c("env_of_envs", "envir")
-  names(expected) = c("R_GlobalEnv", "R_GlobalEnv")
-  expect_equal(environment_name(envir), expected)
+  # Test 2
+  # Two different tests depending on how this test is run (either by sourcing this file or all other ways of testing
+  # --test, check, this test_that() block--)
+  expected_test = c("env_of_envs", "envir")
+  names(expected_test) = c("R_GlobalEnv", "R_GlobalEnv")
+  expected_source = c("env_of_envs", "envir", "R_GlobalEnv")
+  names(expected_source) = c("R_GlobalEnv", "R_GlobalEnv", NA)
+  expect_result = try( expect_equal(environment_name(envir), expected_test), silent=TRUE )
 
-  # WARNING: Use the following when running the test by SOURCEing this file
-  #expected = c("env_of_envs", "envir", "R_GlobalEnv")
-  #names(expected) = c("R_GlobalEnv", "R_GlobalEnv", NA)
-  #expect_equal(environment_name(envir), expected)
-
-  # WARNING: Use the following when running the test by just running this test_that() block
-  #expected = c("env_of_envs", "envir")
-  #names(expected) = c("R_GlobalEnv", "R_GlobalEnv")
-  #expect_equal(environment_name(envir), expected)
+  if (inherits(expect_result, "try-error")) {
+    expect_result = try( expect_equal(environment_name(envir), expected_source), silent=TRUE )
+  }
 })
 #------------------------------------- Extreme cases ------------------------------------------
 
