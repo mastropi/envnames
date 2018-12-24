@@ -34,7 +34,6 @@ alist = list(z="x", v="env_of_envs$zz", u=2)
 
 # 2.- TEST! ---------------------------------------------------------------
 test_that("T1) an object in the global environment is found", {
-  # skip("not now")
   # browser()  # This can be used like a breakpoint for debugging. But stil F10 doesn't go to the next line, it will continue to the end of the program!
   expected = "R_GlobalEnv"
   #print(get_fun_calling_chain())
@@ -47,7 +46,6 @@ test_that("T1) an object in the global environment is found", {
 })
 
 test_that("T2) an object in a package is found", {
-  # skip("not now")
   expected = "base"
 
   observed = obj_find(mean)
@@ -57,7 +55,6 @@ test_that("T2) an object in a package is found", {
 })
 
 test_that("T3a) an object inside a user-defined environment is found", {
-  # skip("not now")
   expected = "env1"
 
   observed = obj_find(x)
@@ -67,7 +64,6 @@ test_that("T3a) an object inside a user-defined environment is found", {
 })
 
 test_that("T3b) user-defined environments are found", {
-  # skip("not now")
   # test 1
   expected = c("R_GlobalEnv", "testenv")
   observed = obj_find(env1)
@@ -84,8 +80,6 @@ test_that("T3b) user-defined environments are found", {
 
 test_that("T3c) looking for system, package, and namespace environments should return NA because they don't have a location!
           They are simply part of the workspace...", {
-  # skip("not now")
-
   # NOTE: the list of R built-in environments is available in help(environment)
 
   # System environments
@@ -104,7 +98,6 @@ test_that("T3c) looking for system, package, and namespace environments should r
 })
 
 test_that("T4) objects are found when given as text, including if object is given with the full environment path", {
-  # skip("not now")
   expected = "env1"
 
   observed = obj_find("x")
@@ -121,7 +114,6 @@ test_that("T4) objects are found when given as text, including if object is give
 
 test_that("T5) an object referenced via a text expression is not found (e.g. alist$z)
            unless the expression is the full environment path to the object (already tested)", {
-  # skip("not now")
   expected = NULL
   observed = obj_find("alist$z")
   expect_equal(observed, expected)
@@ -129,7 +121,6 @@ test_that("T5) an object referenced via a text expression is not found (e.g. ali
 
 test_that("T6) an object referenced by an expression (e.g. alist$z where z = \"x\" or v[1] where v[1] = \"x\")
           is found in the correct environment", {
-  # skip("not now")
   # test 1
   expected = "env1"
   
@@ -156,7 +147,6 @@ test_that("T6) an object referenced by an expression (e.g. alist$z where z = \"x
 test_that("T7a) if object v exists in the global environment and also in another object (e.g. alist$v)
            obj_find() should search for the (possible) object that is stored in alist$v as name
            (as opposed to searching for 'v' in the global environment)", {
-  # skip("not now")
   expected = "env_of_envs"
 
   observed = obj_find(alist$v)
@@ -166,7 +156,6 @@ test_that("T7a) if object v exists in the global environment and also in another
 })
 
 test_that("T7b) an object referenced by another variable (e.g. y = \"x\") is found (WITHOUT needing to enclose as.name() in quote())", {
-  # skip("not now")
   # Case when the symbol referenced by 'y' exists in the calling environment
   expected = sort(c("env_of_envs", "env_of_envs$env2", "R_GlobalEnv"))
   observed = obj_find(as.name(yy))
@@ -182,15 +171,32 @@ test_that("T7c) obj_find() can be called within sapply() on an array of object n
   expected = list(x="env1", y="R_GlobalEnv", z=NULL)
   observed = sapply(v, obj_find)
   expect_equal(observed, expected)
+
   # Test 2
   expected = list("env1", "R_GlobalEnv", NULL)
   observed = sapply(vquote, obj_find)
+  expect_equal(observed, expected)
+
+  # Test 3a: run the sapply() from within an environment
+  expected = list(z="env1", v="env_of_envs", u=NULL)
+  observed = with(env_of_envs, sapply(alist, obj_find))
+  expect_equal(observed, expected)
+  # Test 3b: with globalsearch=FALSE
+  expected = list(z=NULL, v="env_of_envs", u=NULL)
+  observed = with(env_of_envs, sapply(alist, obj_find, globalsearch=FALSE))
+  expect_equal(observed, expected)
+  # Test 3b: with envir=env_of_envs
+  expected = list(z=NULL, v="env_of_envs", u=NULL)
+  observed = with(env_of_envs, sapply(alist, obj_find, envir=env_of_envs))
+  expect_equal(observed, expected)
+  # Test 3b: with both globalsearch=FALSE and envir=env_of_envs
+  expected = list(z=NULL, v="env_of_envs", u=NULL)
+  observed = with(env_of_envs, sapply(alist, obj_find, globalsearch=FALSE, envir=env_of_envs))
   expect_equal(observed, expected)
 })
 
 test_that("T8) looking for an object whose name is the name of another object (e.g. y = \"x\")
            should return the environment of the original object", {
-  # skip("not now")
   expected = "R_GlobalEnv"
   
   observed = obj_find(y)
@@ -201,42 +207,70 @@ test_that("T8) looking for an object whose name is the name of another object (e
 
 test_that("T9) objects are found in all nested environments
           as well as packages and environments in the search() path when envir=NULL", {
-  # skip("not now")
   # test 1
   expected = sort(c("env_of_envs", "env_of_envs$env2", "R_GlobalEnv"))
   observed = obj_find("zz")
   expect_equal(observed, expected)
   # test 2: restricted to an environment
-  expected = sort(c("env_of_envs", "env2"))
+  expected = sort(c("env_of_envs", "env_of_envs$env2"))
   observed = obj_find("zz", envir=env_of_envs)
   expect_equal(observed, expected)
 })
 
-test_that("T10a) when obj_find() is called from within an environment, objects are searched and found in all sub-environments
-          as well as in packages and environments reachable through the search() path when envir=NULL", {
-  # skip("not now")
-  # test 1
+test_that("T10a) when obj_find() is called from within an environment using the with() function,
+          objects are searched and found in all sub-environments, as well as in packages and environments
+          reachable through the search() path when envir=NULL", {
+  ### NOTE: Each of the three tests run below are split into 2 sub-tests:
+  ### a) one which uses globalsearch=TRUE (meaning that (i) the search is performed on the whole workspace
+  ### and (ii) all objects are referenced w.r.t. the global environment --e.g. env_of_envs$env2$zz to reach object zz)
+  ### b) one which uses globalsearch=FALSE (meaning that (i) the search is performed ONLY in the calling environment
+  ### and (ii) all objects are referenced w.r.t. the calling environment defined in with() --e.g. env_of_envs--)
+  ### c) one which performs the search on a specified environment --using the envir= parameter
+  ### (meaning that (i) the search is performed ONLY in the environment specified in 'envir=' and
+  ### (ii) all objects are referenced w.r.t. the 'envir=' environment)
+            
+  # test 1a
   expected = sort(c("env_of_envs", "env_of_envs$env2", "R_GlobalEnv"))
   observed = with(env_of_envs, obj_find("zz"))
   expect_equal(observed, expected)
-  # test 2
+  # test 1b
+  expected = sort(c("env_of_envs", "env_of_envs$env2"))
+  observed = with(env_of_envs, obj_find("zz", globalsearch=FALSE))
+  expect_equal(observed, expected)
+  # test 1c
+  expected = sort(c("env_of_envs", "env_of_envs$env2"))
+  observed = with(env_of_envs, obj_find("zz", envir=env_of_envs))
+  expect_equal(observed, expected)
+
+  # test 2a
   expected = sort(c("env_of_envs", "env_of_envs$env2", "R_GlobalEnv"))
   observed = with(env_of_envs, obj_find(zz))
   expect_equal(observed, expected)
-  # test 3
-  expected = c("env_of_envs$env2")
-  observed = with(env_of_envs, obj_find(env2$zz, globalsearch=FALSE))  # We must use globalsearch=FALSE because o.w. env2$zz is looked for in the global environment.
+  # test 2b
+  expected = c("env_of_envs", "env_of_envs$env2")
+  observed = with(env_of_envs, obj_find(zz, globalsearch=FALSE))
   expect_equal(observed, expected)
-
-  # test 3: test 1 restricted to an environment
-  expected = sort(c("env_of_envs", "env2"))
-  observed = with(env_of_envs, obj_find("zz", envir=env_of_envs))
-  expect_equal(observed, expected)
-  # test 4: test 2 restricted to an environment
-  expected = sort(c("env_of_envs", "env2"))
+  # test 2c
+  expected = sort(c("env_of_envs", "env_of_envs$env2"))
   observed = with(env_of_envs, obj_find(zz, envir=env_of_envs))
   expect_equal(observed, expected)
-  # test 5: test 3 restricted to an environment
+
+  # test 3a
+  # NOTE that when globalsearch=TRUE (the default) the expected result is NULL
+  # becaus env2$zz is searched in the whole workspace, but the name 'env2$zz' does NOT exist
+  # in the whole workspace.
+  # If we wanted 'zz' to be found when basing its search in the whole workspace
+  # we should refer to 'zz' as 'env_of_envs$env2$zz', since this is the path to reach
+  # 'zz' starting from the GLOBAL ENVIRONMENT, ***which is where the search on the whole
+  # workspace starts (based on the envmap returned by the get_env_names() function)***.
+  expected = NULL
+  observed = with(env_of_envs, obj_find(env2$zz))
+  expect_equal(observed, expected)
+  # test 3b
+  expected = c("env_of_envs$env2")
+  observed = with(env_of_envs, obj_find(env2$zz, globalsearch=FALSE))
+  expect_equal(observed, expected)
+  # test 3c
   expected = c("env_of_envs$env2")
   observed = with(env_of_envs, obj_find(env2$zz, envir=env_of_envs))
   expect_equal(observed, expected)
@@ -244,7 +278,6 @@ test_that("T10a) when obj_find() is called from within an environment, objects a
 
 test_that("T10b) when obj_find() is called from within an environment but the object to search for is given
           with an absolute path to the actual object as in globalenv()$env1$x, the object is found", {
-  # skip("not now")
   # test 1
   expected = c("env1")
   observed = with(env_of_envs, obj_find(globalenv()$env1$x))
@@ -258,7 +291,6 @@ test_that("T10b) when obj_find() is called from within an environment but the ob
 
 test_that("T11) objects given with a full environment path involving globalenv()
           or as.environment(package) as in globalenv()$x are found", {
-  # skip("not now")
   # test 1: look for an object in a user-defined environment
   expected = "env1"
   
@@ -324,53 +356,66 @@ test_that("T11) objects given with a full environment path involving globalenv()
   expect_equal(observed, expected)
 })
 
-
 test_that("T21) specifying include_functions=TRUE returns ALL the function environments where the object is found", {
-  skip("Problems when running this test on different modalities, e.g. TEST mode or CHECK mode.")
   # NOTE: This test passes only when calling obj_find() from WITHIN expect_equal() because doing so sets up a function
-  # calling chain that makes the object being searched for appear in different function environments (e.g. compare())
+  # calling chain that makes the object being searched for appear in different function environments (e.g. eval())
   # ***********************************
-  # IMPORTANT: If we run this test as part of running this whole script test-obj_find.r, we should run the second part
-  # of the test which is currently commented out. In fact, in that case, there are two new function names to add to the
-  # expected value: "eval" and "withVisible", as shown in those tests.
+  # IMPORTANT: The results of the tests are DIFFERENT depending on the context where the tests are run.
+  # E.g. it is not the same running the tests by sourcing this script, or by TESTing the package or by CHECKing
+  # the package.
+  # This is why we call the try() function to make sure all the different testing results are tried.
   # ***********************************
-  # WHEN RUNNING THIS TEST THROUGH THE TEST PACKAGE UTILITY
+
+  # 1.- CASE WHEN THIS TEST IS RUN THROUGH THE TEST OR CHECK PACKAGE UTILITY
   # (in this case the eval() function appears in the result but NOT the withVisible() function)
-  expect_equal(obj_find(y, include_functions=TRUE), sort(c("compare.character", "compare", "eval", "R_GlobalEnv")))
-  expect_equal(obj_find(x, include_functions=TRUE), sort(c("env1", "compare.character", "compare")))
-  # Referring an object indirecty
-  expect_equal(obj_find(alist$z, include_functions=TRUE), sort(c("env1", "compare.character", "compare")))
-  
-  # When calling obj_find() from outside expect_equal(), the object is only found in the global environment!
-  observed = obj_find(y, include_functions=TRUE)
-  expect_equal(observed, sort(c("eval", "R_GlobalEnv")))
+  result = try({
+        expect_equal(obj_find(y, include_functions=TRUE), sort(c("eval", "R_GlobalEnv")))
+        expect_equal(obj_find(x, include_functions=TRUE), sort(c("env1", "force")))
+        # Referring an object indirecty
+        expect_equal(obj_find(alist$z, include_functions=TRUE), sort(c("env1", "force")))
+        
+        # When calling obj_find() from outside expect_equal(), the object is found in less environments
+        observed = obj_find(y, include_functions=TRUE)
+        expect_equal(observed, sort(c("eval", "R_GlobalEnv")))
+  }, silent=TRUE)
 
-  # WHEN RUNNING THE TEST BY sourcING THE SCRIPT
-  # (in this case both the eval() and the withVisible() functions appear in the result)
-  #expect_equal(obj_find(y, include_functions=TRUE), sort(c("eval", "compare", "compare.character", "R_GlobalEnv")))
-  #expect_equal(obj_find(x, include_functions=TRUE), sort(c("env1", "withVisible", "compare", "compare.character")))
-  # Referring an object indirecty
-  #expect_equal(obj_find(alist$z, include_functions=TRUE), sort(c("env1", "withVisible", "compare", "compare.character")))
-  
-  # When calling obj_find() from outside expect_equal(), the object is only found in the global environment!
-  #observed = obj_find(y, include_functions=TRUE)
-  #expect_equal(observed, c("eval", "R_GlobalEnv"))
+  if (inherits(result, "try-error")) {
+    # 2.- CASE WHEN THIS TEST IS RUNG BY sourcING THE SCRIPT
+    # (in this case either the eval() or the withVisible() functions appear in the result)
+    result = try({
+      expect_equal(obj_find(y, include_functions=TRUE), sort(c("eval", "R_GlobalEnv")))
+      expect_equal(obj_find(x, include_functions=TRUE), sort(c("env1", "withVisible")))
+      # Referring an object indirecty
+      expect_equal(obj_find(alist$z, include_functions=TRUE), sort(c("env1", "withVisible")))
+      
+      # When calling obj_find() from outside expect_equal(), the object is only found in the global environment!
+      observed = obj_find(y, include_functions=TRUE)
+      expect_equal(observed, c("eval", "R_GlobalEnv"))
+    }, silent=TRUE)
 
-  # WHEN RUNNING THE TEST BY runNING JUST THIS test_that() CALL
-  # (in this case nor the eval() nor the withVisible() functions appear in the result)
-  #expect_equal(obj_find(y, include_functions=TRUE), sort(c("compare", "compare.character", "R_GlobalEnv")))
-  #expect_equal(obj_find(x, include_functions=TRUE), sort(c("env1", "compare", "compare.character")))
-  # Referring an object indirecty
-  #expect_equal(obj_find(alist$z, include_functions=TRUE), sort(c("env1", "compare", "compare.character")))
-  
-  # When calling obj_find() from outside expect_equal(), the object is only found in the global environment!
-  #observed = obj_find(y, include_functions=TRUE)
-  #expect_equal(observed, "R_GlobalEnv")
+    if (inherits(result, "try-error")) {
+      # 3.- CASE WHEN THIS TEST IS RUN BY runNING JUST THIS test_that() CALL
+      # (in this case nor the eval() nor the withVisible() functions appear in the result)
+      result = try( {
+        expect_equal(obj_find(y, include_functions=TRUE), "R_GlobalEnv")
+        expect_equal(obj_find(x, include_functions=TRUE), "env1")
+        # Referring an object indirecty
+        expect_equal(obj_find(alist$z, include_functions=TRUE), "env1")
+        
+        # When calling obj_find() from outside expect_equal(), the object is only found in the global environment!
+        observed = obj_find(y, include_functions=TRUE)
+        expect_equal(observed, "R_GlobalEnv")
+      }, silent=TRUE)
+
+      if (inherits(result, "try-error")) {
+        stop("The test did NOT pass in any of its forms.")
+      }
+    }
+  }
 })
 
 #--------------------- Searches for non-existing objects ------------------
 test_that("T90) a non-existing object is not found and no error is raised", {
-  # skip("not now")
   # test 1
   expected = NULL
   observed = obj_find(nonexistent)
@@ -382,7 +427,6 @@ test_that("T90) a non-existing object is not found and no error is raised", {
 })
 
 test_that("T91) using get() on a variable that refers to a non existing objects returns NULL", {
-  # skip("not now")
   # test 1
   expected = NULL
   observed = obj_find(get(y))

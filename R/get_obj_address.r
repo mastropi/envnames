@@ -213,12 +213,10 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 	# In fact, we don't want to retrieve the address of a string, because the memory address changes for every call to the function!
 	# (note: although this worked correctly for get_obj_address("x"), it failed for get_obj_address("env1$x") (it gave an incorrect
 	# memory address) and fixing it to make it work properly was too complicated and not really necessary)
-	# Note that we need to set the warning option to "no warning" in order to avoid a warning when calling
-	# is.na(obj) on an environment object, and because sometimes we get the warning about "promised evaluation".
-	# Also note that before checking if obj is NA we check that it is not an environment and
-	# not a symbol because is.na() gives a warning in those cases!
+	# Note that we need to set the warning option to "no warning" to avoid the warning about "promised evaluation"
+	# (not sure when it happens)
 	set_option_warn_to_nowarning()
-	is_obj_null_na_string = try( is.null(obj) || (!is.environment(obj) && !is.symbol(obj) && is.na(obj)) || is_string(obj), silent=TRUE )
+	is_obj_null_na_string = try( is_null_or_na(obj) || is_string(obj), silent=TRUE )
 	reset_option_warn()
 	if (!inherits(is_obj_null_na_string, "try-error") && is_obj_null_na_string) {
 	  return(NULL)

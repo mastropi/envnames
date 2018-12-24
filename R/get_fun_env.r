@@ -16,8 +16,9 @@
 #' whose memory address (of the execution environment) equals the given memory address.
 #' 
 #' When the input parameter is a function name, a list of ALL the execution environments belonging
-#' to a function whose name coincides with the given name. Note that these may be many environments
-#' as the same function may be called several times in the function calling chain.
+#' to a function whose name coincides with the given name (including any given path).
+#' Note that these may be many environments as the same function may be called several times in the
+#' function calling chain.
 #' 
 #' @examples
 #' # Define the function that is called to show the behaviour of get_fun_env()
@@ -61,15 +62,15 @@ get_fun_env <- function(fun_name_or_address) {
 	# 1) We use sys.frame(-level) to retrieve the function's execution environment of a calling
 	# function and NOT parent.frame(level), because parent.frames may not always include internal functions in
 	# the counting of parent frames (e.g. print() if we call print(get_env_names())), as explained in the Note
-	# section of the documentation for sys.parent.
+	# section of the documentation for sys.parent().
 	# 2) We CANNOT use eval(environment(), envir=sys.frame(-level)) to do that because this just gives
-	# the execution environment of the currently executed function
+	# the execution environment of the currently executed function.
 
-	# Execution environment by memory address
+	# A) Execution environment by memory address
 	# Return the function execution environment associated to the given memory address
-	# calls is the object returned by sys.calls() with the function calling chain
-	# funaddress is the memory address of the function execution environment we want to retrieve
-	find_function_by_address = function(calls, funaddress) {
+	# - calls is the object returned by sys.calls() with the function calling chain
+	# - funaddress is the memory address of the function execution environment we want to retrieve
+	get_fun_env_by_address = function(calls, funaddress) {
 		# Output variable
 		env = NULL
 		
@@ -101,11 +102,11 @@ get_fun_env <- function(fun_name_or_address) {
 		return(env)
 	}
 
-	# Execution environments by function name
+	# B) Execution environments (plural) by function name
 	# Return ALL the execution environments associated to the given function name
-	# calls is the object returned by sys.calls() with the function calling chain
-	# funname is a string with the name of the function whose execution environment we want to retrieve
-	find_function_by_name = function(calls, funname) {
+	# - calls is the object returned by sys.calls() with the function calling chain
+	# - funname is a string with the name of the function whose execution environment we want to retrieve
+	get_fun_envs_by_name = function(calls, funname) {
 		# Output variable
 		envs = NULL
 
@@ -118,8 +119,8 @@ get_fun_env <- function(fun_name_or_address) {
 		  # is NOT counted in the calling chain passed in input parameter calls
 		  level = length(calls) - c + 1
 
-			# Get the function's execution environment and compare its memory address with the given memory address
-			# where we want to search for the object. This is important because the same function may be invoked several times in
+			# Get the current function name and compare it with the given name (funname)
+			# Note that we need to add the environment is important because the same function may be invoked several times in
 			# the function calling chain and we need to check each of those environments!
 			funname_current = as.character(calls[[c]])[1]
 			if (funname_current == funname) {
@@ -142,9 +143,9 @@ get_fun_env <- function(fun_name_or_address) {
 	# Check if the given parameter is a memory address
 	if (is_memory_address(fun_name_or_address)) {
 		# => The function returns only ONE environment, since all environments have distinct memory addresses
-		return(find_function_by_address(calls, fun_name_or_address))
+		return(get_fun_env_by_address(calls, fun_name_or_address))
 	} else {
 		# The function returns a list of environments (as e.g. the same function may have been called several times!)
-		return(find_function_by_name(calls, fun_name_or_address))
+		return(get_fun_envs_by_name(calls, fun_name_or_address))
 	}
 }

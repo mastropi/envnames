@@ -525,6 +525,35 @@ extract_root_and_last_member = function(full_name) {
 	return(list(root=root, name=name))
 }
 
+#' Put together a root name with a member name
+#' 
+#' This is the opposite operation of \code{extract_root_and_last_member()}:
+#' the \code{root} and its supposed \code{member} are put together using the
+#' \code{$} separator, as in \code{env_of_envs$env1$x}, where the root and
+#' the member could be either \code{env_of_envs$env1} and \code{x} or
+#' \code{env_of_envs} and \code{env1$x}.
+#'
+#' @param root String containing the root name to concatenate. It may be NULL or empty.
+#' @param member String containing the member name to concatenate. It may be NULL or empty.
+#' 
+#' @return A string concatenating the root and the member names with the
+#' \code{$} symbol. If any of them is empty or \code{NULL}, the other name is returned
+#' or \code{""} if the other name is also empty or \code{NULL}.
+#' 
+#' @seealso \code{extract_root_and_last_member()}
+collapse_root_and_member = function(root, member) {
+  if ((length(root) == 0 || root == "") &&
+      (length(member) == 0 || member == "")) {
+    return("")
+  } else if (length(root) == 0 || root == "") {
+    return(member)
+  } else if (length(member) == 0 || member == "") {
+    return(root)
+  } else {
+    return(paste(root, member, sep="$"))
+  }
+}
+
 #' Clean up the list of environments matching a memory address in an environment map.
 #'
 #' @param envmap data frame with the name-address pairs of environments having at least a column
@@ -846,25 +875,33 @@ parse_memory_address = function(x) {
 #' @param x object to check. A scalar is assumed.
 #' @return boolean indicating whether the scalar object contains a valid logical value (i.e. TRUE or FALSE)
 #' and is not NA nor NULL, and has positive length.
+#' FALSE is returned if the object does not exist.
+#' 
+#' @details
+#' This function silently handles special cases for which is.null() and is.na() (called by this function)
+#' may return a warning, such as functions objects or environments.
+#' (e.g. the warning "Warning message: In is.na(g) : is.na() applied to non-(list or vector) of type 'closure')"
 #' 
 #' @keywords internal
 is_logical = function(x) {
-  return(!is.null(x) && !is.na(x) && is.logical(x) && length(x) > 0)
+  output = try( !is.null(x) && !is.environment(x) && !is.symbol(x) && !is.na(x) && is.logical(x) && length(x) > 0, silent=TRUE )
+  if (inherits(output, "try-error")) output = FALSE
+  return(output)
 }
 
 #' Check whether an object is NULL or NA.
 #' 
-#' This function silently handles special cases for which is.null() and is.na() may return a warning, such as functions objects.
+#' This function silently handles special cases for which is.null() and is.na() may return a warning,
+#' such as functions objects or environments.
 #' (e.g. the warning "Warning message: In is.na(g) : is.na() applied to non-(list or vector) of type 'closure')"
 #' 
 #' @param x object to check.
 #' @return boolean indicating whether the object is NULL or NA.
+#' FALSE is returned if the object does not exist.
 #' 
 #' @keywords internal
 is_null_or_na = function(x) {
-  op.warn = options("warn")$warn; on.exit( options(warn=op.warn) )
-  options(warn=-1)
-  output = try( is.null(x) || (is_logical(is.na(x)) && is.na(x)), silent=TRUE )
+  output = try( is.null(x) || (!is.environment(x) && !is.symbol(x) && is.na(x)), silent=TRUE )
   if (inherits(output, "try-error")) output = FALSE
   return(output)
 }
@@ -994,17 +1031,16 @@ unlist_with_names = function(alist) {
 }
 
 #' Set the "warn" options to -1 to avoid warning messages. The hidden variable .option_warn
-#' (defined in global_definitions.r) is set to the original value of the "warn" option,
-#' so that we can reset it later.
+#' defined in global_definitions.r has already been set to the original value of the "warn" option,
+#' at the moment when the package is loaded, so that we can reset it later.
 #' 
 #' @keywords internal
 set_option_warn_to_nowarning = function() {
-  .option_warn = options("warn")$warn
   options(warn=-1)
 }
 
 #' Resets the "warn" option to the value stored in the hidden variable .option_warn
-#' (defined in global_definitions.r).
+#' (set in global_definitions.r to the original value of the "warn" option when the package is loaded).
 #' 
 #' @keywords internal
 reset_option_warn = function() {

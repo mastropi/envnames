@@ -1,4 +1,4 @@
-#' Return the name of a calling function and its environment
+#' Return the name of a calling function with its context or path
 #'
 #' This is a wrapper for \code{get_fun_calling_chain(n)} and returns the name of the calling function
 #' including the environment where it is defined \code{n} levels up. The two pieces of information are
@@ -9,6 +9,9 @@
 #' It defaults to 1, which means "return the last function in the calling chain".
 #' @param showParameters flag indicating whether the parameters of the function call should also be shown
 #' in the output.
+#' 
+#' @seealso
+#' \link{get_fun_name} to retrieve *just* the name of the function, without its context (e.g. \code{"f"}).
 #' 
 #' @examples
 #' # Prepare environments

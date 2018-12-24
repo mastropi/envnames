@@ -143,7 +143,7 @@ environment_name <- function(env=parent.frame(), envir=NULL, envmap=NULL, matchn
 			# NOTE that we don't simply call address() to get the memory address of 'env' because:
 			# - 'env' can be given as a string (i.e. a string containing the environment name)
 			# - even if 'env' is given as an environment object, it could exist in different environments
-			# and we would like to retrieve ALL of them. This is also the reason why I am calling the variable
+			# and we would like to retrieve ALL of them. This is also the reason why we are calling the variable
 			# where the returned value is stored as a plural name ("addresses" instead of "address").
 			env_addresses = get_obj_address(env, envir=envir, envmap=envmap, n=1, include_functions=TRUE)
 

@@ -422,7 +422,7 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 		# NOTE: It's important to define row.names= if we don't want
 		# this to fail when there is only one row with the error message
 		# "row names contain missing values"!
-		env_table = data.frame(	row.names=1:length(env_types),
+		env_table = data.frame(	row.names=seq_along(env_types),
 		                        type=env_types,
 														location=env_locations,
 														locationaddress=env_locationaddresses,

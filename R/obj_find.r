@@ -245,18 +245,31 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 	    # on each of these environments to see if the object exists there.
 	    i = 0
 	    nenvs = nrow(envmap)
+	    # Get the name of the envir environment if any
+	    # (this is used to give the environment where the object is found a context (as in e.g. env_of_envs$env1
+	    # instead of simply showing "env1" when envir=env_of_envs, so that we make explicit that the environment
+	    # where the object is found (env1) is inside env_of_envs.
+	    envir_name = NULL
+	    if (!is.null(envir)) {
+	      envir_name = environment_name(envir)[[1]]
+	      ## With [[1]] we get the UNNAMED version of the first element of the returned array.
+	      ## This is necessary because environment_name() may return more than one element if the memory address
+	      ## of the environment has different names (because e.g. several variables share the same memory address)
+	      ## There is NO error when the returned array is NULL.
+	    }
 	    for (address in envmap[,"address"]) {
 	      i = i + 1
 	      env_type = as.character(envmap[i,"type"])
 	      env_full_name = as.character(envmap[i,"pathname"])
+	      env_full_name_with_context = collapse_root_and_member(envir_name, env_full_name)
 
 	      # ONLY check if the object exists in the env_full_name environment if the environment
 	      # has not already been checked (repetition happens e.g. for package and namespace environments
 	      # which have the same name (e.g. both the base package and its namespace environment
 	      # are called "package:base")
-	      if (!env_full_name %in% env_full_names) {
+	      if (!env_full_name_with_context %in% env_full_names) {
 	        if (!silent)
-	          cat(i, "of", nenvs, ": Inspecting environment", env_full_name, "...\n")
+	          cat(i, "of", nenvs, ": Inspecting environment", env_full_name_with_context, "...\n")
 
 	        # Get the environment from the currently analyzed envmap entry
 	        # Need to check if the current entry corresponds to an unnamed environment (user-defined) or
@@ -291,7 +304,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 	        if (!inherits(env, "try-error") && !is.null(env) &&		## env could be NULL if env_type = "function" and the function's execution environment could not be retrieved
 	            !is.null(obj_name) && obj_name != "" &&        	## This is checked to avoid an error in exists() which does not accept a NULL or empty argument
 	            exists(obj_name, envir=env, inherits=FALSE)) { 	## inherits=FALSE avoids searching on the enclosing (i.e. parent) environments
-	          env_full_names = c(env_full_names, env_full_name)
+	          env_full_names = c(env_full_names, env_full_name_with_context)
 	          env_addresses = c(env_addresses, address)
 	        }
 	      }

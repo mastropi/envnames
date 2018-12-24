@@ -113,7 +113,7 @@ get_fun_calling_chain = function(n=NULL, showParameters=FALSE, silent=TRUE) {
     # Update the data frame containing the functions in the calling chain
     # Note that the l-th entry contains the c-th function in the calling chain (where c = ncalls - l),
     # therefore making the first function stored in the fun_calling_chain data frame be the latest function called.
-    fun_calling_chain[l,] = c(fun_name, env_name, paste(env_name, fun_name, sep="$"))
+    fun_calling_chain[l,] = c(fun_name, env_name, collapse_root_and_member(env_name, fun_name))
 
     # Debug
     #cat("level:", l, "fun:", fun_name, "memory:", address(sys.frame(-l)), "\n")
@@ -121,7 +121,7 @@ get_fun_calling_chain = function(n=NULL, showParameters=FALSE, silent=TRUE) {
 
   # Returned data frame (either the full chain or just one entry)
   if (return_just_one_function) {
-    return(paste(env_name, fun_name, sep="$"))
+    return(collapse_root_and_member(env_name, fun_name))
   } else {
     if (!silent) {
       # Show the calling chain in an intuitive way

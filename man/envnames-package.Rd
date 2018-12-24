@@ -61,11 +61,12 @@ environment_name(env3)                       # named array with value "env3" and
 environment_name(env9)                       # NULL (env9 does not exist)
 environment_name(env_of_envs)                # named array with value "env_of_envs" and name
                                              # "R_GlobalEnv"
-# (2018/11/19) THE FOLLOWING IS AN IMPORTANT TEST BECAUSE IT TESTS THE CASE WHERE THE ADDRESS-NAME LOOKUP TABLE
-# CONTAINS ONLY ONE ROW (namely the row for the env11 environment present in env_of_envs), WHICH
-# CANNOT BE TESTED VIA TESTS USING THE testthat PACKAGE BECAUSE IN THAT CONTEXT THE LOOKUP TABLE
-# NEVER HAS ONLY ONE ROW! (for more info about this limitation see the test commented out at the
-# beginning of test-get_env_names.r.
+# (2018/11/19) THE FOLLOWING IS AN IMPORTANT TEST BECAUSE IT TESTS THE CASE WHERE THE ADDRESS-NAME
+# LOOKUP TABLE CONTAINS ONLY ONE ROW (namely the row for the env11 environment present in
+# env_of_envs), WHICH CANNOT BE TESTED VIA TESTS USING THE testthat PACKAGE BECAUSE IN THAT CONTEXT
+# THE LOOKUP TABLE NEVER HAS ONLY ONE ROW!
+# (for more info about this limitation see the test commented out at the beginning of
+# test-get_env_names.r.
 environment_name(env11, envir=env_of_envs)   # "env11"
 environment_name(env11)                      # named array with value "env11" and name
                                              # "R_GlobalEnv$env_of_envs"
