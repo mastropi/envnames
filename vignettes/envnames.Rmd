@@ -2,7 +2,10 @@
 title: "The envnames package helps navigate user-defined and function execution environments, and find objects in nested environments"
 author: "Daniel Mastropietro (mastropi@uwalumni.com)"
 date: "`r Sys.Date()`"
-output: rmarkdown::pdf_document
+output:
+  rmarkdown::pdf_document:
+    toc: true
+    number_sections: true
 vignette: >
   %\VignetteIndexEntry{Overview of the envnames package}
   %\VignetteEngine{knitr::rmarkdown}
@@ -20,6 +23,7 @@ library(envnames)
 rm(list=ls())
 ```
 
+\newpage
 # Introduction
 
 The main goal of this package is to overcome the limitation of the `environmentName()` function in the base package which does not return the name of an environment unless it is a package, a namespace, or a system environment (e.g. the global environment, the base environment). In fact, the `environmentName()` function returns an *empty string* when the argument is a user-defined environment.
@@ -49,7 +53,7 @@ For more information and examples, see below the sections on functions `get_obj_
 Apart from this core functionality, additional tools were added during the package development process which include:
 
 - an enhancement of the built-in `exists()` function with the capability of searching objects *recursively* --i.e. in  environments defined inside *other* environments--, as well as searching objects that are the *result of expressions*. This functionality is provided by the `obj_find()` function.  
-- a simplification of the output obtained when retrieving the calling function name and the stack of calling functions, currently provided by the built-in function `sys.call()`. This functionality is provided by functions `get_fun_name()`, `get_fun_calling()`, and `get_fun_calling_chain()`, which return simple strings or array of strings with the function names of interest.  
+- a simplification of the output obtained when retrieving the calling function name and the stack of calling functions, currently provided by the built-in function `sys.calls()`. This functionality is provided by functions `get_fun_name()`, `get_fun_calling()`, and `get_fun_calling_chain()`, which return simple strings or array of strings with the function names of interest.  
 - the retrieval of the memory address of an object. This functionality is provided by the `get_obj_address()` function.  
 
 Currently the package has 11 functions directly accessible to the user (plus one function that is an alias).
@@ -59,7 +63,10 @@ Currently the package has 11 functions directly accessible to the user (plus one
 
 **Naming convention**: Function names are all small caps and the underscore is used to separate keywords (e.g. `environment_name()`, `get_obj_address()`, etc.)
 
-# Description of the functions
+
+
+
+# Description of the 11 functions in the package
 
 This section describes the functionality of the 11 available functions, which are now briefly described as 7 groups made up of functions with similar functionality and sorted by relevance in terms of historical and practical use:
 
@@ -79,8 +86,16 @@ This section describes the functionality of the 11 available functions, which ar
 
 Each of the above set of functions will be described in the following sub-sections, where each title is a sentence stating the main purpose of the presented function(s).
 
-## 1) `get_env_names()`: retrieve the address-name lookup table of defined environments
-The `get_env_names()` function returns the address-name lookup table that is the basis for most of the other functions in the package, which rely on it to retrieve the names of environments based on their memory addresses.
+
+
+
+\newpage
+## `get_env_names()`: retrieve the address-name lookup table of defined environments
+The `get_env_names()` function returns a map of all the environments defined in a given environment. If no environment location is given, the map includes all the environments existing in the whole workspace.
+
+In practice, the map is an address-name lookup table that relates the memory address of each environment (be it a system environmet, a package environment, a user-defined environment, or optionally a function execution environment) to its name.
+
+This address-name lookup table is the basis for the operation of most of the other functions in the package, which rely on it to retrieve the names of environments based on their memory addresses.
 
 The signature of the function is the following:  
 `get_env_names(envir = NULL, include_functions = FALSE)`.
@@ -99,20 +114,33 @@ with(env_of_envs, env21 <- new.env())
 Note that environment `env21` is *nested* in environment `env_of_envs`.
 
 #### Basic operation
-The following call returns a data frame containing the address-name lookup table, where the two main columns are `address` (containing the memory address of the environment) and `name` (containing the name of the environment). The other columns are used to give context to the environments, such as `path` which tells us how to get to nested user-defined environments (see the case for environment `env21` nested within `env_of_envs`), and `location` which indicates, for instance, the package where an environment is defined or the environment where a function is defined (if the concerned environment is a function's execution environment).
+The following call returns a data frame containing the address-name lookup table, where the two main columns are:  
+- `address` that contains the memory address of the environment, and  
+- `name` that contains  the name of the environment.
 
-```{r GetLookupTable, warning=FALSE}
+The other columns are used to give context to the environments, such as:  
+- `path` which tells us how to reach user-defined environments that are nested within other user-defined environments. The path is relative to the `envir` environment given as parameter, or from the global environment if no `envir` is given. As an example, see the case for environment `env21` nested within `env_of_envs`.  
+- `location` which indicates, for instance, the package where an environment is defined, or the name of the enclosing environment of a function --i.e. where the function is defined--, if the concerned environment is a function's execution environment.
+
+```{r GetLookupTable}
 get_env_names()
 ```
 
-We can also restrict the lookup table to the environments defined within another environment. Now the `path` to the environment is relative to the environment on which the search is restricted, indicated as the `envir` parameter of the function.
+For instance, in the above map we can see that the `envnames` package defines an environment called `testenv` which contains two other nested enviroments: `env1` and `env22`.
 
-```{r GetLookupTableRestricted, warning=FALSE}
+We can also restrict the lookup table to the environments defined within another environment. Now the `path` to the environment is relative to the environment on which the search is restricted (indicated as the `envir` parameter of the function).
+
+```{r GetLookupTableRestricted}
 get_env_names(envir=env_of_envs)
 ```
 
-## 2) `environment_name()`: retrieve name of user-defined and function execution environments
+
+
+
+\newpage
+## `environment_name()`: retrieve name of user-defined and function execution environments
 The `environment_name()` function (or its alias `get_env_name()`) extends the functionality of the built-in `environmentName()` function by also retrieving the name of user-defined environments and function execution environments.
+
 Although the name of an environment can be easily retrieved with `deparse(substitute(env1))` where `env1` is a user-defined environment, the most useful scenario is when we have just the *memory address* of the environment where e.g. an object resides (as in e.g. `<environment: 0x0437fb40>` in 32-bit systems or `<environment: 0x000000000437fb40>` in 64-bit systems). In this scenario, `environment_name()` can tell us the *name* of the environment having that memory address.  
 
 Note that the address-to-name resolution also works for *function execution environments*, as we shall see in the examples below.
@@ -125,9 +153,9 @@ The signature of the function is the following:
 #### Basic operation
 Let's retrieve the names of the environments defined above. This may sound trivial because we are already typing the environment name! However, we receive additional information as follows:
 
-- the output from the first call includes *all* the environmnts where the given environment is found.
+- the output from the first call includes *all* the environments where the environment with the given name (e.g. `env1`) is found.
 
-- the output from the second call contains the *path* to the environment being searched for stating that `env21` is found inside environment `env_of_envs`.
+- the output from the second call contains the *path* to use (starting from the calling environment) in order to reach the environment being searched for (e.g. stating that `env21` is found inside environment `env_of_envs`).
 
 ```{r GetEnvironmentNames, warning=FALSE}
 cat("Name of environment 'env1':\n")
@@ -135,6 +163,8 @@ environment_name(env1)
 cat("Name of environment 'env21':\n")
 environment_name(env21)
 ```
+
+For future reference, let us point out that the first case above is a case of *environments with the same name* existing in *different environments*.
 
 If we already know the environment where the environment of interest is defined, we can specify it in the `envir` parameter so that the search for the environment is restricted to the specified  environment:
 
@@ -145,28 +175,35 @@ cat("Name of environment 'env21' when we specify its location:\n")
 environment_name(env21, envir=env_of_envs)
 ```
 
-Note that no path information is attached to the returned names because only one environment is found inside the specified environments.
+Note that *no path information is attached now* to the returned names in either case, because only one environment is found inside the respective specified environments.
+
+We can also retrieve the name of the `testenv` environment:
+
+```{r GetNameOfTestEnv}
+cat("Name of environment 'testenv':\n")
+environment_name(testenv)
+```
+where we obtain the information that `testenv` is defined in package `envnames`.
 
 #### More advanced examples
-Suppose we now define another environment that points to one of the already defined environments.
+As above we saw a case of environments with the same name existing in different environments, let's now see a case of *different environments* having the *same memory address*.
 
-```{r DefineAnotherEnvironmentThatPointsToAnExistingEnvironment}
+So, let's define a new environment that points to one of the already defined environments, and let's retrieve its name as above:
+
+```{r GetNameOfNewEnvironmentThatPointsToAnExistingEnvironment}
 e_proxy <- env_of_envs$env21
-```
-
-Now, let's retrieve its name:
-
-```{r GetTheEnvironmentNameOfThisNewEnvironment}
 environment_name(e_proxy)
 ```
 
-What we get is a named array containing names of *all* the environments (in alphabetical order) that point to the same memory address (with their location as the array names). We can disable such behaviour of matching environments by memory address by setting the `matchname` parameter to `TRUE` so that the returned environments must match both the memory address *and* the given name:
+What we get is a named array containing the names of *all* the environments (in alphabetical order) that point to the same memory address (in this case `env21` and `e_proxy`). The names attribute of the array contains the environments where these environments are found (in this case `env_of_envs` defined in the global environment, and `R_GlobalEnv`, the global environment).
+
+We can disable the behaviour of matching environments *just* by memory address by setting the `matchname` parameter to `TRUE` so that the returned environments must match both the memory address *and* the given name:
 
 ```{r CallEnvironmentNameWithMatchNameTRUE1}
 environment_name(e_proxy, matchname=TRUE)
 ```
 
-Now the result is an *unnamed* array because there is only one environment matched by the search for the `e_proxy` environemnt. Furthermore, the result indicates that the environment is defined in the global environment, as otherwise the location where it were defined would be part of the name (as in e.g. `env1$e_proxy`).  
+Now the result is an *unnamed* array because there is only one environment matched by the search for the `e_proxy` environemnt. Furthermore, the result indicates that the environment is defined in the global environment, as otherwise the location where it were defined would be part of the name (as in e.g. `env1$e_proxy`).
 
 Note however that the last call could actually return *more than one environment* in the case where environments sharing the same name (`e_proxy` in the above example) were defined in different environments. We could have this situation if we defined an environment called `"e_proxy"` in environment `env_of_envs`, as shown in the following example:
 
@@ -246,7 +283,6 @@ Note that, in the second case when `f()` is called from `g()` --and not directly
 
 But if we call `env_of_envs$env21$f()` (instead of calling `f()` as above) from a function `h()` defined in the `env_of_envs$env21` environment, we get:
 
-
 ```{r GetExecutionEnvironmentName2}
 with(env_of_envs$env21, {
   f <- function() {
@@ -261,12 +297,16 @@ with(env_of_envs$env21, {
 env_of_envs$env21$h()
 ```
 
-i.e., when making explicit the location of function `f()`, such location is shown as part of the name of the execution environment (as opposed to seeing location `e_proxy` as above).
+i.e., when making explicit the location of function `f()`, such location is shown as part of the name of the execution environment (as opposed to seeing a "supposedly strange" location `e_proxy` as above).
 
-## 3) `obj_find()`: find the environment where (visible) objects exist
-With the `obj_find()` function we can check if an object exists in an environment of the workspace and retrieve all the environments where it has been found. In the case of packages, only *exported* objects can be found.
 
-All environments --including system environments, packages, user-defined environments, and optionally function execution environments-- are crawled and searched for the object. This includes any environments that are defined *within* other environments (*nested*), and it represents an enhancement to the built-in `exists()` function, which does *not* search for an object inside nested environments.
+
+
+\newpage
+## `obj_find()`: find the environments where (visible) objects exist
+With the `obj_find()` function we can check if an object exists in the whole workspace and retrieve all the environments where it has been found. In the case of packages, only *exported* objects are searched for.
+
+All environments --including system environments, packages, user-defined environments, and optionally function execution environments-- are crawled and searched for the object. This includes any environments that are defined *within* other environments (*nested*), and it therefore represents an enhancement to the built-in `exists()` function, which does *not* search for an object inside nested environments.
 
 The function returns a character array with all the environments where the object has been found.
 
@@ -293,7 +333,7 @@ with(env1, {
 
 #### Basic operation
 Now let's look for these objects:
-```{r LookForObjects1, warning=FALSE}
+```{r LookForObjects1}
 environments_where_obj_x_is_found = obj_find(x)
 cat("Object 'x' found
 in the following environments:"); print(environments_where_obj_x_is_found)
@@ -335,7 +375,7 @@ cat("The objects defined in the 'env1$vars_as_string' array are found
 print(environments_where_objs_are_found)
 ```
 
-Note how calling `obj_find()` from within the `env1` environment (which we do in order to resolve the `vars_as_string` variable --the argument of `obj_find()`) still searches for the objects everywhere. This is because parameter `globalsearch` is set to `TRUE`. If we set it to `FALSE` and we add `envir=env1` as searched environment, we would get a non `NULL` value only for the objects defined in the `env1` environment, as shown below:  
+Note how calling `obj_find()` from within the `env1` environment (which we do in order to resolve the `vars_as_string` variable --the argument of `obj_find()`) still searches for the objects everywhere. This is because parameter `globalsearch` is set to `TRUE` (by default). If we set it to `FALSE` and we add `envir=env1` as searched environment, we would get a non `NULL` value only for the objects defined in the `env1` environment, as shown below:  
 
 ```{r LookForObjectsUsingSAPPLYNoGlobalSearch}
 environments_where_objs_are_found = with(env1,
@@ -344,33 +384,33 @@ cat("The objects defined in the 'env1$vars_as_string' array are found
     in the following environments (no globalsearch):\n");
 print(environments_where_objs_are_found)
 ```
-NOTE: Even if we run `sapply()` inside environment `env1`, it's important to add parameter `envir=env1` to the call to `obj_find()`; if we don't add it, *no object is found* because the parent environment of the call to `obj_find()` is *not* `env1` but the `sapply()` execution environment, where the objects do not exist.
+NOTE: Even if we run `sapply()` inside environment `env1`, it is important to add parameter `envir=env1` to the call to `obj_find()`; if we don't add it, *no object is found* because the calling environment for `obj_find()` (i.e. its parent environment) is *not* `env1` but the `sapply()` execution environment, where the objects do not exist.
 
 We can also search for objects given as a symbol:
 
 ```{r LookForObjectAsASymbol}
 environments_where_obj_x_is_found = obj_find(as.name("x"))
-cat("Object 'x' found
-in the following environments:"); print(environments_where_obj_x_is_found)
+cat("Object 'x' found in the following environments:\n")
+print(environments_where_obj_x_is_found)
 ```
 
 Finally, we can also search for visible (exported) objects defined in packages:
 
 ```{r LookForObjectsDefinedInPackages}
 environments_where_obj_is_found = obj_find(aov)
-cat("Object 'aov' found
-in the following environments:"); print(environments_where_obj_is_found)
+cat("Object 'aov' found in the following environments:\n")
+print(environments_where_obj_is_found)
 ```
 
-## 4) `get_fun_name()`, `get_fun_calling()`, `get_fun_calling_chain()`: retrieve functions in the function calling chain (stack)
+
+
+
+\newpage
+## `get_fun_name()`, `get_fun_calling()`, `get_fun_calling_chain()`: retrieve functions in the function calling chain (stack)
 Functions `get_fun_name()`, `get_fun_calling()`, and `get_fun_calling_chain()` can be used to retrieve information about
-calling functions. The first two retrieve information about one function while the latter retrieves information about the functions in the calling chain or stack.
+calling functions. The first two retrieve information about *one* function while the latter retrieves information about the functions in the calling chain or stack, in the same spirit as `sys.calls()`.
 
-Following is an example that shows the difference between using the `get_fun_calling_chain()` function vs. the built-in `sys.call()` function to retrieve the calling stack. 
-
-In particular note:  
-- How easy it is to check what the calling function is (just do a string comparison as in e.g. `get_fun_calling() == "env1$f"`). On the contrary, when using `sys.call()` we first need to parse the output before making such a comparison. See **[this link](http://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine)** for more details.  
-- We get a data frame containing the chain of calling functions, from the most recent call to least recent, including function parameters if desired.  
+However, the `get_fun_calling_chain()` function was designed to give an output that is easier to handle than the output from `sys.calls()` in the practical scenario of making a decision based on the *name* of the calling function. The following section shows such an example.
 
 The signatures of the three aforementioned functions are:  
 `get_fun_name(n = 0)`  
@@ -378,6 +418,11 @@ The signatures of the three aforementioned functions are:
 `get_fun_calling_chain(n = NULL, showParameters = FALSE, silent = TRUE)`
 
 ### Examples
+The example of this section shows the practical impact of using the `get_fun_calling_chain()` function instead of the built-in `sys.calls()` function to retrieve the calling stack and make decisions based on the calling function names.
+
+In particular note:  
+- How easy it is to check what the calling function is (just do a string comparison as in e.g. `get_fun_calling() == "env1$f"`). On the contrary, when using `sys.call()` we first need to parse the output before making such a comparison. See **[this link](http://stackoverflow.com/questions/15595478/how-to-get-the-name-of-the-calling-function-inside-the-called-routine)** for more details.  
+- We get a data frame containing the chain of calling functions, from the most recent call to least recent, including function parameters if desired.
 
 #### Let's start with a few object definitions
 1) First we define a couple of new environments:
@@ -445,13 +490,19 @@ Note how easy it was (by using just a string comparison) to decide what action t
 
 Note also that, in order to decide between the two possible calling functions `env11$f()` or `env12$f()` we used `get_fun_calling()`, as opposed to `get_fun_name()`, because the latter returns *just* the function name, devoided of any environment name.
 
-## 5) `get_fun_env()`: retrieve a function's execution environment
-The `get_fun_env()` function can be used to easily place oneself in a function's execution environment and explore it.
+
+
+
+\newpage
+## `get_fun_env()`: retrieve a function's execution environment
+The `get_fun_env()` function can be used to retrieve the execution environment of a function by simply giving the function's name.
+
+This removes the need of knowing the *position* of the function in the calling chain, which is a piece of information that is required by the usual way of retrieving a function's execution environment, namely with `parent.frame()`.
 
 The following example illustrates.
 
 ### Basic operation
-Let's start defining a couple of functions that make up a function calling chain. The called function `h()` retrieves the memory address of its callee.
+Let's start defining a couple of functions that make up a function calling chain. The called function `h()` retrieves and displays the value of variable `x` both inside `h()` and inside the calling function `env1$g()`, whose execution environment is retrieved by `get_fun_env("env1$g")`.
 
 ```{r GetFunEnv}
 h <- function(x) {
@@ -481,20 +532,22 @@ print(get_fun_env("env1$g"))
 ```
 
 ### Advanced example that puts together `get_fun_calling()` and `get_fun_env()`
+In this example the parent frame of function `h()` (i.e. the execution environment of the calling function) is retrieved with `get_fun_env(get_fun_calling())`.
+
 ```{r GetFunEnvCombinedExample}
 h <- function(x) {
+  parent_function_name = get_fun_calling(n=1)
+  cat("Using get_fun_calling() and environment_name() functions:
+      The parent frame of function", get_fun_name(), "is", get_fun_calling(n=2), "\n")
   # Get the value of parameter 'x' in the execution environment of function 'env1$g'
   # The returned value is a list because there may exist different instances of the
   # same function.
-  parent_function_name = get_fun_calling(n=1)
-  cat("Using get_fun_calling() and environment_name() functions:
-      The parent frame of function", get_fun_name(), "is", get_fun_calling(n=1), "\n")
   xval_h = x
   xval_g = evalq(x, get_fun_env(parent_function_name)[[1]])
   cat("Using get_fun_name():
       The value of variable 'x' in function", get_fun_name(), "is", xval_h, "\n")
   cat("Using get_fun_env() and evalq() functions:
-      The value of variable 'x' inside function", parent_function_name, "is", xval_g, "\n") 
+      The value of variable 'x' inside function", parent_function_name, "is", xval_g,"\n") 
 }
 env1 <- new.env()
 with(env1, 
@@ -506,12 +559,18 @@ with(env1,
 env1$g() 
 ```
 
-## 6) `get_obj_name()`, `get_obj_value()`: retrieve the name/value of an object at a specified parent generation
-The `get_obj_name()` and `get_obj_value()` functions are intended to help track objects and their values as they are passed through different environments. The most useful of the two is `get_obj_name()`, because the *values* of linked objects are the same as they traverse the different environments, making `get_obj_value()` be almost the same as calling `deparse()` at any environment (except for some special cases described in the documentation).
+Clearly in the above examples we *already know* the position of function `env1$g()` in the calling chain, so using `parent.frame()` would have sufficed. However, using `get_fun_env()` could help in case the function calling chain from withing `h()` changes in the future, in which case we would not need to update the number of the parent frame in order to refer to the execution environment of function `env1$g()`.
+
+
+
+
+\newpage
+## `get_obj_name()`, `get_obj_value()`: retrieve the name/value of an object at a specified parent generation
+The `get_obj_name()` and `get_obj_value()` functions are intended to help track objects and their values as they are passed through different environments. The most useful of the two is `get_obj_name()`, because the *values* of linked objects are the same as they traverse the different environments, making `get_obj_value()` be almost the same as calling `eval()` or `evalq()` at any environment (except for some special cases described in the function's documentation). However, `get_obj_value()` provides some kind of shortcut to the required `eval()` or `evalq()` expressions that do the same thing.
 
 When called from within a function `get_obj_name()` can be used to know the name of the object that *leads* to a particular parameter a few generations back following the function calling chain. In other words, it helps us know the object in a given parent generation that is "responsible" for a function's parameter value.
 
-After learning a little more about `get_obj_name()`, one may have the impression that it gives the same result as the one provided by `deparse(substitute())`. However, this is not the case as is shown in the examples that follow.
+After learning a little more about `get_obj_name()`, one may have the impression that it gives the same result as the one provided by `deparse(substitute())`. However, this is **not** the case as is shown in the examples that follow.
 
 The signatures of these two functions are:  
 `get_obj_name(obj, n = 0, eval = FALSE, silent = TRUE)`
@@ -576,18 +635,20 @@ callGetObjNameAndCompareWithSubstitute(z)
 Note the conceptual difference: `deparse(substitute(y, parent.frame(n=2)))` retrieves the object assigned to `y` at parent generation 2 (`substitut`ion) and returns it as a string (`depars`ing), while `get_obj_name(y, n=2)` **first** *traces back* the object names in parent generations leading to parameter `y`, and **then** returns the name of the object at the specified parent generation.
 
 When `eval=TRUE`, `get_obj_name()` behaves the same way as `deparse()`, because the values of the objects leading to parameter `y` in parent generations is always the same and equal to the parameter's value. This result is the same as the one obtained by calling `get_obj_value()`. The following example illustrates:
+
 ```{r GetObjNameExampleCall2}
 y <- -9   # Global variable with the same name as the parameter of testing function
 z <- 3
 callGetObjNameAndCompareWithSubstitute(z, eval=TRUE)
 ```
+
 That is, calling `get_obj_name(y, n=n, eval=TRUE)` (or its equivalent `get_obj_value()`) retrieves the value of parameter `y` in parent generation `n`, which is the same in all parent generations and equal to the value of parameter `y` inside the calling function. Therefore, this is the same as the result of `deparse(y)`.
 On the other hand substituting or evaluating variable `y` in parent generation 2 concerns directly variable `y` in *that* parent generation.
 
 #### Finding the parameter path leading to a given function's parameter
 The `get_obj_name()` function can also be used to find the set of variables in the different parent environments leading to a specified variable in the current environment. A particular case of this is the parameter path in a function calling chain leading to a function's parameter, which is illustrated below.
 
-Let's define a set of simple functions that create a calling chain, `f1() -> f2() -> f3()` each of them having a parameter with a different names:
+Let's define a set of simple functions that create a calling chain, `f1() -> f2() -> f3()` each of them having a parameter with a different name (`x`, `y`, and `z`):
 
 ```{r RetrieveParameterPath}
 f1 <- function(x) {
@@ -607,6 +668,7 @@ f3 <- function(z) {
 w = 1.3
 f1(w)
 ```
+
 So, we clearly see the environments and variables leading to parameter `z` from `R_GlobalEnv$w`:  
 `R_GlobalEnv$w -> f1$x -> f2$y -> f3$z`
 
@@ -624,7 +686,7 @@ getObjValueAndCompareWithEval <- function(y) {
   eval_result = evalq(y, envir=parent.frame(n=parent_generation))
   cat("Result of get_obj_value(y, n=", parent_generation, "): ", get_obj_value_result,
       "\n\tConceptually this is the object LEADING to *parameter* 'y' 
-      evaluated at parent generation ",
+      \tevaluated at parent generation ",
       parent_generation, ".\n", sep="")
   cat("Result of evalq(y, envir=parent.frame(n=", parent_generation, ")): ", eval_result,
         "\n\tConceptually this is the evaluation of *variable* 'y' at parent generation ",
@@ -642,7 +704,11 @@ z <- 3
 callGetObjValueAndCompareWithEval(z)
 ```
 
-## 7) `get_obj_address()` and `address()`: retrieve the memory address of an object
+
+
+
+\newpage
+## `get_obj_address()` and `address()`: retrieve the memory address of an object
 Following are examples of using the `get_obj_address()` function to retrieve the memory address of an object, which is then checked by the `address()` function that calls the direct method (via a C function call) to retrieve an object's memory address. The differences between these two functions are also explained.
 
 In the `get_obj_address()` function, the object can be given either as a symbol or as an expression. If given as an expression, the memory address of the *result* of the expression is returned. If the result is yet *another* expression, the process stops, i.e. the memory address of that final expression is returned.
@@ -664,7 +730,7 @@ cat("Output of 'with(env1, get_obj_address(x))':\n"); print(obj_address2)
 
 Note especially the last case, where calling `get_obj_address()` from within the `env1` environment still searches for the object everywhere.
 
-We can restrict the memory address returned by making the environment where the object is located explicit --by either using the `$` notation or the `envir` parameter of `get_obj_address()`. In this case only the address of the specified object is returned, even if other objects with the same name exist within the specified environment. A few examples follow:
+We can restrict the memory addresses returned by making the environment where the object is located explicit --by either using the `$` notation or the `envir` parameter of `get_obj_address()`. In this case only the address of the specified object is returned, even if other objects with the same name exist within the specified environment. A few examples follow:
 
 ```{r GetObjectAddress2}
 get_obj_address(env1$x)
@@ -710,6 +776,10 @@ while running `get_obj_address()` on the non-existent object yields `NULL`:
 get_obj_address(env1$nonexistent)
 ```
 
+
+
+
+\newpage
 # Summing up
 We have described all the 11 visible functions defined in the `envnames` package and shown examples of using them, as follows:  
 
@@ -725,18 +795,22 @@ We have described all the 11 visible functions defined in the `envnames` package
     - searching for the object in user-defined environments and in function execution environments  
     - searching for the object recursively (i.e. in environments defined inside other environments)  
 
-4) We have used `get_fun_name()`, `get_fun_calling()`, `get_fun_calling_chain()` to get the stack of calling functions. These functions return the stack information in a manner that is much simpler than the built-in `sys.calls()` function, making it easier to check the_*names* of the calling functions.  
+4) We have used `get_fun_name()`, `get_fun_calling()`, `get_fun_calling_chain()` to get the stack of calling functions. These functions return the stack information in a manner that is much simpler than the built-in `sys.calls()` function, making it easier to check the *names* of the calling functions and make decisions that depend on them.  
 
-5) We have used `get_fun_env()` to get the execution environment of a given function in the calling stack, so that we can query objects that live within.  
+5) We have used `get_fun_env()` to get the execution environment of a function in the calling chain by *simply passing the function's name*, so that we can retrieve the value of objects that exist within.  
 
-6) We have used `get_obj_name()`, `get_obj_value()` to retrieve the name and value of the object leading to a given function's parameter.
+6) We have used `get_obj_name()`, `get_obj_value()` to retrieve the name and value of the object leading to a given function's parameter.  
 
 7) We have used `get_obj_address()`, `address()` to retrieve the memory address of an object. These functions provide a functionality that is not available in base R. Note that the `data.table` package also provides a function called `address()` to retrieve the memory address of an object; however the object is *not searched for in the whole workspace* as is the case with the `get_obj_address()` function in this package.  
 
 &nbsp;
 &nbsp;
 
-*This vignette was generated under the following platform:  *
+
+
+
+\newpage
+This vignette was generated under the following platform:
 ```{r SystemInfo, echo=FALSE}
 data.frame(SystemInfo=Sys.info()[c("sysname", "release", "version", "machine")])
 version

@@ -185,11 +185,11 @@ test_that("T7c) obj_find() can be called within sapply() on an array of object n
   expected = list(z=NULL, v="env_of_envs", u=NULL)
   observed = with(env_of_envs, sapply(alist, obj_find, globalsearch=FALSE))
   expect_equal(observed, expected)
-  # Test 3b: with envir=env_of_envs
+  # Test 3c: with envir=env_of_envs
   expected = list(z=NULL, v="env_of_envs", u=NULL)
   observed = with(env_of_envs, sapply(alist, obj_find, envir=env_of_envs))
   expect_equal(observed, expected)
-  # Test 3b: with both globalsearch=FALSE and envir=env_of_envs
+  # Test 3d: with both globalsearch=FALSE and envir=env_of_envs
   expected = list(z=NULL, v="env_of_envs", u=NULL)
   observed = with(env_of_envs, sapply(alist, obj_find, globalsearch=FALSE, envir=env_of_envs))
   expect_equal(observed, expected)
@@ -257,7 +257,7 @@ test_that("T10a) when obj_find() is called from within an environment using the 
 
   # test 3a
   # NOTE that when globalsearch=TRUE (the default) the expected result is NULL
-  # becaus env2$zz is searched in the whole workspace, but the name 'env2$zz' does NOT exist
+  # because env2$zz is searched in the whole workspace, but the name 'env2$zz' does NOT exist
   # in the whole workspace.
   # If we wanted 'zz' to be found when basing its search in the whole workspace
   # we should refer to 'zz' as 'env_of_envs$env2$zz', since this is the path to reach
