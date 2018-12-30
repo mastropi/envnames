@@ -328,12 +328,34 @@ get_env_names = function(envir=NULL, include_functions=FALSE) {
 				env_execenv_fun = c(env_execenv_fun, fun_exec_env)
 				#cat("level:", level, ", fun:", fun_name, ", memory:", fun_exec_address, ", location:", location_env_name, "\n")
 				
-				# Recursively look for user-defined environents defined inside the function execution environment
-				# (whenever the function is NOT "environment_name", which is the function calling this function where
-				# the environment passed as parameter 'env' will also match the environment whose name we want to retrieve)
-				# done-2017/10/15: (2017/10/15) We should make sure that the function environmnt_name() is the function INSIDE
-				# the envnames package and NOT a function defined by the user... (in which case we should process it!)
-				if (include_functions && !identical( environment(eval(as.name(fun_name), envir=parent.env(fun_exec_env))), asNamespace("envnames") )) {
+				# Recursively look for user-defined environments defined inside the function execution environment
+				# (but ONLY when the function execution environment is NOT the environment_name() function
+				# of the envnames package --i.e. when fun_name is NOT "environment_name" and the environment
+				# where that function is defined is NOT the envnames package)
+				# That would be the case when e.g. the user called e.g. environment_name(env1, include_functions=TRUE):
+				# such call at one point makes a call to get_env_names(..., include_functions=TRUE) and the process
+				# will come to this precise point here, where user-defined environments are searched for inside the
+				# function execution environment of environment_name() (this search will happen when fun_name = "environment_name"
+				# in this loop) and the environment passed as parameter to the call 'environment_name(env1, ...)'
+				# (env1) would be found...
+				# And we DO NOT WANT to find that environment (because that environment is just an environment
+				# that was created by the call to environment_name() which the user called to look for an environment named
+				# 'env1' in the workspace and possibly inside functions in the calling chain, but the user is NOT interested
+				# in the 'env1' environment created inside the environment_name() execution environment creted by
+				# their call to environment_name()!
+				# NOTE: The situation when the environment_name() function is part of the function calling chain
+				# and we don't want to analyze it is part of one of the tests in test-environment_name.r, which,
+				# at the time of writing this (2018/12/30) is the T21 test that defines an environment called
+				# 'envfun' inside a function. When calling environment_name(envfun, include_functions=TRUE),
+				# the result of such call should be ONLY ONE environment, as opposed to two environments,
+				# which would be the case should this check here on the "environment_name" function not be performed.
+				if (include_functions &&
+				    fun_name != "environment_name" && !identical( parent.env(fun_exec_env), asNamespace("envnames") )) {
+				      ## Recall that parent.env() gives the enclosing environment of the given environment,
+				      ## and in this case, this is the environment where the function whose execution environment
+				      ## given in fun_exec_env is defined (e.g. the environment where the environment_name() function is defined
+				      ## when fun_name = "environment_name")
+				  # Look for user-defined environments defined inside the function execution environment being analyzed
 				  env_user_names_in_fun = crawl_envs_in_env(fun_exec_env)
 				  if (length(env_user_names_in_fun) > 0) {
 				    # Use the location of the function as names attribute of the array

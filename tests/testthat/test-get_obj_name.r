@@ -179,6 +179,24 @@ test_that("T12b) (eval=TRUE) the name of unnamed environments
 # eval=TRUE ----------------------------------------------------------
 test_that("T21) expressions passed to get_obj_name() are evaluated when eval=TRUE,
           and the result associated to that value is returned as a string", {
+  # 0) Equivalence/Non-equivalence with deparse() and deparse(substitute()) depending on the type of the input parameter
+  # (Ref: Entry on 18-Sep-2017 on Project Tasks Excel)
+  f <- function(x) {
+    obj_name = get_obj_name(x, n=1, eval=TRUE)  # This gives the value of parameter x when called from the outside world via e.g. f(3)
+    if (is.numeric(x)) {
+      expect_equal(obj_name, deparse(x))
+      expect_equal(obj_name, deparse(substitute(x)))
+    } else {
+      expect_equal(paste('"', obj_name, '\"', sep=""), deparse(x))  # i.e. obj_name = "test" and deparse(x) = "\"test\""
+      expect_equal(paste('"', obj_name, '\"', sep=""), deparse(substitute(x)))  # i.e. obj_name = "test" and deparse(x) = "\"test\""
+    }
+
+    # Non-equivalence with evaluating x in the parent frame
+    expect_error( expect_equal(obj_name, deparse(substitute(x, parent.frame(1)))) )
+  }
+  f(3)
+  f("char-value")
+
   # 1) Name of an expression returning a numeric value is the numeric value given as a string
   expected = as.character(x) # as.character(x) converts the value of 'x' to a string (e.g. "5")
   observed = get_obj_name(get("x"), eval=TRUE)  # Note: get("x") returns the value of 'x' (e.g. 5)

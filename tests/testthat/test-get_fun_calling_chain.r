@@ -62,7 +62,6 @@ test_that("T0) the function returns NULL when called from outside a function", {
 })
 
 test_that("T1) the function calling chain with several functions in the chain is correctly created", {
-  # skip("not now")
   # browser()
   expected = data.frame(fun=c("h", "g", "f"), env=c("R_GlobalEnv", "env2", "env1"), envfun=c("R_GlobalEnv$h", "env2$g", "env1$f"), stringsAsFactors=FALSE)
   rownames(expected) = 1:nrow(expected) - 1
@@ -71,13 +70,43 @@ test_that("T1) the function calling chain with several functions in the chain is
 })
 
 test_that("T2) the function calling chain when the calling function is defined in an environment nested within
-          a *package* environment is correctly created (here we use an environment env_test whish should be 
-          temporarily defined in the envnames package)", {
-  skip("still to complete --need to define test environment env_test in the envnames package --temporarily because we don't want to include it in the package distribution... I guess")
-  expected = data.frame(fun=character(0), env=character(0), envfun=character(0), stringsAsFactors=FALSE)
+          a *package* environment is correctly created (here we use an environment that should already be 
+          defined in the envnames package)", {
+  # Prepare the environment by creating a function pointing to the env1$f() function defined above
+  testenv$f <- env1$f
+
+  # 1) Calling testenv$f()
+  # Note that we compare just the FIRST 3 rows because the FULL calling chain depends on how we run this test
+  # (e.g. whether by running the whole test_that() function, or by running just the lines and in addition
+  # that calling chain may be quite long)
+  expected = data.frame(fun=c("h", "g", "f"),
+                        env=c("R_GlobalEnv", "env2", "testenv"),
+                        envfun=c("R_GlobalEnv$h", "env2$g", "testenv$f"),
+                        stringsAsFactors=FALSE)
   rownames(expected) = 1:nrow(expected) - 1
-  observed = with(envnames:::env_test, f())
+  observed = testenv$f()[1:3,]
   expect_equal(observed, expected)
+
+  # 2) Calling testenv$f() using with()
+  # Note that we compare just the FIRST 7 rows because the FULL calling chain depends on how we run this test
+  # (e.g. whether by running the whole test_that() function, or by running just the lines and in addition
+  # that calling chain may be quite long)
+  expected = data.frame(fun=c("h", "g", "f",
+                              "eval", "eval",
+                              "with.default", "with"),
+                        env=c("R_GlobalEnv", "env2", "",
+                              "", "base",
+                              "base", "base"),
+                        envfun=c("R_GlobalEnv$h", "env2$g", "f",
+                                 "eval", "base$eval",
+                                 "base$with.default", "base$with"),
+                        stringsAsFactors=FALSE)
+  rownames(expected) = 1:nrow(expected) - 1
+  observed = with(envnames:::testenv, f())[1:7,]
+  expect_equal(observed, expected)
+
+  # Clean-up
+  rm("f", envir=testenv)
 })
 
 
