@@ -805,7 +805,7 @@ check_object_exists = function(obj, envir=globalenv()) {
 #' @return boolean indicating whether the given object represents a valid memory address.
 #' 
 #' @details
-#' Valid memory addresses depend on the architecture. For instance for:
+#' Valid memory addresses depend on the architecture. For instance:
 #' - for Windows 32-bit systems, an 8-bit representation (since 2^32 = 16^8)
 #' - for Windows 64-bit systems, a 16-bit representation (since 2^64 = 16^16)
 #' - for Linux Debian 64-bit systems, a 12-bit representation seems to be the case...
@@ -820,6 +820,11 @@ check_object_exists = function(obj, envir=globalenv()) {
 is_memory_address = function(x) {
 	result = FALSE
 
+	# Minimum and maximum number of hexadecimal digits in valid memory address
+	nhexdigits_min = 7    # This is the case for some Unix systems like Fedora, Solaris, and some Debian distributions
+	                      # (inferred from CHECK run by CRAN when submitting the package)
+	nhexdigits_max = 16   # Number of hexadecimal digits in a 64-bit system
+
 	ischaracter = try( is.character(x), silent=TRUE )
 	if (!inherits(ischaracter, "try-error") && ischaracter) {
 		# Check if x contains a string that is a memory address
@@ -827,11 +832,11 @@ is_memory_address = function(x) {
 		# Note that the blank space at the beginning or end of the pattern includes tabs (checked).
 		# Note also that if we want to use PERL regular expression we should use double escape to represent
 		# special characters as in grep("^\\s*<", obj, perl=TRUE)
-		isaddress = grep( paste("^ *<[0-9a-f]{8,16}> *$", sep=""), x, ignore.case=TRUE) ||
-		            grep( paste("^ *[0-9a-f]{8,16} *$", sep=""), x, ignore.case=TRUE) ||
-		            grep( paste("^ *<0x[0-9a-f]{8,16}> *$", sep=""), x, ignore.case=TRUE) ||
-		            grep( paste("^ *0x[0-9a-f]{8,16} *$", sep=""), x, ignore.case=TRUE) ||
-          		  grep( paste("^ *<environment: 0x[0-9a-f]{8,16}> *$", sep=""), x, ignore.case=TRUE)
+		isaddress = grep( paste("^ *<[0-9a-f]{", nhexdigits_min, ",", nhexdigits_max, "}> *$", sep=""), x, ignore.case=TRUE) ||
+		            grep( paste("^ *[0-9a-f]{", nhexdigits_min, ",", nhexdigits_max, "} *$", sep=""), x, ignore.case=TRUE) ||
+		            grep( paste("^ *<0x[0-9a-f]{", nhexdigits_min, ",", nhexdigits_max, "}> *$", sep=""), x, ignore.case=TRUE) ||
+		            grep( paste("^ *0x[0-9a-f]{", nhexdigits_min, ",", nhexdigits_max, "} *$", sep=""), x, ignore.case=TRUE) ||
+          		  grep( paste("^ *<environment: 0x[0-9a-f]{", nhexdigits_min, ",", nhexdigits_max, "}> *$", sep=""), x, ignore.case=TRUE)
 		if (!is.na(isaddress) && isaddress) {
 			result = TRUE
 		} else {

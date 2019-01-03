@@ -94,7 +94,7 @@
 #' environment_name(env1)                   		# "env1"
 #' 
 #' # Retrieve the name of an environment given as a memory address
-#' env1_address = get_obj_address(env1)
+#' env1_address = get_obj_address(globalenv()$env1)
 #' environment_name(env1_address)           		# "env1"
 #' 
 #' # Create a copy of the above environment
