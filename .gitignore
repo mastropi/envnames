@@ -1,6 +1,7 @@
-.Rproj.user
-.Rhistory
-.RData
+^\.Rproj\.user$
+^\.Rhistory$
+^\.RData$
+^\.Renviron$
 *.o
 *.dll
 inst/doc
