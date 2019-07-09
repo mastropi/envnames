@@ -1,0 +1,19 @@
+Version: 1.0
+
+RestoreWorkspace: Default
+SaveWorkspace: Default
+AlwaysSaveHistory: Default
+
+EnableCodeIndexing: Yes
+UseSpacesForTab: Yes
+NumSpacesForTab: 2
+Encoding: UTF-8
+
+RnwWeave: Sweave
+LaTeX: pdfLaTeX
+
+BuildType: Package
+PackageInstallArgs: --no-multiarch --with-keep.source --library=E:/Daniel/AppData/R/R-3.5.2/library
+PackageBuildBinaryArgs: --library=E:/Daniel/AppData/R/R-3.5.2/library
+PackageCheckArgs: --as-cran
+PackageRoxygenize: rd,collate,vignette

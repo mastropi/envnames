@@ -1,0 +1,7 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^other$
+^cran-comments.md$
+^\.travis\.yml$
+
+
