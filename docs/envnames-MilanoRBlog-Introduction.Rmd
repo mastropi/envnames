@@ -9,7 +9,15 @@ output:
 library(knitr)
 options(Encoding="UTF-8")
 options(warn=-1)
-opts_chunk$set(collapse=TRUE)
+opts_chunk$set(collapse=TRUE, results="hold", warning=FALSE)
+# We use:
+# - results="hold" so that all the output of a code chunk is shown ALL together
+# (as opposed to one output after each line of code in the chunk)
+# - warning=TRUE to avoid the "interrupted promise evaluation" warning, which is
+# only shown when running the obj_find(z) code inside the chunk but not in the R console.
+# Check all chunk options with: str(opts_chunk$get())
+# Ref for chunk options: https://yihui.name/knitr/options
+
 # Compile to PDF by running in CMD:
 # "C:\Program Files\R\RStudio\bin\pandoc\pandoc" -s -V geometry:margin=2cm envnames-MilanoRBlog-Introduction.html -o envnames-MilanoRBlog-Introduction.pdf
 ```
@@ -25,9 +33,9 @@ myenv <- new.env()
 environmentName(myenv)
 ```
 
-The frustration may have come when you see the empty string in the output from the `environmentName()` function, instead of `myenv`.
+The frustration may have come when you see the empty string in the output from the [environmentName()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/environment) function, instead of `myenv`.
 
-Gladly, the `environment_name()` function in the recently released [envnames](https://cran.r-project.org/web/packages/envnames) package comes to our rescue in these situations, as explained in the upcoming sections.
+Gladly, the [environment_name()](https://rdrr.io/cran/envnames/man/environment_name.html) function in the recently released [envnames](https://cran.r-project.org/web/packages/envnames) package comes to our rescue in these situations, as explained in the upcoming sections.
 
 ## The `environment_name()` function does give us the name of the environment
 We can use the [environment_name()](https://rdrr.io/cran/envnames/man/environment_name.html) function of the package to retrieve the name of the user-defined environment we created above:
@@ -46,20 +54,24 @@ environment_name(address(myenv))
 
 where we have used the package's [address()](https://rdrr.io/cran/envnames/man/address.html) function to show that the **environment name can also be retrieved from the environment's memory address**, which is where this function becomes truly useful.
 
-In fact, this may come really handy when debugging a program and navigating through environments. In those situations it is not rare to come across a memory address that represents an environment and we may want to know which environment it represents. To this end, we can simply copy & paste the memory address shown in the R console (e.g. `"<environment: 0x00000000147499b0>"`) and run `environment_name("<environment: 0x00000000147499b0>")` to get the name of the environment represented by the memory address.
+In fact, this may come handy when debugging a program and navigating through environments. In those situations it is not rare to come across a memory address that represents an environment and we may want to know which environment it represents. To this end, we can simply copy & paste the memory address shown in the R console (e.g. `"<environment: 0x00000000147499b0>"`) and run `environment_name("<environment: 0x00000000147499b0>")` to get the name of the environment represented by the memory address.
 
 ## How it works
 The `envnames` package is capable of accessing the name of *any* environment --be it a system environment, a package, a namespace, a user-defined environment, or even a function execution environment-- by way of a lookup table that maps environment names to their memory addresses. The lookup table is created every time one of the 11 visible functions defined in the package is run, thus updating the map to the latest changes in the workspace.
 
 ## Capabilities worth mentioning
 
-### Looking for an object in nested environments
-The following picture shows an environment space that highlights the connection between package and system environments (child `->` parent relationships) and in particular the possibility of defining and working with nested environments, which are the topic of this section.  
+### Looking for an object in user-defined environments
+The following picture shows an environment space that highlights the connections between package and system environments (child `->` parent relationships) and in particular the use of user-defined environments (`outer_env` and `nested_env`), which are part of the global environment and may be regarded as *nested* environments (within the global environment).  
 ![](E:\Daniel\Projects\R\packages\envnames\docs\EnvironmentSpaceExample.png){width=7in}
 
-The package includes the [obj_find()](https://rdrr.io/cran/envnames/man/obj_find.html) function that is able to look for objects in the whole workspace **including nested environments**. The following example, where environments and objects are defined to mimic the situation shown in the above picture, illustrates the search for objects `x` and `y` in the whole workspace.
+The package includes the [obj_find()](https://rdrr.io/cran/envnames/man/obj_find.html) function that is able to look for objects in the whole workspace **including user-defined environments**, even if they are **nested in other user environments**.
 
-First we define objects `x` and `y`:
+This is an important feature because the R built-in function [exists()](https://www.rdocumentation.org/packages/base/versions/3.6.0/topics/exists) does *not* look for objects in user-defined environments, but only in system and package environments. The only way to make `exists()` look for objects in user-defined environments is to specify them explicitly --*but this doesn't help if we don't know where the object may reside!*
+
+The following example illustrates the above limitations of the `exists()` function, and how such limitations are overcome with the `obj_find()` function.
+
+First we define the necessary environments, including objects `x` and `y`, as shown in the picture:
 ```{r NestedEnvironments}
 outer_env <- new.env()
 outer_env$nested_env <- new.env(parent=emptyenv())
@@ -72,15 +84,26 @@ with(outer_env,
 	})
 ```
 
-Now we look for the objects using `obj_find(x)` and `obj_find(y)`:
+Now we check whether the objects exist using the `exists()` function:
+```{r CheckObjectsExist}
+cat("\n'x' exists?: ", exists("x"), "\n")
+cat("\n'y' exists?: ", exists("y"), "\n")
+```
+We clearly see two important limitations of the `exists()` function:  
+- it does *not* check for existence in *user-defined* environments (`y` is not found, but it exists in the `nested_env` environment),  
+- if the object exists, it doesn't tell us *where* it is found.
+
+Instead, the following calls to the `obj_find()` function tell us the whole picture and is informative about the location of the objects (if existing):  
 ```{r LookForObjects}
 cat("\nObject 'x' is found in the following environments:\n",
     paste(obj_find(x), collapse="\n"), "\n", sep="")
 cat("\nObject 'y' is found in the following environments:\n",
     paste(obj_find(y), collapse="\n"), "\n", sep="")
+cat("\nObject 'nonexisting' is found in the following environments:\n",
+    paste(obj_find(nonexisting), collapse="\n"), "\n", sep="")
 ```
 
-We see that object `x` is found in all three environments where it is defined, including the `nested_env` environment that is *nested* in `outer_env`. The path to reach each object is shown using the `$` notation. Note also that the global environment shows up with the name `R_GlobalEnv`.
+Not only is object `y` found, but object `x` is found in *all* three environments where it is defined, including the user-defined environments `outer_env` and `nested_env`, despite the fact that `nested_env` is *nested* in `outer_env`. The path to reach each object is shown using the `$` notation, which is the symbol used to access the object's value, as achieved by `outer_env$nested_env$x`.
 
 ### Looking for an object in a function's execution environment
 If we are working inside a function, we could also look for objects defined in the function calling chain by specifying `include_functions=TRUE`, as shown in the following example:
@@ -100,14 +123,13 @@ with(env1,
 env1$g()
 ```
 
-where we see all the (8) function environments where `x` has been passed during the execution of the code, plus 3 regular environments. For now, regular environments cannot be distinguished from function environments in the output returned by `obj_find()`, but this will be improved in a future release where the plan is to add the `()` symbol at the end of function environment names, e.g. `env1$g()`.
+where we see all the (8) function environments where `x` has been passed during the execution of the code, plus three non-function environments. For now, regular environments cannot be distinguished from function environments in the output returned by `obj_find()`, but this will be improved in a future release where the plan is to add the `()` symbol at the end of function environment names, e.g. `env1$g()`.
 
 \newpage
 ## Summary
 We have seen a few ways in which the [envnames](https://cran.r-project.org/web/packages/envnames) package can help us work with user-defined environments, namely:  
-- **look for objects** in the workspace, including *nested environments*, and *function execution environments*.  
-- **see the name of the environments** where those objects reside, be it a system environment, a package, a namespace, a user-defined environment or, when working inside a function, the name of the function whose execution environment is hosting the object.  
-- **know the name of an environment given its memory address** (specially useful in debug contexts)  
+- use the [obj_find()](https://rdrr.io/cran/envnames/man/obj_find.html) function to **look for objects** in the workspace, and **retrieve the name of the environments** where they reside, be it a system environment, a package, a namespace, a **user-defined environment** or, when working inside a function, the name of the function whose execution environment is hosting the object.    
+- use the [environment_name()](https://rdrr.io/cran/envnames/man/environment_name.html) function to **find the name of an environment given its memory address** (specially useful in debug contexts)  
 
 To learn more about further capabilities provided by the package, I invite you to take a look at the **[vignette](https://cran.r-project.org/web/packages/envnames/vignettes/envnames.pdf)**.
 

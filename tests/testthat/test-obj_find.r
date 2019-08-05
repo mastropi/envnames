@@ -376,6 +376,8 @@ test_that("T21) specifying include_functions=TRUE returns ALL the function envir
         
         # When calling obj_find() from outside expect_equal(), the object is found in less environments
         observed = obj_find(y, include_functions=TRUE)
+        print("Test form 1:")
+        print(observed)
         expect_equal(observed, sort(c("eval", "R_GlobalEnv")))
   }, silent=TRUE)
 
@@ -390,6 +392,8 @@ test_that("T21) specifying include_functions=TRUE returns ALL the function envir
       
       # When calling obj_find() from outside expect_equal(), the object is only found in the global environment!
       observed = obj_find(y, include_functions=TRUE)
+      print("Test form 2:")
+      print(observed)
       expect_equal(observed, c("eval", "R_GlobalEnv"))
     }, silent=TRUE)
 
@@ -404,6 +408,8 @@ test_that("T21) specifying include_functions=TRUE returns ALL the function envir
         
         # When calling obj_find() from outside expect_equal(), the object is only found in the global environment!
         observed = obj_find(y, include_functions=TRUE)
+        print("Test form 3:")
+        print(observed)
         expect_equal(observed, "R_GlobalEnv")
       }, silent=TRUE)
 

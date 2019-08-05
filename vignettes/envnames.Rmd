@@ -52,7 +52,7 @@ For more information and examples, see below the sections on functions `get_obj_
 
 Apart from this core functionality, additional tools were added during the package development process which include:
 
-- an enhancement of the built-in `exists()` function with the capability of searching objects *recursively* --i.e. in  environments defined inside *other* environments--, as well as searching objects that are the *result of expressions*. This functionality is provided by the `obj_find()` function.  
+- an enhancement of the built-in `exists()` function with the capability of searching objects inside *user-defined environments* and *recursively* --i.e. in *nested* environments, defined inside other environments--, as well as searching objects that are the *result of expressions*. This functionality is provided by the `obj_find()` function.  
 - a simplification of the output obtained when retrieving the calling function name and the stack of calling functions, currently provided by the built-in function `sys.calls()`. This functionality is provided by functions `get_fun_name()`, `get_fun_calling()`, and `get_fun_calling_chain()`, which return simple strings or array of strings with the function names of interest.  
 - the retrieval of the memory address of an object. This functionality is provided by the `get_obj_address()` function.  
 
@@ -306,7 +306,9 @@ i.e., when making explicit the location of function `f()`, such location is show
 ## `obj_find()`: find the environments where (visible) objects exist
 With the `obj_find()` function we can check if an object exists in the whole workspace and retrieve all the environments where it has been found. In the case of packages, only *exported* objects are searched for.
 
-All environments --including system environments, packages, user-defined environments, and optionally function execution environments-- are crawled and searched for the object. This includes any environments that are defined *within* other environments (*nested*), and it therefore represents an enhancement to the built-in `exists()` function, which does *not* search for an object inside nested environments.
+All environments --including system environments, packages, user-defined environments, and optionally function execution environments-- are crawled and searched for the object. This includes any environments that are defined *within* other environments (*nested*).
+
+It therefore represents an enhancement to the built-in `exists()` function, which does *not* search for an object inside user-defined and nested environments, nor tells use *where* the object is defined.
 
 The function returns a character array with all the environments where the object has been found.
 
@@ -794,6 +796,7 @@ We have described all the 11 visible functions defined in the `envnames` package
 3) We have used `obj_find()` to find an object in the workspace. This function extends the functionality of the built-in `exists()` function by:  
     - searching for the object in user-defined environments and in function execution environments  
     - searching for the object recursively (i.e. in environments defined inside other environments)  
+    - showing the environment where the object is defined  
 
 4) We have used `get_fun_name()`, `get_fun_calling()`, `get_fun_calling_chain()` to get the stack of calling functions. These functions return the stack information in a manner that is much simpler than the built-in `sys.calls()` function, making it easier to check the *names* of the calling functions and make decisions that depend on them.  
 
