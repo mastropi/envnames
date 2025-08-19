@@ -101,7 +101,7 @@ test_that("T4) the name of objects inside environments are correctly returned", 
   expected = "x"
   observed = with(env1, get_obj_name(x))
   expect_equal(observed, expected)
-  
+
   expected = "env1$x"
   observed = get_obj_name(env1$x)
   expect_equal(observed, expected)
@@ -120,7 +120,7 @@ test_that("T11) the name of user-defined environments when given through their v
   expected = "env1"
   observed = get_obj_name(env1)
   expect_equal(observed, expected)
-  
+
   expected = "env_of_envs$env2"
   observed = get_obj_name(env_of_envs$env2)
   expect_equal(observed, expected)
@@ -162,10 +162,10 @@ test_that("T12b) (eval=TRUE) the name of unnamed environments
 
   # User-defined environment (given by its address as we do by using 'globalenv()$' in front of the environment name)
   expect_equal(get_obj_name(globalenv()$env1, eval=TRUE), "env1")
-            
+
   # Function execution environment
   expect_equal(get_obj_name(environment(), eval=TRUE), "base$eval")
-  
+
   # Test the case where we retrieve the name of an unnamed environment deep down in the calling chain
   # (so that the loop performed on nback in get_obj_name is actually tested on function execution environments!
   # (which are given in the form <environment: 0x000000001b485670>))
@@ -261,7 +261,7 @@ test_that("T21) Object names are correcly returned when eval=FALSE at different 
   expect_equal( h(fNull, n=1, silent=silent), names(as.list(h))[1] )
 })
 
-test_that("T22) The value returned when eval=TRUE is the same as the return value of deparse() and doesn't change with n.
+test_that("T22) The value returned when eval=TRUE is the same as the return value of deparse() (converted to single string) and doesn't change with n.
           In fact, the value of the object that is passed through different functions is always the same inside each function!", {
   silent = TRUE
 
@@ -269,13 +269,13 @@ test_that("T22) The value returned when eval=TRUE is the same as the return valu
   expect_equal( h(v[2], n=2, eval=TRUE, silent=silent), v[2] )
   expect_equal( h(v[2], n=1, eval=TRUE, silent=silent), v[2] )
   expect_equal( h(v[2], n=0, eval=TRUE, silent=silent), v[2] )
-  
+
   # When the object passed is a more complicated object (vector, function, etc.)
   expect_equal( h(v, n=0, eval=TRUE, silent=silent), deparse(v) )
   expect_equal( h(v, n=1, eval=TRUE, silent=silent), deparse(v) )
   expect_equal( h(fNull(), n=0, eval=TRUE, silent=silent), NULL )
-  expect_equal( h(fNull, n=0, eval=TRUE, silent=silent), deparse(fNull) )
-  expect_equal( h(fNull, n=1, eval=TRUE, silent=silent), deparse(fNull) )
+  expect_equal( h(fNull, n=0, eval=TRUE, silent=silent), paste(deparse(fNull), collapse = "\n"))
+  expect_equal( h(fNull, n=1, eval=TRUE, silent=silent), paste(deparse(fNull), collapse = "\n"))
 })
 # Tests on n > 0 ----------------------------------------------------------
 
@@ -287,12 +287,12 @@ test_that("T31) the function works on arrays and lists and using sapply()", {
   expected = as.character(v[1])
   observed = get_obj_name(v[1], eval=TRUE)
   expect_equal(observed, expected)
-  
+
   # Out of range element
   expected = "NA_character_"
   observed = get_obj_name(v[5], eval=TRUE)
   expect_equal(observed, expected)
-  
+
   # sapply()
   expected = as.character(v)
   names(expected) = v
@@ -309,7 +309,7 @@ test_that("T31) the function works on arrays and lists and using sapply()", {
   expected = as.character(alist[[1]])  # Note that deparse(alist[1]) gives "\"x\"", and as.character() returns "x"
   observed = get_obj_name(alist[[1]], eval=TRUE)
   expect_equal(observed, expected)
-  
+
   # Out of range element as a vector
   expected = deparse(alist[5])
   observed = get_obj_name(alist[5], eval=TRUE)  # Note that calling alist[[5]] gives "out of bounds" error
@@ -318,13 +318,13 @@ test_that("T31) the function works on arrays and lists and using sapply()", {
   expected = NULL   # (2017/03/17) get_obj_name() returns "alist[[5]]"... I think it should return NULL...
   observed = get_obj_name(alist[[5]], eval=TRUE)  # Note that calling alist[[5]] gives "out of bounds" error
   expect_equal(observed, expected)
-  
+
   # sapply()
   expected = as.character(alist)
   names(expected) = names(alist)
   observed = sapply(alist, get_obj_name, eval=TRUE)
   expect_equal(observed, expected)
-  
+
   #--- List of quoted objects
   # On one element as a vector
   expected = deparse(alist_quoted[1])  # This is "list(x)" NOT "x"
@@ -334,12 +334,12 @@ test_that("T31) the function works on arrays and lists and using sapply()", {
   expected = "x"
   observed = get_obj_name(alist_quoted[[1]], eval=TRUE)
   expect_equal(observed, expected)
-  
+
   # sapply()
   expected = as.character(alist_quoted)
   observed = sapply(alist_quoted, get_obj_name, eval=TRUE)
   expect_equal(observed, expected)
-  
+
   #--- List of expressions (e.g. functions, array elements, etc.)
   # On one element as a list element
   expected = "fNull()"
@@ -396,7 +396,13 @@ test_that("T93) the name of NULL is NULL, and the name of NA is \"NA\", regardle
   expect_equal( get_obj_name(NA, eval=FALSE), "NA" )
   expect_equal( get_obj_name(NA, eval=TRUE), "NA" )
 })
-# Extreme cases -----------------------------------------------------------
+
+test_that("objects deparsing to more than 60 characters do not cause an error", {
+  # related to #12
+  expect_no_error(
+    get_obj_name(data.frame(x = 1:8, y = c("a", "b", "c", "d", "e", "f", "g", "h")), n = 1)
+  )
+})
 
 
 # 3.- Cleanup -------------------------------------------------------------

@@ -270,6 +270,13 @@ test_that("T3OLD) the address of an object passed as a string is correctly retur
   expect_equal(get_obj_address("env1"), expected)
   expect_equal(get_obj_address("x", envir=globalenv()$env1), envnames:::address(globalenv()$env1$x))
 })
+
+test_that("Empty data frames and lists do not cause errors", {
+  # Related to issue #12
+  expect_no_error(get_obj_address(data.frame()))
+  expect_no_error(get_obj_address(list()))
+})
+
 #---------------------------------- Extreme cases -----------------------------------
 
 # 3.- Cleanup -------------------------------------------------------------

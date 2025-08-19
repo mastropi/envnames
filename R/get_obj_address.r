@@ -1,8 +1,8 @@
 #' Return the memory address of an object
-#' 
+#'
 #' Return the memory address of an object after recursively searching for the object in all the environments defined
 #' in a specified environment or in all the environments defined in the whole workspace.
-#' 
+#'
 #' @param obj object whose memory address is requested. It can be given as a variable name or an expression.
 #' Strings representing object names are not interpreted and return \code{NULL}.
 #' @param envir environment where the object should be searched for. All parent environments of
@@ -23,14 +23,14 @@
 #' The object is first searched recursively in all environments defined in the specified environment (if any),
 #' by calling \code{obj_find}.
 #' If no environment is specified, the object is searched recursively in the whole workspace.
-#' 
+#'
 #' The memory address is then retrieved for every object found in those environments having the same name
 #' as the given object \code{obj}.
-#' 
+#'
 #' Strings return \code{NULL} but strings can be the result of an expression passed as argument to this function.
 #' In that case, the string is interpreted as an object and its memory address is returned as long as
 #' the object exists.
-#' 
+#'
 #' If \code{envmap} is passed it should be a data frame providing an address-name pair lookup table
 #' of environments and should contain at least the following columns:
 #' \itemize{
@@ -49,8 +49,8 @@
 #' Such \code{envmap} data frame can be created by calling \link{get_env_names}.
 #' Use this parameter with care, as the matrix passed may not correspond to the actual mapping of existing
 #' environments to their addresses and in that case results may be different from those expected.
-#' 
-#' @return 
+#'
+#' @return
 #' The 8-digit (32-bit architectures) thru 16-digit (64-bit architectures) memory address of
 #' the input object given as a string enclosed in <>  (e.g. \code{"<0000000005E90988>"})
 #' (note that Ubuntu Debian may use 12-digit memory addresses),
@@ -63,16 +63,16 @@
 #' \item the object does not exist in the given environment.
 #' \item the object is an expression that cannot be evaluated in the given environment.
 #' }
-#' 
+#'
 #' Note that for the last case, although constants have a memory address, this address is meaningless as
 #' it changes with every invocation of the function. For instance, running
 #' \code{address(3)} several times will show a different memory address each time, and that is why
 #' \code{get_obj_address} returns \code{NULL} in those cases.
-#' 
+#'
 #' When \code{envir=NULL} (the default) or when an object exists in several environments,
 #' the memory address is returned for all of the environments where the object is found. In that case, the addresses are
 #' stored in an array whose names attribute shows the environments where the object is found.
-#' 
+#'
 #' @examples
 #' env1 = new.env()
 #' env1$x = 3                       # x defined in environment 'env1'
@@ -84,14 +84,14 @@
 #'                                  # returns a named array with the memory address of all its
 #'                                  # occurrences, where the names are the names of the
 #'                                  # environments where x was found.
-#' 
+#'
 #' # Memory addresses of objects whose names are stored in an array and retrieved using sapply()
 #' env1$y <- 2;
 #' objects <- c("x", "y")
 #' sapply(objects, FUN=get_obj_address, envir=env1)	# Note that the address of object "x"
 #'                                                  # is the same as the one returned above
 #'                                                  # by get_obj_address(x, envir=env1)
-#' 
+#'
 #' # Memory address of elements of a list
 #' alist <- list("x")
 #' get_obj_address(alist[[1]])      # memory address of object 'x'
@@ -113,7 +113,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 			obj_name = get_obj_name(obj, n=n+1, silent=TRUE)
 			if (!is.null(obj_name) && obj_name != "" && exists(obj_name, envir=envir, inherits=FALSE)) {
 				## NOTE: The conditions !is.null() and != "" are in place because these are not valid arguments for the
-				## exists() function. All the other names including invalid names such as "<a" are valid arguments for exists(). 
+				## exists() function. All the other names including invalid names such as "<a" are valid arguments for exists().
 				obj_address = address(eval(as.name(obj_name), envir=envir))  # This eval() does NOT need to be enclosed in try() because the object exists() in 'envir'
 				## NOTE: we are using eval(as.name(obj_name)) instead of eval(obj).
 				## It's strange that the latter does not work because eval() first evaluates obj in the calling environment
@@ -122,8 +122,8 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 				## is not found when envir is not the Global Environment!
 				## We can neither use evalq() because evalq() prevents 'obj' from being evaluated in the
 				## current execution environment and in that case the address() function would be returning
-				## the memory address of the local variable 'obj', not of the variable referenced by 'obj'!  
-				
+				## the memory address of the local variable 'obj', not of the variable referenced by 'obj'!
+
 				## NOTE also that eval() presumably looks for the object recursively in all parent environments
 				## if it is not found in the 'envir' environment, so in principle it does the same thing that
 				## exists() does when inherits=TRUE, and we should be ok here in that eval() should not give an
@@ -131,7 +131,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 			} else {
 				obj_address = NULL
 			}
-			
+
 			if (is.null(obj_address)) {
 			  #---- 2.- Check if 'obj' was given as an expression that includes the environment path -----
 			  # This is the case when e.g. obj = env1$x, where env1 is an environment
@@ -152,7 +152,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 
 			 if (is.null(obj_address)) {
 			    # Still the object's address could not be retrieved...
-			    
+
 			    #------------ 3. Try to retrieve the object's address after evaluating the object --------
 			    # This is the case when e.g. obj is an expression as in 'objects[1]'
 			    # Note that we set the warn option to "no warning" in order to
@@ -218,7 +218,8 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
 	set_option_warn_to_nowarning()
 	is_obj_null_na_string = try( is_null_or_na(obj) || is_string(obj), silent=TRUE )
 	reset_option_warn()
-	if (!inherits(is_obj_null_na_string, "try-error") && is_obj_null_na_string) {
+	# is_obj_null_na_string can evaluate to NA in some cases, NA is treated as false here.
+	if (!inherits(is_obj_null_na_string, "try-error") && isTRUE(is_obj_null_na_string)) {
 	  return(NULL)
 	}
 
@@ -265,7 +266,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
   					# envir=.GlobalEnv in this case.
   				  # - setting envir=.GlobalEnv is not a problem of overriding the 'envir' parameter because
   				  # we don't even get to this point when the envir parameter is set to a particular environment
-  				  # since these statements are part of the block 'if (is.null(envir))'. 
+  				  # since these statements are part of the block 'if (is.null(envir))'.
   					obj_addresses = c(obj_addresses, get_obj_address0(obj, envir=.GlobalEnv, n=n+1))
   				} else {
   					# Check whether the environment whose name is 'envir_name' is a "user-defined environment or a function
@@ -276,7 +277,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
   						# It's a user-defined or function environment
   					  # => Get the environment object associated to 'envir_name' by evaluating envir_name as an expression
   					  # (i.e. using parse() to convert the string in 'envir_name' to an expression)
-  					  
+
   					  # Notes:
   					  # - we evaluate the expression in envir=parent.frame(). This is important to avoid name collision
   					  # when envir_name happens to be "e" (i.e. the user has defined an environment with name "e"), whose name
@@ -290,7 +291,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
   					  # pairs map! (the user could pass anything... even this happened in Sep-2017 when testing the package
   					  # where a completely controlled environment generated an inconsistent envmap table --recall this case with
   					  # the "object 'doTryCatch' not found" error triggered from test-get_obj_value.r)
-  					  
+
   					  # First get the environment as if it were an user-defined environment (as opposed to a function execution environment)
   					  # Note that we DESTANDARDIZE the environment name 'envir_name' in case the user-defined environment
   					  # is given as in e.g. "R_GlobalEnv$env1", in which case the eval-parse-ing of it will not find env1
