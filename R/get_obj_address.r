@@ -298,7 +298,7 @@ get_obj_address = function(obj, envir=NULL, envmap=NULL, n=0, include_functions=
   					  # but the eval-parse-ing of ".GlobalEnv$env1", i.e. of the result of the destandardization, will))
   					  e = try( eval(parse(text=destandardize_env_name(envir_name)), envir=parent.frame()), silent=TRUE )
   					  # Check if the environment is actually a function execution environment
-  					  if (class(e) == "function" && include_functions) {
+  					  if (inherits(e, "function") && include_functions) {
   					    # Get the function's execution environment using its name and address
   					    envir_address = objects_found$env_addresses[i]
   					    e = get_fun_env(envir_address)

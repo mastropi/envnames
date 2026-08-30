@@ -1,5 +1,6 @@
 \docType{package}
 \name{envnames-package}
+\encoding{UTF-8}
 \alias{envnames-package}
 \alias{envnames}
 \title{Track user-defined environment names}
@@ -29,9 +30,9 @@ Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
 \references{
 Motivation for developing this package:  
 
-- A comment by Quantide's instructor Andrea Spano during his "R for developers" course (\url{http://www.quantide.com/courses-overview/r-for-developers}) about the impossibility of retrieving the name of user-defined environments.  
+- A comment by Andrea Spanò, instructor of the "R for developers" course I took at Quantide in 2014 about the impossibility of retrieving the name of user-defined environments.  
 
-- A question posted by Gabor Grothendieck at the R-Help forum (\url{https://stat.ethz.ch/pipermail/r-help/2010-July/245646.html})
+- A question posted in 2010 by Gabor Grothendieck at the R-Help forum (\url{https://stat.ethz.ch/pipermail/r-help/2010-July/245646.html})
 }
 \keyword{ package }
 \keyword{ environment }
@@ -61,19 +62,13 @@ environment_name(env3)                       # named array with value "env3" and
 environment_name(env9)                       # NULL (env9 does not exist)
 environment_name(env_of_envs)                # named array with value "env_of_envs" and name
                                              # "R_GlobalEnv"
-# (2018/11/19) THE FOLLOWING IS AN IMPORTANT TEST BECAUSE IT TESTS THE CASE WHERE THE ADDRESS-NAME
-# LOOKUP TABLE CONTAINS ONLY ONE ROW (namely the row for the env11 environment present in
-# env_of_envs), WHICH CANNOT BE TESTED VIA TESTS USING THE testthat PACKAGE BECAUSE IN THAT CONTEXT
-# THE LOOKUP TABLE NEVER HAS ONLY ONE ROW!
-# (for more info about this limitation see the test commented out at the beginning of
-# test-get_env_names.r.
 environment_name(env11, envir=env_of_envs)   # "env11"
 environment_name(env11)                      # named array with value "env11" and name
                                              # "R_GlobalEnv$env_of_envs"
 
 
-### Example 2: Retrieve calling functions and their environments
-### Note in particular the complicated use of sys.call() to retrieve the call as a string... 
+### Example 2: Different methods to retrieve the name of calling functions and their environments
+### Note in particular the complicated use of sys.call() to retrieve the calling function name... 
 # Define two environments
 env1 <- new.env()
 env2 <- new.env()
@@ -85,7 +80,7 @@ with(env2,
        fun_current_name = get_fun_name()
 
        # Get the name of the calling environment and function
-			 fun_calling_name = get_fun_calling()
+       fun_calling_name = get_fun_calling()
 
        # Show calling environment using and not using the envnames package
        cat("Now inside function", fun_current_name, "\n")
@@ -117,7 +112,7 @@ with(env1,
 env1$f(7)
 
 
-### Example 3: find the location of an object
+### Example 3: find the location of an object using obj_find() (needs the objects of Example 2)
 # This differs from the R function exists() because it also searches
 # in user-defined environments and any environments wihin.
 obj_find(f)                   # "env1"

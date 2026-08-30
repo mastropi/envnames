@@ -13,7 +13,7 @@ RnwWeave: Sweave
 LaTeX: pdfLaTeX
 
 BuildType: Package
-PackageInstallArgs: --no-multiarch --with-keep.source --library=E:/Daniel/AppData/R/R-3.5.2/library
-PackageBuildBinaryArgs: --library=E:/Daniel/AppData/R/R-3.5.2/library
+PackageInstallArgs: --no-multiarch --with-keep.source --library=E:/Daniel/AppData/R/R-4.6.1/library
+PackageBuildBinaryArgs: --library=E:/Daniel/AppData/R/R-4.6.1/library
 PackageCheckArgs: --as-cran
 PackageRoxygenize: rd,collate,vignette

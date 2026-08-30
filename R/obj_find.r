@@ -348,7 +348,7 @@ obj_find = function(obj, envir=NULL, envmap=NULL, globalsearch=TRUE, n=0, return
 	# Check that the value of parameter 'envir' is an environment
   error = FALSE
   tryCatch(
-    if (class(envir) != "environment") {
+    if (!inherits(envir, "environment")) {
 			error_NotValidEnvironment(envir_name)
       error = TRUE
     },

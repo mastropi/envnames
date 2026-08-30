@@ -1,18 +1,23 @@
 Package: envnames
 Type: Package
 Title: Track User-Defined Environment Names
-Version: 0.4.0
-Date: 2019-01-03
-Author: Daniel Mastropietro
+Encoding: UTF-8
+Version: 0.4.2
+Date: 2026-09-01
+Author: Daniel Mastropietro [aut, cre]
+Authors@R: person(given = "Daniel",
+                  family = "Mastropietro",
+                  role = c("aut", "cre"),
+                  email = "mastropi@uwalumni.com")
 Maintainer: Daniel Mastropietro <mastropi@uwalumni.com>
-Description: Set of functions to keep track of user-defined environment names
-    (which cannot be retrieved with the built-in function environmentName()).
-    The package also provides functionality to search for objects in environments,
-    deal with function calling chains, and retrieve an object's
-    memory address.
+Description: Set of functions to keep track and find objects in user-defined environments
+    by identifying environments by name --which cannot be retrieved with the built-in function environmentName().
+    The package also provides functionality to obtain simplified information about function calling chains
+    and to get an object's memory address.
 URL: https://github.com/mastropi/envnames
 BugReports: https://github.com/mastropi/envnames/issues
 License: GPL
 Suggests: knitr, rmarkdown, testthat
 VignetteBuilder: knitr
-RoxygenNote: 6.1.1
+NeedsCompilation: yes
+Config/roxygen2/version: 8.1.0

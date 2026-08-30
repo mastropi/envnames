@@ -403,6 +403,7 @@ test_that("objects deparsing to more than 60 characters do not cause an error", 
     get_obj_name(data.frame(x = 1:8, y = c("a", "b", "c", "d", "e", "f", "g", "h")), n = 1)
   )
 })
+# Extreme cases -----------------------------------------------------------
 
 
 # 3.- Cleanup -------------------------------------------------------------
